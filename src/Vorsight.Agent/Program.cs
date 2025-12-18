@@ -5,9 +5,13 @@ using Vorsight.Core.IPC;
 using Vorsight.Core.Screenshots;
 using Vorsight.Agent;
 
-// Configure Serilog for the Agent
+// Configure Serilog for the Agent (one-off execution model)
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
+    // Console output for debugging
+    .WriteTo.Console(
+        outputTemplate: "[{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    // File output for diagnostics
     .WriteTo.File(
         path: Path.Combine(Path.GetTempPath(), "vorsight", "logs", "agent-.log"),
         rollingInterval: RollingInterval.Day,
