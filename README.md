@@ -1,10 +1,14 @@
-﻿# Ö rsight - PC Management Suite for Child Safety
+﻿﻿﻿# Vörsight - PC Management Suite for Child Safety
 
 A comprehensive Windows-based PC management system designed to provide parental oversight, access scheduling, and activity auditing for child user accounts.
 
+**📋 [Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - See what's been built and the architecture details.
+
+**📚 [Complete Documentation](docs/README.md)** - Browse comprehensive component and feature documentation in the `docs/` folder.
+
 ## Project Overview
 
-Ö rsight (spelled `vorsight` for GitHub compatibility) is a sophisticated client-server architecture built in C# and designed to run on Windows systems. It operates at the system level to manage access schedules, capture user activity, and maintain audit logs for a designated child user account.
+Vörsight (`vorsight` in code) is a sophisticated client-server architecture built in C# and designed to run on Windows systems. It operates at the system level to manage access schedules, capture user activity, and maintain audit logs for a designated child user account.
 
 ### Core Components
 

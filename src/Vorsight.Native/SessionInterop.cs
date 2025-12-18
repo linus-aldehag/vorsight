@@ -58,7 +58,15 @@ namespace Vorsight.Native
         public static extern void WTSCloseServer(IntPtr hServer);
 
         /// <summary>
-        /// Information classes for WTSQuerySessionInformation.
+        /// Logs off a user from a specific session.
+        /// </summary>
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSLogoffSession(
+            IntPtr hServer,
+            uint SessionId,
+            bool bWait);
+
+        /// <summary>
         /// </summary>
         public enum WTS_INFO_CLASS
         {
