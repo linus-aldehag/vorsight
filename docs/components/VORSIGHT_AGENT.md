@@ -60,10 +60,13 @@ Graceful Shutdown on Exit
 - **Purpose**: Structured logging for debugging
 - **Location**: `Program.cs` (Serilog setup)
 - **Features**:
-  - Daily rolling logs
+  - **Console output** for real-time debugging
+  - Daily rolling logs for diagnostics
   - 7-day retention
   - Debug minimum level
-  - File-based output (no console bloat)
+  - Dual output (console + file)
+
+**Note**: The Agent is designed as a **one-off command-line tool**, not a long-lived daemon. It executes, captures/reports via IPC pipes, and terminates. Console logging enables immediate visibility into Agent operations.
 
 ## Session Management
 
@@ -84,6 +87,12 @@ if (sessionId < 0)
 
 ### Execution Context
 
+The Agent operates as a **one-off command-line tool**, not a long-lived daemon:
+
+- **Lifetime**: Launches, processes requests, terminates
+- **Invocation**: Service calls `CreateProcessAsUser` with `wuapihost.exe` arguments
+- **Reporting**: Returns results via IPC Named Pipes (not stdout)
+- **Exit**: Cleanly terminates after handling requests or on shutdown command
 - **User Context**: Child user account (not System)
 - **Session**: Session 1 (interactive session)
 - **Privileges**: Limited to child user capabilities
@@ -205,6 +214,19 @@ Log.Logger = new LoggerConfiguration()
 
 ### Log Examples
 
+**Console Output** (real-time):
+```
+[INF] Vörsight Agent starting...
+[INF] Agent running in session 1
+[INF] Connecting to IPC server on pipe: VorsightIPC
+[INF] Connected to IPC server
+[DBG] Message received: CaptureScreenshot (size: 1024)
+[INF] Screenshot captured: 1920x1080, 124 KB, SHA256: abc123...
+[INF] Screenshot sent: 262144 bytes
+[INF] Vörsight Agent terminated
+```
+
+**File Output** (diagnostic logs in `%TEMP%\vorsight\logs\`):
 ```
 2025-12-18 14:23:45.123 +00:00 [INF] Vörsight Agent starting...
 2025-12-18 14:23:45.456 +00:00 [INF] Agent running in session 1
