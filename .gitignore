@@ -1,0 +1,117 @@
+﻿# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options directory
+.vs/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Rider / IntelliJ
+.idea/
+*.sln.iml
+*.swp
+*.swo
+*~
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider cache
+.idea_modules/
+
+# Build folder
+.build/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# NuGet v3 specific
+.nuget/
+
+# Misc
+*.log
+*.tmp
+*.temp
+Thumbs.db
+Desktop.ini
+
+# OS files
+.DS_Store
+._*
+
+# Application Insights Telemetry
+ApplicationInsights.config
+appsettings.*.local.json
+
+# Local development settings (if not committed)
+appsettings.local.json
+
+# Entity Framework
+*.edmx.diagram
+
+# Python tools
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.local
+
+# Publish artifacts
+PublishProfiles/
+*.PublishSettings
+*.pubxml
+publish/
+
+# Certificates
+*.pfx
+*.cer
+*.crt
+*.key
+*.pem
+
+# Configuration files with secrets (if applicable)
+secrets.json
+
+# IDE settings
+.idea/
+*.iml
+.vscode/settings.json
+
+# yarn
+yarn-error.log
+
+# npm
+npm-debug.log
+package-lock.json
+
+/src/Vorsight.Web/appsettings.Development.json

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Vorsight.Service-09199870-2c2a-4a8b-82d4-a9df6a239d76</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Vorsight.Core\Vorsight.Core.csproj" />
+    <ProjectReference Include="..\Vorsight.Native\Vorsight.Native.csproj" />
+  </ItemGroup>
+</Project>
