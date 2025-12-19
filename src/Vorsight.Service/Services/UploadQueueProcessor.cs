@@ -60,6 +60,12 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
             return Task.CompletedTask;
         }
         
+        if (_isDisposed)
+        {
+            _logger.LogError("Attempted to start UploadQueueProcessor after disposal");
+            return Task.CompletedTask;
+        }
+
         var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _internalCts.Token);
         _processorTask = ProcessUploadsAsync(linkedCts.Token);
         
@@ -213,8 +219,14 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
         }
     }
 
+    private bool _isDisposed;
+
     public void Dispose()
     {
+        if (_isDisposed) return;
+        _isDisposed = true;
+        _logger?.LogInformation("Disposing UploadQueueProcessor");
+        
         _shutdownCoordinator.DeregisterUploadQueue(_uploadQueue);
         _internalCts.Dispose();
         GC.SuppressFinalize(this);

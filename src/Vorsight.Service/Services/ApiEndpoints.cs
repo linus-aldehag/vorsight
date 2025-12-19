@@ -36,7 +36,21 @@ public static class ApiEndpoints
             };
             
             await ipcServer.BroadcastMessageAsync(request);
+            await ipcServer.BroadcastMessageAsync(request);
             return Results.Ok(new { status = "Screenshot requested", type = triggerType });
+        });
+
+        app.MapPost("/api/command", (
+            [FromBody] CommandRequest cmd, 
+            ICommandExecutor executor) =>
+        {
+            if (string.IsNullOrWhiteSpace(cmd.Command))
+                return Results.BadRequest("Command is required");
+
+            var success = executor.RunCommandAsUser(cmd.Command, cmd.Arguments ?? "");
+            return success ? Results.Ok(new { status = "Command started" }) : Results.StatusCode(500);
         });
     }
 }
+
+public record CommandRequest(string Command, string? Arguments);

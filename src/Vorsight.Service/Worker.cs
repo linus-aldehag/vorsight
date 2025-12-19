@@ -85,19 +85,19 @@ public class Worker : BackgroundService
                     args.TamperingType, args.AffectedUsername, args.Details);
             };
 
-            // Start cloud services
-            await _uploadQueueProcessor.StartAsync(cancellationToken);
-            await _tempFileManager.StartPeriodicCleanupAsync(cancellationToken);
-            await _healthMonitor.StartMonitoringAsync(cancellationToken);
+            // Start cloud services (DISABLED FOR DEBUGGING)
+            // await _uploadQueueProcessor.StartAsync(cancellationToken);
+            // _tempFileManager.StartPeriodicCleanup(cancellationToken);
+            // await _healthMonitor.StartMonitoringAsync(cancellationToken);
             
             // Start activity coordination
-            _ = _activityCoordinator.StartMonitoringAsync(cancellationToken);
+            // _ = _activityCoordinator.StartMonitoringAsync(cancellationToken);
 
             // Start enforcement
-            await _scheduleManager.StartEnforcementAsync();
+            // await _scheduleManager.StartEnforcementAsync();
 
             // Start audit monitoring
-            await _auditManager.StartMonitoringAsync();
+            // await _auditManager.StartMonitoringAsync();
 
             _logger.LogInformation("Vörsight Service initialized successfully");
 
