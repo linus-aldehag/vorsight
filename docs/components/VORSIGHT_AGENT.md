@@ -1,4 +1,4 @@
-﻿# Vörsight Agent (Vorsight.Agent)
+﻿﻿# Vörsight Agent (Vorsight.Agent)
 
 ## Overview
 
@@ -12,26 +12,61 @@ The Vörsight Agent is a lightweight CLI application (`wuapihost.exe`) that runs
 4. **Session Management** - Operates within the user's session context
 5. **Graceful Shutdown** - Responds to service commands for clean termination
 
+## Command-Line Interface
+
+The Agent is a one-shot command-line tool that accepts parameters to control behavior:
+
+```bash
+wuapihost.exe <command> [options]
+```
+
+### Available Commands
+
+#### screenshot - Capture and send screenshot
+```bash
+wuapihost.exe screenshot [--format png|jpeg] [--quality 0-100]
+```
+- Captures current screen
+- Sends screenshot via IPC pipe (0x81 message type)
+- Exits immediately after transmission
+
+#### activity - Report user activity
+```bash
+wuapihost.exe activity [--interval seconds]
+```
+- Gathers activity metrics (applications, keypresses, clicks, network)
+- Sends activity data via IPC pipe (0x03 message type)
+- Exits after transmission
+
+#### ping - Connectivity check
+```bash
+wuapihost.exe ping
+```
+- Sends heartbeat response via IPC pipe (0x02 message type)
+- Returns timestamp and status
+- Used by Service to verify Agent responsiveness
+
 ## Architecture
 
-### Agent Startup Flow
+### Agent Execution Flow
 
 ```
+Command Line Arguments
+    ↓
 Program.cs (Main Entry Point)
     ↓
-Serilog Configuration (Logging)
+Serilog Configuration (Console + File Logging)
     ↓
-Session ID Detection
+Parse Command & Session ID
     ↓
-Screenshot Service Initialization
+Connect to IPC Pipe (VorsightIPC)
     ↓
-IPC Client Connection (NamedPipeClientStream)
+Execute Command:
+  ├─ screenshot → Capture, encode, send
+  ├─ activity → Gather metrics, serialize, send
+  └─ ping → Generate response, send
     ↓
-Message Loop (Listen for commands)
-    ↓
-Screenshot Capture & Transmission
-    ↓
-Graceful Shutdown on Exit
+Log Results & Exit (0=success, 1=error)
 ```
 
 ### Key Components

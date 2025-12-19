@@ -1,5 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.IO.Pipes;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using Microsoft.Extensions.Logging;
 
 namespace Vorsight.Core.IPC;
@@ -119,15 +121,29 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                NamedPipeServerStream pipeServer = null;
                 try
                 {
-                    // Create a new pipe server stream for each client
-                    var pipeServer = new NamedPipeServerStream(
+                    // Create security object allowing Everyone to read/write
+                    var pipeSecurity = new PipeSecurity();
+                    pipeSecurity.AddAccessRule(new PipeAccessRule(
+                        new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                        PipeAccessRights.ReadWrite,
+                        AccessControlType.Allow));
+
+                    // Create pipe server stream with security - this must be done at creation time
+                    // to work correctly for subsequent instances and avoid race conditions
+                    pipeServer = NamedPipeServerStreamAcl.Create(
                         PipeName,
                         PipeDirection.InOut,
                         NamedPipeServerStream.MaxAllowedServerInstances,
-                        PipeTransmissionMode.Message);
+                        PipeTransmissionMode.Byte,
+                        PipeOptions.Asynchronous,
+                        0, // Default in buffer
+                        0, // Default out buffer
+                        pipeSecurity);
 
+                    logger.LogDebug("Pipe created on: {PipeName} with public access", PipeName);
                     logger.LogDebug("Waiting for client connection on pipe: {PipeName}", PipeName);
 
                     // Wait for client connection
@@ -135,16 +151,18 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
 
                     logger.LogInformation("Client connected to pipe: {PipeName}", PipeName);
 
-                    // Handle the client in a separate task
+                    // Handle the client in a separate task (don't await - continue listening)
                     _ = HandleClientAsync(pipeServer, cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
+                    pipeServer?.Dispose();
                     break;
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error accepting client connection");
+                    pipeServer?.Dispose();
                 }
             }
         }
@@ -153,6 +171,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
             logger.LogError(ex, "Pipe listener task failed");
         }
     }
+
 
     private async Task HandleClientAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
     {
