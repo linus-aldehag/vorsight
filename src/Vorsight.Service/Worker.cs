@@ -197,8 +197,30 @@ public class Worker : BackgroundService
             message.Payload?.Length ?? 0,
             message.MessageId);
 
-        // TODO: Store screenshot to database or file system
-        // This is where you would save the image data, update thumbnails, etc.
+        // Temporary verification: Save screenshot to disk
+        try
+        {
+            var fileName = $"screenshot-{sessionId}-{message.CreatedUtc.Ticks}.png";
+            var runDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location) ?? ".";
+            var outputPath = Path.Combine(runDir, fileName); // Save to binary directory to avoid cluttering source
+
+            // Also save to a known location for easier verification if possible, or just log the path
+            var verifyPath = Path.Combine(Environment.CurrentDirectory, "screenshot_verify.png");
+            
+            if (message.Payload != null && message.Payload.Length > 0)
+            {
+                 File.WriteAllBytes(verifyPath, message.Payload);
+                 _logger.LogInformation("Screenshot saved for verification to: {FilePath}", verifyPath);
+            }
+            else
+            {
+                _logger.LogWarning("Received empty screenshot payload from session {SessionId}", sessionId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save verification screenshot");
+        }
     }
 
     /// <summary>
