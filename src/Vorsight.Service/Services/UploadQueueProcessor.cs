@@ -134,6 +134,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
     {
         try
         {
+            _logger.LogInformation("Upload Queue Processing Loop Started");
             while (!cancellationToken.IsCancellationRequested && !_uploadQueue.Completion.IsCompleted)
             {
                 string filePath;
@@ -154,6 +155,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                     }
                     
                     filePath = await receiveTask;
+                    _logger.LogDebug("Dequeued item: {FilePath}", filePath);
                 }
                 catch (InvalidOperationException) when (_uploadQueue.Completion.IsCompleted)
                 {

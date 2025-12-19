@@ -23,6 +23,21 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 return false;
             }
 
+            // Optimization: If we are already in the target session, just start the process directly
+            if (System.Diagnostics.Process.GetCurrentProcess().SessionId == sessionId)
+            {
+                logger.LogInformation("Service is running in target session {SessionId}. Using direct Process.Start.", sessionId);
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c {command} {arguments}",
+                    UseShellExecute = false,
+                    CreateNoWindow = true // Or false if we want to see it
+                };
+                System.Diagnostics.Process.Start(psi);
+                return true;
+            }
+
             // 2. Find a process in that session (Explorer is best bet)
             var userProcess = System.Diagnostics.Process.GetProcessesByName("explorer")
                 .FirstOrDefault(p => p.SessionId == sessionId);
@@ -34,14 +49,24 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             }
 
             // 3. Open Process Token
-            if (!Vorsight.Native.ProcessHelper.TryOpenProcessToken(userProcess.Handle, Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE, out var hToken))
+            // 3. Open Process Token
+            // Use specific access rights to avoid Access Denied from Process.Handle (which requests ALL_ACCESS)
+            if (!Vorsight.Native.ProcessHelper.TryOpenProcess((uint)userProcess.Id, Vorsight.Native.ProcessInterop.PROCESS_QUERY_LIMITED_INFORMATION, out var hProcess))
             {
-                logger.LogError("Failed to open process token for explorer.exe");
+                logger.LogError("Failed to open process handle for explorer.exe (PID: {Pid})", userProcess.Id);
                 return false;
             }
 
             try
             {
+                if (!Vorsight.Native.ProcessHelper.TryOpenProcessToken(hProcess, Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE, out var hToken))
+                {
+                    logger.LogError("Failed to open process token for explorer.exe");
+                    return false;
+                }
+
+                try
+                {
                 // 4. Duplicate Token
                 if (!Vorsight.Native.ProcessHelper.TryDuplicateTokenEx(
                     hToken, 
@@ -81,9 +106,14 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     Vorsight.Native.ProcessInterop.CloseHandle(hUserToken);
                 }
             }
+                finally
+                {
+                    Vorsight.Native.ProcessInterop.CloseHandle(hToken);
+                }
+            }
             finally
             {
-                Vorsight.Native.ProcessInterop.CloseHandle(hToken);
+                Vorsight.Native.ProcessInterop.CloseHandle(hProcess);
             }
         }
         catch (Exception ex)

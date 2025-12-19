@@ -23,6 +23,7 @@ public class Worker : BackgroundService
     private readonly IHealthMonitor _healthMonitor;
     private readonly IActivityCoordinator _activityCoordinator;
     private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
+    private readonly ISessionSummaryManager _sessionSummaryManager;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
@@ -36,7 +37,8 @@ public class Worker : BackgroundService
         ITempFileManager tempFileManager,
         IHealthMonitor healthMonitor,
         IActivityCoordinator activityCoordinator,
-        Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor)
+        Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor,
+        ISessionSummaryManager sessionSummaryManager)
     {
         _logger = logger;
         _ipcServer = ipcServer;
@@ -49,6 +51,7 @@ public class Worker : BackgroundService
         _healthMonitor = healthMonitor;
         _activityCoordinator = activityCoordinator;
         _uptimeMonitor = uptimeMonitor;
+        _sessionSummaryManager = sessionSummaryManager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -60,15 +63,18 @@ public class Worker : BackgroundService
 
         try
         {
-            // Initialize components
-            await _scheduleManager.InitializeAsync();
-            await _auditManager.InitializeAsync();
-            await _ipcServer.StartAsync();
+            // Initialize components with granular error handling
+            await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
+            await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
+            await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
 
-            // Hook up IPC message received events
-            _ipcServer.MessageReceived += OnMessageReceived;
-            _ipcServer.SessionConnected += OnSessionConnected;
-            _ipcServer.SessionDisconnected += OnSessionDisconnected;
+            // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
+            if (_ipcServer.IsRunning) // Check if valid
+            {
+                _ipcServer.MessageReceived += OnMessageReceived;
+                _ipcServer.SessionConnected += OnSessionConnected;
+                _ipcServer.SessionDisconnected += OnSessionDisconnected;
+            }
 
             // Hook up audit events
             _auditManager.CriticalEventDetected += (sender, args) =>
@@ -85,19 +91,19 @@ public class Worker : BackgroundService
                     args.TamperingType, args.AffectedUsername, args.Details);
             };
 
-            // Start cloud services (DISABLED FOR DEBUGGING)
-            // await _uploadQueueProcessor.StartAsync(cancellationToken);
-            // _tempFileManager.StartPeriodicCleanup(cancellationToken);
-            // await _healthMonitor.StartMonitoringAsync(cancellationToken);
+            // Start cloud services
+            await TryStartComponent("UploadQueueProcessor", () => _uploadQueueProcessor.StartAsync(cancellationToken));
+            TryStartComponentSync("TempFileManager", () => _tempFileManager.StartPeriodicCleanup(cancellationToken));
+            await TryStartComponent("HealthMonitor", () => _healthMonitor.StartMonitoringAsync(cancellationToken));
             
             // Start activity coordination
-            // _ = _activityCoordinator.StartMonitoringAsync(cancellationToken);
+            await TryStartComponent("ActivityCoordinator", () => _activityCoordinator.StartMonitoringAsync(cancellationToken));
 
             // Start enforcement
-            // await _scheduleManager.StartEnforcementAsync();
+            await TryStartComponent("ScheduleManager Enforcement", () => _scheduleManager.StartEnforcementAsync());
 
             // Start audit monitoring
-            // await _auditManager.StartMonitoringAsync();
+            await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync());
 
             _logger.LogInformation("Vörsight Service initialized successfully");
 
@@ -120,6 +126,7 @@ public class Worker : BackgroundService
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error in service loop");
+                    _sessionSummaryManager.RegisterException(ex);
                 }
             }
         }
@@ -130,10 +137,42 @@ public class Worker : BackgroundService
         catch (Exception ex)
         {
             _logger.LogCritical(ex, "Fatal error in service");
+            _sessionSummaryManager.RegisterException(ex);
         }
         finally
         {
             await StopServiceAsync();
+        }
+    }
+
+    private async Task TryStartComponent(string name, Func<Task> startupAction)
+    {
+        try
+        {
+            _logger.LogInformation("Starting component: {Name}", name);
+            await startupAction();
+            _logger.LogInformation("Component started: {Name}", name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start component: {Name}", name);
+            _sessionSummaryManager.RegisterException(ex);
+            // We choose NOT to rethrow, allowing partial service startup
+        }
+    }
+
+    private void TryStartComponentSync(string name, Action startupAction)
+    {
+        try
+        {
+            _logger.LogInformation("Starting component: {Name}", name);
+            startupAction();
+            _logger.LogInformation("Component started: {Name}", name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start component: {Name}", name);
+            _sessionSummaryManager.RegisterException(ex);
         }
     }
 

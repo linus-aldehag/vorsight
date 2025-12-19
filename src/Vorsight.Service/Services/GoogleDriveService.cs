@@ -9,7 +9,10 @@ namespace Vorsight.Service.Services;
 
 public interface IGoogleDriveService
 {
+    Task<string> EnsureFolderExistsAsync(string folderName);
+    Task<string> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId);
     Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
+    Task InitializeAsync();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
 }
 
@@ -23,6 +26,9 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     // Track if we're shutting down
     private bool _isShuttingDown;
     
+    // Cache drive service to avoid re-authenticating every time
+    private DriveService _driveServiceInstance;
+    
     public GoogleDriveService(
         IConfiguration config, 
         ILogger<GoogleDriveService> logger)
@@ -31,6 +37,27 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         // Use AppContext.BaseDirectory to resolve paths relative to the application directory
         _clientSecretsPath = Path.Combine(AppContext.BaseDirectory, clientSecretsPath);
         _logger = logger;
+    }
+
+    public async Task InitializeAsync()
+    {
+        // Pre-initialize service to fail fast if auth is missing
+        try 
+        {
+            if (File.Exists(_clientSecretsPath))
+            {
+                _driveServiceInstance = await GetDriveServiceAsync(CancellationToken.None);
+                _logger.LogInformation("Google Drive Service initialized successfully");
+            }
+            else
+            {
+                _logger.LogWarning("Google Drive client secrets not found at {Path}. Uploads will fail.", _clientSecretsPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Google Drive Service");
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -94,6 +121,8 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     
     private async Task<DriveService> GetDriveServiceAsync(CancellationToken cancellationToken)
     {
+        if (_driveServiceInstance != null) return _driveServiceInstance;
+
         if (!File.Exists(_clientSecretsPath))
         {
             throw new InvalidOperationException($"Client secrets file not found at: {_clientSecretsPath}");
@@ -107,19 +136,27 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         _logger.LogDebug("Using credential store path: {Path}", credentialPath);
         var dataStore = new FileDataStore(credentialPath, true);
         
-        var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-            (await GoogleClientSecrets.FromStreamAsync(stream, cancellationToken)).Secrets,
-            [DriveService.Scope.DriveFile],
-            "user",
-            cancellationToken,
-            dataStore
-        );
-
-        return new DriveService(new BaseClientService.Initializer
+        try
         {
-            HttpClientInitializer = credential,
-            ApplicationName = "Vorsight"
-        });
+            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
+                (await GoogleClientSecrets.FromStreamAsync(stream, cancellationToken)).Secrets,
+                [DriveService.Scope.DriveFile],
+                "user",
+                cancellationToken,
+                dataStore
+            );
+
+            return new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Vorsight"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to authenticate with Google Drive. Please verify 'oauth.json' or 'client_secrets.json' is valid and contains correct client secrets.");
+            throw new InvalidOperationException("Google Drive authentication failed", ex);
+        }
     }
 
     private async Task<string> GetOrCreateFolderAsync(DriveService service, string path,
@@ -210,6 +247,8 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
 
     public async Task UploadFileAsync(string filePath, CancellationToken cancellationToken)
     {
+        // Legacy implementation for UploadQueueProcessor
+        
         // Create a new cancellation token source that isn't affected by application shutdown
         // if we're already shutting down
         using var uploadCts = _isShuttingDown ? 
@@ -245,6 +284,11 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         {
             _logger.LogInformation("Upload cancelled for file: {FilePath}", filePath);
             // Don't rethrow when shutting down
+            if (!_isShuttingDown) throw;
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("authentication failed"))
+        {
+            _logger.LogError("Drive Upload Failed: Authentication credentials are invalid or missing. Ensure oauth.json is correct.");
             if (!_isShuttingDown) throw;
         }
         catch (Exception ex)
@@ -308,6 +352,75 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         {
             _logger.LogError("Upload failed with status: {Status}", response.Status);
             throw new InvalidOperationException($"Upload failed with status: {response.Status}");
+        }
+    }
+
+    public async Task<string> EnsureFolderExistsAsync(string folderName)
+    {
+        // Use cached service or get new one
+        var service = await GetDriveServiceAsync(CancellationToken.None);
+
+        try
+        {
+            // Check if exists
+            var request = service.Files.List();
+            request.Q = $"mimeType = 'application/vnd.google-apps.folder' and name = '{folderName}' and trashed = false";
+            request.Fields = "files(id, name)";
+            
+            var result = await request.ExecuteAsync();
+            var folder = result.Files.FirstOrDefault();
+
+            if (folder != null)
+                return folder.Id;
+
+            // Create if not exists
+            var fileMetadata = new Google.Apis.Drive.v3.Data.File()
+            {
+                Name = folderName,
+                MimeType = "application/vnd.google-apps.folder"
+            };
+
+            var createRequest = service.Files.Create(fileMetadata);
+            createRequest.Fields = "id";
+            var file = await createRequest.ExecuteAsync();
+            
+            _logger.LogInformation("Created Google Drive folder: {FolderName}", folderName);
+            return file.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to ensure folder exists: {FolderName}", folderName);
+            return null;
+        }
+    }
+
+    public async Task<string> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId)
+    {
+        var service = await GetDriveServiceAsync(CancellationToken.None);
+
+        try
+        {
+            var fileMetadata = new Google.Apis.Drive.v3.Data.File()
+            {
+                Name = fileName,
+                Parents = parentFolderId != null ? new List<string> { parentFolderId } : null
+            };
+
+            using var stream = new FileStream(filePath, FileMode.Open);
+            var request = service.Files.Create(fileMetadata, stream, mimeType);
+            request.Fields = "id";
+            
+            var result = await request.UploadAsync();
+            
+            if (result.Status == Google.Apis.Upload.UploadStatus.Failed)
+                throw result.Exception;
+
+            return request.ResponseBody?.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to direct upload file: {FileName}", fileName);
+            throw;
         }
     }
 }
