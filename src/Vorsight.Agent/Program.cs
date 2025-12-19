@@ -314,6 +314,8 @@ async Task SendScreenshotThroughIpc(NamedPipeClientStream pipe, byte[] screensho
 
         Log.Debug("Sending {SizeBytes} bytes through IPC", data.Length);
         
+        // Send length prefix
+        await pipe.WriteAsync(BitConverter.GetBytes(data.Length));
         await pipe.WriteAsync(data, 0, data.Length);
         await pipe.FlushAsync();
 
@@ -361,6 +363,8 @@ async Task SendActivityThroughIpc(NamedPipeClientStream pipe, byte[] payload, ui
 
         Log.Debug("Sending {SizeBytes} bytes through IPC", data.Length);
         
+        // Send length prefix
+        await pipe.WriteAsync(BitConverter.GetBytes(data.Length));
         await pipe.WriteAsync(data, 0, data.Length);
         await pipe.FlushAsync();
 
@@ -386,6 +390,8 @@ async Task SendPingThroughIpc(NamedPipeClientStream pipe, byte[] payload, uint s
 
         Log.Debug("Sending {SizeBytes} bytes through IPC", data.Length);
         
+        // Send length prefix
+        await pipe.WriteAsync(BitConverter.GetBytes(data.Length));
         await pipe.WriteAsync(data, 0, data.Length);
         await pipe.FlushAsync();
 

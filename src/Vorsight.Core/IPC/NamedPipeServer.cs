@@ -86,6 +86,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         try
         {
             var data = message.Serialize();
+            var lengthBytes = BitConverter.GetBytes(data.Length);
+            
+            // Write length prefix first
+            await pipe.WriteAsync(lengthBytes, 0, 4);
             await pipe.WriteAsync(data, 0, data.Length);
             await pipe.FlushAsync();
 
@@ -203,12 +207,13 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 SessionConnected?.Invoke(this, new SessionConnectedEventArgs { SessionId = sessionId });
 
                 // Message loop
-                var buffer = new byte[65536]; // 64KB buffer
                 while (!cancellationToken.IsCancellationRequested && pipe.IsConnected)
                 {
                     try
                     {
-                        bytesRead = await pipe.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                        // 1. Read Message Length (4 bytes)
+                        var lengthBuffer = new byte[4];
+                        bytesRead = await pipe.ReadAsync(lengthBuffer, 0, 4, cancellationToken);
 
                         if (bytesRead == 0)
                         {
@@ -216,8 +221,39 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             break;
                         }
 
+                        if (bytesRead < 4)
+                        {
+                            // Partial header read - checking if we can read the rest
+                            int headerRemaining = 4 - bytesRead;
+                            while (headerRemaining > 0)
+                            {
+                                int read = await pipe.ReadAsync(lengthBuffer, 4 - headerRemaining, headerRemaining, cancellationToken);
+                                if (read == 0) throw new EndOfStreamException("Connection closed during header read");
+                                headerRemaining -= read;
+                            }
+                        }
+
+                        int messageLength = BitConverter.ToInt32(lengthBuffer, 0);
+
+                        // Validity check (max 10MB to prevent OOM)
+                        if (messageLength <= 0 || messageLength > 10 * 1024 * 1024)
+                        {
+                            logger.LogWarning("Invalid message length received: {Length}", messageLength);
+                            break; // Disconnect
+                        }
+
+                        // 2. Read Message Body
+                        var messageBuffer = new byte[messageLength];
+                        int totalRead = 0;
+                        while (totalRead < messageLength)
+                        {
+                            int read = await pipe.ReadAsync(messageBuffer, totalRead, messageLength - totalRead, cancellationToken);
+                            if (read == 0) throw new EndOfStreamException("Connection closed during body read");
+                            totalRead += read;
+                        }
+
                         // Deserialize and process message
-                        var message = PipeMessage.Deserialize(buffer, bytesRead);
+                        var message = PipeMessage.Deserialize(messageBuffer, messageLength);
                         logger.LogDebug("Message received from session {SessionId}: {MessageType}", sessionId, message.Type);
 
                         MessageReceived?.Invoke(this, new PipeMessageReceivedEventArgs
@@ -225,6 +261,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             SessionId = sessionId,
                             Message = message
                         });
+                    }
+                    catch (EndOfStreamException)
+                    {
+                        logger.LogInformation("Session {SessionId} disconnected (EOF)", sessionId);
+                        break;
                     }
                     catch (OperationCanceledException)
                     {
