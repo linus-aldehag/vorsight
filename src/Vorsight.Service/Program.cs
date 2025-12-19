@@ -22,9 +22,9 @@ try
     Log.Information("Vörsight Service starting...");
     Log.Information("Application directory: {Directory}", AppContext.BaseDirectory);
 
-    var builder = Host.CreateApplicationBuilder(args);
+    var builder = WebApplication.CreateBuilder(args);
 
-    // Configure Serilog
+    // Add services to the container.
     builder.Services.AddSerilog();
 
     // Configure core services
@@ -45,18 +45,20 @@ try
     builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
     
     // Scavenged Services
-    builder.Services.AddSingleton<Vorsight.Native.IWindowMonitor, Vorsight.Native.WindowMonitor>();
-    builder.Services.AddSingleton<IScreenshotCoordinator, ScreenshotCoordinator>();
+    builder.Services.AddSingleton<Vorsight.Native.IUserActivityMonitor, Vorsight.Native.UserActivityMonitor>();
+    builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
 
     // Add hosted service
     builder.Services.AddHostedService<Worker>();
 
 
     // Build and run
-    var host = builder.Build();
+    var app = builder.Build();
+    
+    // Map API Endpoints
+    app.MapApiEndpoints();
 
-    Log.Information("Starting Vörsight Service host...");
-    await host.RunAsync();
+    app.Run();
 }
 catch (Exception ex)
 {

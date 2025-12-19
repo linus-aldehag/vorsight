@@ -120,7 +120,28 @@ public class UptimeMonitor
     {
         var json = JsonSerializer.Serialize(intervals, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(_storagePath, json);
+        File.WriteAllText(_storagePath, json);
     }
+
+    public UptimeStatus GetCurrentStatus()
+    {
+        lock (_lock)
+        {
+            return new UptimeStatus
+            {
+                CurrentStart = _currentStart,
+                LastSeen = _lastSeen,
+                IsTracking = _lastSeen.HasValue && (DateTime.UtcNow - _lastSeen.Value) < _threshold
+            };
+        }
+    }
+}
+
+public record UptimeStatus
+{
+    public DateTime? CurrentStart { get; init; }
+    public DateTime? LastSeen { get; init; }
+    public bool IsTracking { get; init; }
 }
 
 public class UptimeInterval

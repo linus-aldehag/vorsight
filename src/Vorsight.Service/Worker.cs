@@ -21,7 +21,7 @@ public class Worker : BackgroundService
     private readonly IUploadQueueProcessor _uploadQueueProcessor;
     private readonly ITempFileManager _tempFileManager;
     private readonly IHealthMonitor _healthMonitor;
-    private readonly IScreenshotCoordinator _screenshotCoordinator;
+    private readonly IActivityCoordinator _activityCoordinator;
     private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly CancellationTokenSource _internalCts = new();
 
@@ -35,7 +35,7 @@ public class Worker : BackgroundService
         IUploadQueueProcessor uploadQueueProcessor,
         ITempFileManager tempFileManager,
         IHealthMonitor healthMonitor,
-        IScreenshotCoordinator screenshotCoordinator,
+        IActivityCoordinator activityCoordinator,
         Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor)
     {
         _logger = logger;
@@ -47,7 +47,7 @@ public class Worker : BackgroundService
         _uploadQueueProcessor = uploadQueueProcessor;
         _tempFileManager = tempFileManager;
         _healthMonitor = healthMonitor;
-        _screenshotCoordinator = screenshotCoordinator;
+        _activityCoordinator = activityCoordinator;
         _uptimeMonitor = uptimeMonitor;
     }
 
@@ -90,9 +90,8 @@ public class Worker : BackgroundService
             await _tempFileManager.StartPeriodicCleanupAsync(cancellationToken);
             await _healthMonitor.StartMonitoringAsync(cancellationToken);
             
-            // Start screenshot coordination (fire and forget tasks, managed by internal loop with token)
-            _ = _screenshotCoordinator.StartTimedScreenshotsAsync(cancellationToken);
-            _ = _screenshotCoordinator.StartWindowChangeScreenshotsAsync(cancellationToken);
+            // Start activity coordination
+            _ = _activityCoordinator.StartMonitoringAsync(cancellationToken);
 
             // Start enforcement
             await _scheduleManager.StartEnforcementAsync();
