@@ -42,8 +42,10 @@ public class Worker : BackgroundService
             await _auditManager.InitializeAsync();
             await _ipcServer.StartAsync();
 
-            // Start enforcement
-            await _scheduleManager.StartEnforcementAsync();
+            // Hook up IPC message received events
+            _ipcServer.MessageReceived += OnMessageReceived;
+            _ipcServer.SessionConnected += OnSessionConnected;
+            _ipcServer.SessionDisconnected += OnSessionDisconnected;
 
             // Hook up audit events
             _auditManager.CriticalEventDetected += (sender, args) =>
@@ -59,6 +61,9 @@ public class Worker : BackgroundService
                     "SECURITY ALERT: Audit tampering detected - Type: {TamperingType}, User: {User}, Details: {Details}",
                     args.TamperingType, args.AffectedUsername, args.Details);
             };
+
+            // Start enforcement
+            await _scheduleManager.StartEnforcementAsync();
 
             // Start audit monitoring
             await _auditManager.StartMonitoringAsync();
@@ -140,5 +145,109 @@ public class Worker : BackgroundService
         _internalCts.Dispose();
         base.Dispose();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Handles incoming messages from Agent via IPC.
+    /// </summary>
+    private void OnMessageReceived(object sender, PipeMessageReceivedEventArgs e)
+    {
+        try
+        {
+            _logger.LogInformation(
+                "Agent message received from session {SessionId}: Type={MessageType}, Size={PayloadSize} bytes",
+                e.SessionId,
+                e.Message.Type,
+                e.Message.Payload?.Length ?? 0);
+
+            // Handle different message types
+            switch (e.Message.Type)
+            {
+                case PipeMessage.MessageType.Screenshot:
+                    HandleScreenshotMessage(e.SessionId, e.Message);
+                    break;
+
+                case PipeMessage.MessageType.PingResponse:
+                    HandlePingResponse(e.SessionId, e.Message);
+                    break;
+
+                case PipeMessage.MessageType.AuditLog:
+                    HandleAuditLog(e.SessionId, e.Message);
+                    break;
+
+                default:
+                    _logger.LogWarning("Unknown message type received: {MessageType}", e.Message.Type);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing message from session {SessionId}", e.SessionId);
+        }
+    }
+
+    /// <summary>
+    /// Handles screenshot message from Agent.
+    /// </summary>
+    private void HandleScreenshotMessage(uint sessionId, PipeMessage message)
+    {
+        _logger.LogInformation(
+            "Screenshot received from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
+            sessionId,
+            message.Payload?.Length ?? 0,
+            message.MessageId);
+
+        // TODO: Store screenshot to database or file system
+        // This is where you would save the image data, update thumbnails, etc.
+    }
+
+    /// <summary>
+    /// Handles ping/heartbeat response from Agent.
+    /// </summary>
+    private void HandlePingResponse(uint sessionId, PipeMessage message)
+    {
+        _logger.LogDebug(
+            "Heartbeat response from session {SessionId}: ID={MessageId}, Time={CreatedUtc}",
+            sessionId,
+            message.MessageId,
+            message.CreatedUtc);
+
+        // TODO: Update session last-seen timestamp for monitoring
+    }
+
+    /// <summary>
+    /// Handles audit log entries from Agent.
+    /// </summary>
+    private void HandleAuditLog(uint sessionId, PipeMessage message)
+    {
+        _logger.LogInformation(
+            "Audit log from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
+            sessionId,
+            message.Payload?.Length ?? 0,
+            message.MessageId);
+
+        // TODO: Parse and store audit events
+    }
+
+    /// <summary>
+    /// Handles session connection events.
+    /// </summary>
+    private void OnSessionConnected(object sender, SessionConnectedEventArgs e)
+    {
+        _logger.LogInformation(
+            "Agent session connected: SessionId={SessionId}, User={Username}",
+            e.SessionId,
+            e.Username ?? "(unknown)");
+    }
+
+    /// <summary>
+    /// Handles session disconnection events.
+    /// </summary>
+    private void OnSessionDisconnected(object sender, SessionDisconnectedEventArgs e)
+    {
+        _logger.LogInformation(
+            "Agent session disconnected: SessionId={SessionId}, Reason={Reason}",
+            e.SessionId,
+            e.Reason ?? "normal");
     }
 }

@@ -1,4 +1,4 @@
-﻿# Vörsight Service (Vorsight.Service)
+﻿﻿# Vörsight Service (Vorsight.Service)
 
 ## Overview
 
@@ -25,10 +25,47 @@ Serilog Configuration (Logging)
 Host Builder Setup
     ↓
 Dependency Injection Configuration
+    ├─ INamedPipeServer (IPC communication)
+    ├─ IScheduleManager (Access enforcement)
+    ├─ IAuditManager (Security monitoring)
+    └─ Worker (Orchestration)
     ↓
-Worker.cs (ExecuteAsync Loop)
+Worker.cs (ExecuteAsync)
+    ├─ Initialize components
+    ├─ Start IPC server
+    ├─ Hook up event handlers
+    ├─ Start schedule enforcement
+    ├─ Start audit monitoring
+    └─ Health checks (Every 30s)
+```
+
+### Message Reception Flow
+
+```
+Agent Connects
     ↓
-Health Checks (Every 30s)
+OnSessionConnected event
+    └─ Log: [INF] Agent session connected
+    ↓
+Agent Sends Message (0x81, 0x03, or 0x02)
+    ↓
+OnMessageReceived event
+    ├─ Log: [INF] Agent message received: Type=X, Size=Y
+    └─ Route by message type:
+        ├─ Screenshot (0x81)
+        │  └─ HandleScreenshotMessage()
+        │     └─ Log: [INF] Screenshot received: {size} bytes
+        ├─ Activity/AuditLog (0x03)
+        │  └─ HandleAuditLog()
+        │     └─ Log: [INF] Audit log received: {size} bytes
+        └─ Ping/Heartbeat (0x02)
+           └─ HandlePingResponse()
+              └─ Log: [DBG] Heartbeat response received
+    ↓
+Agent Disconnects
+    ↓
+OnSessionDisconnected event
+    └─ Log: [INF] Agent session disconnected
 ```
 
 ### Core Services
@@ -120,10 +157,109 @@ The service uses Serilog for structured logging with:
 
 ### Log Examples
 
+## Message Handlers
+
+The Service receives and processes messages from connected Agent instances via IPC. All message reception is logged.
+
+### Handler: OnMessageReceived
+
+Called when any message arrives from an Agent.
+
+```csharp
+private void OnMessageReceived(object sender, PipeMessageReceivedEventArgs e)
+{
+    // Logs: [INF] Agent message received from session X: Type=Y, Size=Z bytes
+    // Routes to handler based on message type
+}
 ```
-2025-12-18 14:23:45.123 [INF] Vörsight Service starting...
-2025-12-18 14:23:45.456 [INF] Vörsight.Service.Worker: Health check passed, 1 active sessions
-2025-12-18 14:23:46.789 [ERR] Vörsight.Core.Audit.AuditManager: Critical event detected: User Account Creation (EventId: 4720)
+
+**Logging Output:**
+```
+[INF] Agent message received from session 1: Type=Screenshot, Size=262144 bytes
+[INF] Screenshot received from session 1: 262144 bytes, ID=12345678-1234-1234-1234-123456789012
+```
+
+### Handler: HandleScreenshotMessage
+
+Processes screenshot data from Agent.
+
+```csharp
+private void HandleScreenshotMessage(uint sessionId, PipeMessage message)
+{
+    // Logs: [INF] Screenshot received from session X: {SizeBytes} bytes, ID={MessageId}
+    // TODO: Store screenshot to database or file system
+}
+```
+
+**Typical Usage:**
+- Called when Agent sends message type 0x81 (Screenshot)
+- Logs size and message ID for audit trail
+- Ready for screenshot storage/processing implementation
+
+### Handler: HandlePingResponse
+
+Processes heartbeat/ping responses from Agent.
+
+```csharp
+private void HandlePingResponse(uint sessionId, PipeMessage message)
+{
+    // Logs: [DBG] Heartbeat response from session X: ID={MessageId}, Time={CreatedUtc}
+    // TODO: Update session last-seen timestamp for monitoring
+}
+```
+
+**Typical Usage:**
+- Called when Agent sends message type 0x02 (Ping)
+- Used to verify Agent is alive and responsive
+- Updates session health status
+
+### Handler: HandleAuditLog
+
+Processes activity/audit log entries from Agent.
+
+```csharp
+private void HandleAuditLog(uint sessionId, PipeMessage message)
+{
+    // Logs: [INF] Audit log from session X: {SizeBytes} bytes, ID={MessageId}
+    // TODO: Parse and store audit events
+}
+```
+
+**Typical Usage:**
+- Called when Agent sends message type 0x03 (Activity/Audit)
+- Contains JSON payload with activity metrics
+- Ready for event parsing and storage implementation
+
+### Handler: OnSessionConnected
+
+Called when an Agent connects to the IPC pipe.
+
+```csharp
+private void OnSessionConnected(object sender, SessionConnectedEventArgs e)
+{
+    // Logs: [INF] Agent session connected: SessionId=X, User=Y
+}
+```
+
+**Logging Output:**
+```
+[INF] Agent session connected: SessionId=1, User=(unknown)
+```
+
+### Handler: OnSessionDisconnected
+
+Called when an Agent disconnects from the IPC pipe.
+
+```csharp
+private void OnSessionDisconnected(object sender, SessionDisconnectedEventArgs e)
+{
+    // Logs: [INF] Agent session disconnected: SessionId=X, Reason=Y
+}
+```
+
+**Logging Output:**
+```
+[INF] Agent session disconnected: SessionId=1, Reason=normal
 ```
 
 ## API Endpoints

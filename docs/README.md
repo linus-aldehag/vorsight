@@ -4,14 +4,20 @@ Welcome to the Vörsight documentation index. This folder contains comprehensive
 
 ## Core Documentation
 
-### [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md)
-High-level overview of Vörsight, its purpose, and main components.
+### [START_HERE.md](./START_HERE.md)
+Introduction and getting started guide.
 
 ### [ARCHITECTURE.md](./ARCHITECTURE.md)
 Detailed system architecture, component interactions, and design patterns.
 
 ### [QUICKSTART.md](./QUICKSTART.md)
 Step-by-step guide to building, testing, and deploying Vörsight.
+
+### [PROJECT_STATUS.md](./PROJECT_STATUS.md)
+Current project status and roadmap.
+
+### [CHECKLIST.md](./CHECKLIST.md)
+Implementation checklist and completion status.
 
 ## Component Documentation
 
@@ -63,7 +69,7 @@ Screenshot capture mechanism, GDI+ integration, and data transmission.
 
 ## Development Guides
 
-### [CONTRIBUTING.md](./CONTRIBUTING.md)
+### [CONTRIBUTING.md](../CONTRIBUTING.md)
 Guidelines for contributing to Vörsight, including coding standards and pull request procedures.
 
 ### [DEVELOPMENT_SETUP.md](./DEVELOPMENT_SETUP.md)
