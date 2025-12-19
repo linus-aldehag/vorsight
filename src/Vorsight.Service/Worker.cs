@@ -2,6 +2,8 @@ using Vorsight.Core.Audit;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Scheduling;
 
+using Vorsight.Service.Services;
+
 namespace Vorsight.Service;
 
 /// <summary>
@@ -14,18 +16,39 @@ public class Worker : BackgroundService
     private readonly INamedPipeServer _ipcServer;
     private readonly IScheduleManager _scheduleManager;
     private readonly IAuditManager _auditManager;
+    private readonly IGoogleDriveService _googleDriveService;
+    private readonly IShutdownCoordinator _shutdownCoordinator;
+    private readonly IUploadQueueProcessor _uploadQueueProcessor;
+    private readonly ITempFileManager _tempFileManager;
+    private readonly IHealthMonitor _healthMonitor;
+    private readonly IScreenshotCoordinator _screenshotCoordinator;
+    private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
         ILogger<Worker> logger,
         INamedPipeServer ipcServer,
         IScheduleManager scheduleManager,
-        IAuditManager auditManager)
+        IAuditManager auditManager,
+        IGoogleDriveService googleDriveService,
+        IShutdownCoordinator shutdownCoordinator,
+        IUploadQueueProcessor uploadQueueProcessor,
+        ITempFileManager tempFileManager,
+        IHealthMonitor healthMonitor,
+        IScreenshotCoordinator screenshotCoordinator,
+        Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor)
     {
         _logger = logger;
         _ipcServer = ipcServer;
         _scheduleManager = scheduleManager;
         _auditManager = auditManager;
+        _googleDriveService = googleDriveService;
+        _shutdownCoordinator = shutdownCoordinator;
+        _uploadQueueProcessor = uploadQueueProcessor;
+        _tempFileManager = tempFileManager;
+        _healthMonitor = healthMonitor;
+        _screenshotCoordinator = screenshotCoordinator;
+        _uptimeMonitor = uptimeMonitor;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,6 +85,15 @@ public class Worker : BackgroundService
                     args.TamperingType, args.AffectedUsername, args.Details);
             };
 
+            // Start cloud services
+            await _uploadQueueProcessor.StartAsync(cancellationToken);
+            await _tempFileManager.StartPeriodicCleanupAsync(cancellationToken);
+            await _healthMonitor.StartMonitoringAsync(cancellationToken);
+            
+            // Start screenshot coordination (fire and forget tasks, managed by internal loop with token)
+            _ = _screenshotCoordinator.StartTimedScreenshotsAsync(cancellationToken);
+            _ = _screenshotCoordinator.StartWindowChangeScreenshotsAsync(cancellationToken);
+
             // Start enforcement
             await _scheduleManager.StartEnforcementAsync();
 
@@ -74,10 +106,13 @@ public class Worker : BackgroundService
             {
                 try
                 {
+                    _logger.LogDebug("Service health check: OK");
+                    
+                    // Update uptime
+                    _uptimeMonitor.RecordHeartbeat();
+
                     // Service health check every 30 seconds
                     await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-
-                    _logger.LogDebug("Service health check: OK");
                 }
                 catch (OperationCanceledException)
                 {
@@ -126,6 +161,10 @@ public class Worker : BackgroundService
             await _ipcServer.StopAsync();
 
             // Cleanup
+            // Cleanup
+            await _uploadQueueProcessor.CompleteAsync(TimeSpan.FromSeconds(5));
+            await _shutdownCoordinator.ShutdownGracefullyAsync(TimeSpan.FromSeconds(10));
+            
             _auditManager?.Dispose();
             _scheduleManager?.Dispose();
             _ipcServer?.Dispose();
@@ -197,29 +236,36 @@ public class Worker : BackgroundService
             message.Payload?.Length ?? 0,
             message.MessageId);
 
-        // Temporary verification: Save screenshot to disk
+        // Write to temp file and enqueue for upload
         try
         {
-            var fileName = $"screenshot-{sessionId}-{message.CreatedUtc.Ticks}.png";
-            var runDir = Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location) ?? ".";
-            var outputPath = Path.Combine(runDir, fileName); // Save to binary directory to avoid cluttering source
-
-            // Also save to a known location for easier verification if possible, or just log the path
-            var verifyPath = Path.Combine(Environment.CurrentDirectory, "screenshot_verify.png");
-            
             if (message.Payload != null && message.Payload.Length > 0)
             {
-                 File.WriteAllBytes(verifyPath, message.Payload);
-                 _logger.LogInformation("Screenshot saved for verification to: {FilePath}", verifyPath);
+                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName);
+                Directory.CreateDirectory(tempPath);
+                
+                var fileName = $"screenshot-{sessionId}-{message.CreatedUtc.Ticks}.png";
+                var filePath = Path.Combine(tempPath, fileName);
+                
+                File.WriteAllBytes(filePath, message.Payload);
+                _logger.LogInformation("Screenshot saved to temp: {FilePath}", filePath);
+                
+                // Enqueue for upload
+                _uploadQueueProcessor.EnqueueFileAsync(filePath, CancellationToken.None);
+                
+                // Record success
+                _healthMonitor.RecordScreenshotSuccess();
             }
             else
             {
                 _logger.LogWarning("Received empty screenshot payload from session {SessionId}", sessionId);
+                _healthMonitor.RecordScreenshotFailure();
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to save verification screenshot");
+            _logger.LogError(ex, "Failed to process screenshot message");
+            _healthMonitor.RecordScreenshotFailure();
         }
     }
 

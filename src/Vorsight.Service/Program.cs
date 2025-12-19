@@ -3,6 +3,7 @@ using Vorsight.Core.Audit;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Scheduling;
 using Vorsight.Service;
+using Vorsight.Service.Services;
 
 // Configure Serilog for structured logging
 Log.Logger = new LoggerConfiguration()
@@ -34,6 +35,18 @@ try
         new ScheduleManager(sp.GetRequiredService<ILogger<ScheduleManager>>()));
 
     builder.Services.AddSingleton<IAuditManager, AuditManager>();
+
+    // Cloud Upload Services
+    builder.Services.AddSingleton<IGoogleDriveService, GoogleDriveService>();
+    builder.Services.AddSingleton<IShutdownCoordinator, ShutdownCoordinator>();
+    builder.Services.AddSingleton<IUploadQueueProcessor, UploadQueueProcessor>();
+    builder.Services.AddSingleton<ITempFileManager, TempFileManager>();
+    builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
+    builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
+    
+    // Scavenged Services
+    builder.Services.AddSingleton<Vorsight.Native.IWindowMonitor, Vorsight.Native.WindowMonitor>();
+    builder.Services.AddSingleton<IScreenshotCoordinator, ScreenshotCoordinator>();
 
     // Add hosted service
     builder.Services.AddHostedService<Worker>();
