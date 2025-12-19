@@ -28,6 +28,7 @@ try
     builder.Services.AddSerilog();
 
     // Configure core services
+    builder.Services.AddCors();
     builder.Services.AddSingleton<INamedPipeServer>(sp =>
         new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
 
@@ -47,6 +48,7 @@ try
     // Scavenged Services
     builder.Services.AddSingleton<Vorsight.Native.IUserActivityMonitor, Vorsight.Native.UserActivityMonitor>();
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
+    builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
 
     // Add hosted service
     builder.Services.AddHostedService<Worker>();
@@ -56,6 +58,7 @@ try
     var app = builder.Build();
     
     // Map API Endpoints
+    app.UseCors(policy => policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost").AllowAnyMethod().AllowAnyHeader());
     app.MapApiEndpoints();
 
     app.Run();

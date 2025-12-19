@@ -1,0 +1,95 @@
+using Vorsight.Native;
+
+namespace Vorsight.Service.Services;
+
+public interface ICommandExecutor
+{
+    bool RunCommandAsUser(string command, string arguments);
+}
+
+public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
+{
+    public bool RunCommandAsUser(string command, string arguments)
+    {
+        try
+        {
+            logger.LogInformation("Attempting to run command as user: {Command} {Args}", command, arguments);
+
+            // 1. Get Active Session
+            var sessionId = Vorsight.Native.ProcessHelper.GetActiveConsoleSessionId();
+            if (sessionId == 0xFFFFFFFF)
+            {
+                logger.LogError("No active console session found");
+                return false;
+            }
+
+            // 2. Find a process in that session (Explorer is best bet)
+            var userProcess = System.Diagnostics.Process.GetProcessesByName("explorer")
+                .FirstOrDefault(p => p.SessionId == sessionId);
+
+            if (userProcess == null)
+            {
+                logger.LogError("Could not find explorer.exe in session {SessionId}", sessionId);
+                return false;
+            }
+
+            // 3. Open Process Token
+            if (!Vorsight.Native.ProcessHelper.TryOpenProcessToken(userProcess.Handle, Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE, out var hToken))
+            {
+                logger.LogError("Failed to open process token for explorer.exe");
+                return false;
+            }
+
+            try
+            {
+                // 4. Duplicate Token
+                if (!Vorsight.Native.ProcessHelper.TryDuplicateTokenEx(
+                    hToken, 
+                    Vorsight.Native.ProcessInterop.TOKEN_ASSIGN_PRIMARY | 
+                    Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE | 
+                    Vorsight.Native.ProcessInterop.TOKEN_QUERY | 
+                    Vorsight.Native.ProcessInterop.TOKEN_ADJUST_PRIVILEGES,
+                    Vorsight.Native.ProcessInterop.SecurityImpersonation,
+                    Vorsight.Native.ProcessInterop.TokenPrimary,
+                    out var hUserToken))
+                {
+                    logger.LogError("Failed to duplicate token");
+                    return false;
+                }
+
+                try
+                {
+                    // 5. Create Process as User
+                    if (Vorsight.Native.ProcessHelper.TryCreateProcessAsUser(
+                        hUserToken,
+                        null, // Application Name
+                        $"\"{command}\" {arguments}", // Command Line
+                        null, // Working Directory (default)
+                        out var pid))
+                    {
+                        logger.LogInformation("Successfully started process {Pid} as user", pid);
+                        return true;
+                    }
+                    else
+                    {
+                        logger.LogError("Failed to CreateProcessAsUser");
+                        return false;
+                    }
+                }
+                finally
+                {
+                    Vorsight.Native.ProcessInterop.CloseHandle(hUserToken);
+                }
+            }
+            finally
+            {
+                Vorsight.Native.ProcessInterop.CloseHandle(hToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to execute command as user");
+            return false;
+        }
+    }
+}

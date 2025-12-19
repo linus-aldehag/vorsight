@@ -8,7 +8,7 @@ public interface ITempFileManager
     /// <summary>
     /// Starts the periodic cleanup process
     /// </summary>
-    Task StartPeriodicCleanupAsync(CancellationToken cancellationToken = default);
+    void StartPeriodicCleanup(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -27,22 +27,14 @@ public class TempFileManager(
     
     private static readonly TimeSpan MinAgeForRetry = TimeSpan.FromMinutes(5);
 
-    public async Task StartPeriodicCleanupAsync(CancellationToken cancellationToken = default)
+    public void StartPeriodicCleanup(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Starting periodic cleanup (cleanup every {CleanupInterval}, retry every {RetryInterval})", 
             _cleanupInterval, _retryFailedUploadsInterval);
         
-        var cleanupTask = RunPeriodicTaskAsync("cleanup", _cleanupInterval, CleanupOldFilesAsync, cancellationToken);
-        var retryTask = RunPeriodicTaskAsync("retry", _retryFailedUploadsInterval, RetryFailedUploadsAsync, cancellationToken);
-        
-        try
-        {
-            await Task.WhenAll(cleanupTask, retryTask);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            logger.LogInformation("Periodic cleanup stopped");
-        }
+        // Start tasks without awaiting them
+        _ = RunPeriodicTaskAsync("cleanup", _cleanupInterval, CleanupOldFilesAsync, cancellationToken);
+        _ = RunPeriodicTaskAsync("retry", _retryFailedUploadsInterval, RetryFailedUploadsAsync, cancellationToken);
     }
 
     private async Task CleanupOldFilesAsync(CancellationToken cancellationToken = default)

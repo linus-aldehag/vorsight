@@ -135,17 +135,23 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                         PipeAccessRights.ReadWrite,
                         AccessControlType.Allow));
 
-                    // Create pipe server stream with security - this must be done at creation time
-                    // to work correctly for subsequent instances and avoid race conditions
-                    pipeServer = NamedPipeServerStreamAcl.Create(
-                        PipeName,
-                        PipeDirection.InOut,
-                        NamedPipeServerStream.MaxAllowedServerInstances,
-                        PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous,
-                        0, // Default in buffer
-                        0, // Default out buffer
-                        pipeSecurity);
+                    try 
+                    {
+                        pipeServer = NamedPipeServerStreamAcl.Create(
+                            PipeName,
+                            PipeDirection.InOut,
+                            NamedPipeServerStream.MaxAllowedServerInstances,
+                            PipeTransmissionMode.Byte,
+                            PipeOptions.Asynchronous,
+                            0, 
+                            0, 
+                            pipeSecurity);
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        logger.LogWarning("Insufficient permissions to create Named Pipe with World access. IPC will be disabled.");
+                        break; // Stop listening to allow service to continue
+                    }
 
                     logger.LogDebug("Pipe created on: {PipeName} with public access", PipeName);
                     logger.LogDebug("Waiting for client connection on pipe: {PipeName}", PipeName);
