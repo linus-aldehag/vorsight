@@ -29,6 +29,11 @@ public interface IHealthMonitor
     /// Starts health monitoring and periodic reporting
     /// </summary>
     Task StartMonitoringAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Gets the current health report
+    /// </summary>
+    HealthReport GetHealthReport();
 }
 
 /// <summary>
@@ -175,4 +180,41 @@ public class HealthMonitor : IHealthMonitor
             _periodStart = DateTime.Now;
         }
     }
+
+    public HealthReport GetHealthReport()
+    {
+        lock (_statsLock)
+        {
+            var periodDuration = DateTime.Now - _periodStart;
+            var totalDuration = DateTime.Now - _applicationStart;
+            
+            return new HealthReport
+            {
+                ScreenshotsSuccessful = _screenshotsSuccessful,
+                ScreenshotsFailed = _screenshotsFailed,
+                UploadsSuccessful = _uploadsSuccessful,
+                UploadsFailed = _uploadsFailed,
+                TotalScreenshotsSuccessful = _totalScreenshotsSuccessful,
+                TotalScreenshotsFailed = _totalScreenshotsFailed,
+                TotalUploadsSuccessful = _totalUploadsSuccessful,
+                TotalUploadsFailed = _totalUploadsFailed,
+                PeriodDuration = periodDuration,
+                TotalRuntime = totalDuration
+            };
+        }
+    }
+}
+
+public record HealthReport
+{
+    public int ScreenshotsSuccessful { get; init; }
+    public int ScreenshotsFailed { get; init; }
+    public int UploadsSuccessful { get; init; }
+    public int UploadsFailed { get; init; }
+    public int TotalScreenshotsSuccessful { get; init; }
+    public int TotalScreenshotsFailed { get; init; }
+    public int TotalUploadsSuccessful { get; init; }
+    public int TotalUploadsFailed { get; init; }
+    public TimeSpan PeriodDuration { get; init; }
+    public TimeSpan TotalRuntime { get; init; }
 }
