@@ -121,6 +121,16 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
 
     private async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
     {
+        bool fallbackToDefaultSecurity = false;
+        bool worldAccessEstablished = false;
+        
+        // Create security object allowing Everyone to read/write - created ONCE reused
+        var pipeSecurity = new PipeSecurity();
+        pipeSecurity.AddAccessRule(new PipeAccessRule(
+            new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+            PipeAccessRights.ReadWrite,
+            AccessControlType.Allow));
+
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -128,32 +138,73 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 NamedPipeServerStream pipeServer = null;
                 try
                 {
-                    // Create security object allowing Everyone to read/write
-                    var pipeSecurity = new PipeSecurity();
-                    pipeSecurity.AddAccessRule(new PipeAccessRule(
-                        new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                        PipeAccessRights.ReadWrite,
-                        AccessControlType.Allow));
-
-                    try 
+                    // Strategy 1: World Access (Preferred)
+                    if (!fallbackToDefaultSecurity)
                     {
-                        pipeServer = NamedPipeServerStreamAcl.Create(
-                            PipeName,
-                            PipeDirection.InOut,
-                            NamedPipeServerStream.MaxAllowedServerInstances,
-                            PipeTransmissionMode.Byte,
-                            PipeOptions.Asynchronous,
-                            0, 
-                            0, 
-                            pipeSecurity);
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        logger.LogWarning("Insufficient permissions to create Named Pipe with World access. IPC will be disabled.");
-                        break; // Stop listening to allow service to continue
+                        try 
+                        {
+                            pipeServer = NamedPipeServerStreamAcl.Create(
+                                PipeName,
+                                PipeDirection.InOut,
+                                NamedPipeServerStream.MaxAllowedServerInstances,
+                                PipeTransmissionMode.Byte,
+                                PipeOptions.Asynchronous,
+                                0, 
+                                0, 
+                                pipeSecurity);
+                            
+                            // If we succeed, we LOCK onto this strategy
+                            worldAccessEstablished = true;
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            if (worldAccessEstablished)
+                            {
+                                // CRITICAL: We previously succeeded with World Access, but now failed.
+                                // We CANNOT switch to Default Security because existing pipe instances use World Access.
+                                // Switching would cause a mismatch error. We must retry World Access.
+                                logger.LogError("Insufficient permissions to create subsequent Named Pipe with World access. Retrying in 1s do to ACL constraints...");
+                                await Task.Delay(1000, cancellationToken);
+                                continue; 
+                            }
+                            else
+                            {
+                                // First attempt failed? Okay to fallback.
+                                logger.LogWarning("Insufficient permissions to create Named Pipe with World access. Switching to Default Permissions strategy for future connections.");
+                                fallbackToDefaultSecurity = true;
+                            }
+                        }
                     }
 
-                    logger.LogDebug("Pipe created on: {PipeName} with public access", PipeName);
+                    // Strategy 2: Default Security (Fallback)
+                    if (pipeServer == null && fallbackToDefaultSecurity) 
+                    {
+                         try
+                        {
+                            pipeServer = NamedPipeServerStreamAcl.Create(
+                                PipeName,
+                                PipeDirection.InOut,
+                                NamedPipeServerStream.MaxAllowedServerInstances,
+                                PipeTransmissionMode.Byte,
+                                PipeOptions.Asynchronous,
+                                0, 
+                                0, 
+                                null); // Default security
+
+                            logger.LogDebug("Created Named Pipe with default permissions.");
+                        }
+                        catch (Exception exFallback)
+                        {
+                            logger.LogError(exFallback, "Failed to create Named Pipe even with default permissions. IPC will be disabled.");
+                            // If we fail here, we are truly stuck. Wait a bit to avoid hot loop.
+                            await Task.Delay(5000, cancellationToken);
+                            continue;
+                        }
+                    }
+                    
+                    if (pipeServer == null) continue; // Should have been handled above, but safety check
+
+                    logger.LogDebug("Pipe created on: {PipeName}", PipeName);
                     logger.LogDebug("Waiting for client connection on pipe: {PipeName}", PipeName);
 
                     // Wait for client connection
@@ -173,6 +224,8 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 {
                     logger.LogError(ex, "Error accepting client connection");
                     pipeServer?.Dispose();
+                    // Wait before retrying loop to avoid log spam
+                    await Task.Delay(1000, cancellationToken); 
                 }
             }
         }

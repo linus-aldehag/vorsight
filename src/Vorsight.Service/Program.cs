@@ -8,6 +8,7 @@ using Vorsight.Service.Services;
 // Configure Serilog for structured logging
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Debug) // Enable Microsoft logs for debugging startup
     .WriteTo.File(
         path: Path.Combine(AppContext.BaseDirectory, "logs", "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
@@ -48,6 +49,7 @@ try
     // Scavenged Services
     builder.Services.AddSingleton<Vorsight.Native.IUserActivityMonitor, Vorsight.Native.UserActivityMonitor>();
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
+    builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
 
     // Add hosted service
@@ -61,7 +63,31 @@ try
     app.UseCors(policy => policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost").AllowAnyMethod().AllowAnyHeader());
     app.MapApiEndpoints();
 
-    app.Run();
+    // Initialize Global Exception Handling
+    var sessionManager = app.Services.GetRequiredService<ISessionSummaryManager>();
+    await sessionManager.InitializeAsync(); // Check for previous crashes
+    
+    AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+    {
+        sessionManager.RegisterException((Exception)e.ExceptionObject);
+        if (e.IsTerminating)
+        {
+            Log.Fatal((Exception)e.ExceptionObject, "AppDomain Unhandled Exception");
+            // Attempt to upload sync? or just rely on lock file
+        }
+    };
+
+    try 
+    {
+        await app.RunAsync();
+        await sessionManager.CompleteSessionAsync("Controlled Exit", null);
+    }
+    catch (Exception ex)
+    {
+        sessionManager.RegisterException(ex);
+        // await sessionManager.CompleteSessionAsync("Crash", null); // Might fail if tearing down
+        throw;
+    }
 }
 catch (Exception ex)
 {

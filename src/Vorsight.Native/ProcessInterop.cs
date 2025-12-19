@@ -103,6 +103,7 @@ namespace Vorsight.Native
         // Process access rights
         public const uint PROCESS_ALL_ACCESS = 0x001F0FFF;
         public const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
         public const uint TOKEN_ADJUST_PRIVILEGES = 0x0020;
         public const uint TOKEN_QUERY = 0x0008;
         public const uint TOKEN_DUPLICATE = 0x0002;
