@@ -47,7 +47,6 @@ try
     builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
     
     // Scavenged Services
-    builder.Services.AddSingleton<Vorsight.Native.IUserActivityMonitor, Vorsight.Native.UserActivityMonitor>();
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
@@ -80,7 +79,7 @@ try
     try 
     {
         await app.RunAsync();
-        await sessionManager.CompleteSessionAsync("Controlled Exit", null);
+        // Session completion moved to Worker.StopServiceAsync to ensure safe disposal
     }
     catch (Exception ex)
     {

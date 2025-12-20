@@ -94,10 +94,10 @@ public class Worker : BackgroundService
             // Start cloud services
             await TryStartComponent("UploadQueueProcessor", () => _uploadQueueProcessor.StartAsync(cancellationToken));
             TryStartComponentSync("TempFileManager", () => _tempFileManager.StartPeriodicCleanup(cancellationToken));
-            await TryStartComponent("HealthMonitor", () => _healthMonitor.StartMonitoringAsync(cancellationToken));
             
-            // Start activity coordination
-            await TryStartComponent("ActivityCoordinator", () => _activityCoordinator.StartMonitoringAsync(cancellationToken));
+            // Start monitoring loops in background (do not await, as they run indefinitely)
+            _ = Task.Run(() => TryStartComponent("HealthMonitor", () => _healthMonitor.StartMonitoringAsync(cancellationToken)), cancellationToken);
+            _ = Task.Run(() => TryStartComponent("ActivityCoordinator", () => _activityCoordinator.StartMonitoringAsync(cancellationToken)), cancellationToken);
 
             // Start enforcement
             await TryStartComponent("ScheduleManager Enforcement", () => _scheduleManager.StartEnforcementAsync());
@@ -183,8 +183,13 @@ public class Worker : BackgroundService
         await base.StopAsync(cancellationToken);
     }
 
+    private bool _isStopping;
+
     private async Task StopServiceAsync()
     {
+        if (_isStopping) return;
+        _isStopping = true;
+
         try
         {
             _logger.LogInformation("Shutting down service components");
@@ -198,10 +203,13 @@ public class Worker : BackgroundService
             // Stop IPC server
             await _ipcServer.StopAsync();
 
-            // Cleanup
-            // Cleanup
+            // Cleanup uploads
             await _uploadQueueProcessor.CompleteAsync(TimeSpan.FromSeconds(5));
             await _shutdownCoordinator.ShutdownGracefullyAsync(TimeSpan.FromSeconds(10));
+            
+            // Complete session (Upload logs) - MUST be done before disposing drive service (via container)
+            // Note: Worker doesn't own the container, but we must ensure this runs before the host shuts down completely
+            await _sessionSummaryManager.CompleteSessionAsync("Controlled Exit", _healthMonitor.GetHealthReport());
             
             _auditManager?.Dispose();
             _scheduleManager?.Dispose();
@@ -279,7 +287,7 @@ public class Worker : BackgroundService
         {
             if (message.Payload != null && message.Payload.Length > 0)
             {
-                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName);
+                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Screenshots");
                 Directory.CreateDirectory(tempPath);
                 
                 var fileName = $"screenshot-{sessionId}-{message.CreatedUtc.Ticks}.png";
@@ -332,7 +340,23 @@ public class Worker : BackgroundService
             message.Payload?.Length ?? 0,
             message.MessageId);
 
-        // TODO: Parse and store audit events
+        try
+        {
+            if (message.Payload != null && message.Payload.Length > 0)
+            {
+                var json = System.Text.Encoding.UTF8.GetString(message.Payload);
+                var data = System.Text.Json.JsonSerializer.Deserialize<Vorsight.Core.Models.ActivityData>(json);
+                
+                if (data != null)
+                {
+                    _activityCoordinator.UpdateActivity(data);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse activity data from session {SessionId}", sessionId);
+        }
     }
 
     /// <summary>
@@ -340,7 +364,7 @@ public class Worker : BackgroundService
     /// </summary>
     private void OnSessionConnected(object sender, SessionConnectedEventArgs e)
     {
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Agent session connected: SessionId={SessionId}, User={Username}",
             e.SessionId,
             e.Username ?? "(unknown)");
@@ -351,7 +375,7 @@ public class Worker : BackgroundService
     /// </summary>
     private void OnSessionDisconnected(object sender, SessionDisconnectedEventArgs e)
     {
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Agent session disconnected: SessionId={SessionId}, Reason={Reason}",
             e.SessionId,
             e.Reason ?? "normal");

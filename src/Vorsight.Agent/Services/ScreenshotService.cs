@@ -1,9 +1,9 @@
-﻿using System.Drawing.Imaging;
+using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Vorsight.Core.Screenshots;
 
-namespace Vorsight.Agent;
+namespace Vorsight.Agent.Services;
 
 /// <summary>
 /// Windows-specific implementation of screenshot service.
@@ -23,7 +23,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
             // Ensure the screen has time to update
             await Task.Delay(200, cancellationToken);
 
-            Bitmap bitmap = null;
+            Bitmap? bitmap = null;
             try
             {
                 bitmap = CaptureScreenInternal();
@@ -108,18 +108,17 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
     private async Task<byte[]?> CaptureFallbackAsync(CancellationToken cancellationToken)
     {
-        // Attempt capture with retry logic (inspired by CloudGrabber)
+        // Attempt capture with retry logic
         for (var attempt = 0; attempt < 3; attempt++)
         {
             try
             {
                 if (attempt > 0)
                 {
-                    // Increasing delay between retries
                     await Task.Delay(100 * (attempt + 1), cancellationToken);
                 }
 
-                Bitmap bitmap = null;
+                Bitmap? bitmap = null;
                 try
                 {
                     bitmap = CaptureScreenInternal();
@@ -155,7 +154,6 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
     private Bitmap CreatePlaceholderImage()
     {
-        // Create a basic placeholder image with error information (from CloudGrabber)
         var bitmap = new Bitmap(800, 600, PixelFormat.Format32bppArgb);
 
         try
@@ -185,9 +183,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
     private static Rectangle GetCombinedScreenBounds()
     {
-        // Get the bounds of all screens combined (multi-monitor support)
         return Screen.AllScreens.Aggregate(Rectangle.Empty, (current, screen) => 
             Rectangle.Union(current, screen.Bounds));
     }
 }
-

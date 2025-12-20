@@ -124,13 +124,6 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         bool fallbackToDefaultSecurity = false;
         bool worldAccessEstablished = false;
         
-        // Create security object allowing Everyone to read/write - created ONCE reused
-        var pipeSecurity = new PipeSecurity();
-        pipeSecurity.AddAccessRule(new PipeAccessRule(
-            new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-            PipeAccessRights.ReadWrite,
-            AccessControlType.Allow));
-
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -143,6 +136,27 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     {
                         try 
                         {
+                            // Create security object allowing Everyone to read/write - create fresh each time
+                            var pipeSecurity = new PipeSecurity();
+                            
+                            // 1. Grant Everyone Read/Write access (so Agent can connect)
+                            pipeSecurity.AddAccessRule(new PipeAccessRule(
+                                new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                                PipeAccessRights.ReadWrite,
+                                AccessControlType.Allow));
+
+                            // 2. Grant Current User (Service Owner) Full Control
+                            // This is CRITICAL. Without this, the explicit 'Everyone' rule might strip
+                            // the implicit Owner rights, preventing the Service from creating SUBSEQUENT pipe instances.
+                            var currentUser = WindowsIdentity.GetCurrent().User;
+                            if (currentUser != null)
+                            {
+                                pipeSecurity.AddAccessRule(new PipeAccessRule(
+                                    currentUser,
+                                    PipeAccessRights.FullControl,
+                                    AccessControlType.Allow));
+                            }
+
                             pipeServer = NamedPipeServerStreamAcl.Create(
                                 PipeName,
                                 PipeDirection.InOut,
@@ -156,14 +170,14 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             // If we succeed, we LOCK onto this strategy
                             worldAccessEstablished = true;
                         }
-                        catch (UnauthorizedAccessException)
+                        catch (UnauthorizedAccessException uex)
                         {
                             if (worldAccessEstablished)
                             {
                                 // CRITICAL: We previously succeeded with World Access, but now failed.
                                 // We CANNOT switch to Default Security because existing pipe instances use World Access.
                                 // Switching would cause a mismatch error. We must retry World Access.
-                                logger.LogError("Insufficient permissions to create subsequent Named Pipe with World access. Retrying in 1s do to ACL constraints...");
+                                logger.LogError(uex, "Insufficient permissions to create subsequent Named Pipe with World access. Retrying in 1s due to ACL constraints...");
                                 await Task.Delay(1000, cancellationToken);
                                 continue; 
                             }
@@ -210,7 +224,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     // Wait for client connection
                     await pipeServer.WaitForConnectionAsync(cancellationToken);
 
-                    logger.LogInformation("Client connected to pipe: {PipeName}", PipeName);
+                    logger.LogDebug("Client connected to pipe: {PipeName}", PipeName);
 
                     // Handle the client in a separate task (don't await - continue listening)
                     _ = HandleClientAsync(pipeServer, cancellationToken);
@@ -262,7 +276,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     return;
                 }
 
-                logger.LogInformation("Session {SessionId} registered", sessionId);
+                logger.LogDebug("Session {SessionId} registered", sessionId);
                 SessionConnected?.Invoke(this, new SessionConnectedEventArgs { SessionId = sessionId });
 
                 // Message loop
@@ -276,7 +290,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
 
                         if (bytesRead == 0)
                         {
-                            logger.LogInformation("Session {SessionId} disconnected", sessionId);
+                            logger.LogDebug("Session {SessionId} disconnected", sessionId);
                             break;
                         }
 
@@ -323,7 +337,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     }
                     catch (EndOfStreamException)
                     {
-                        logger.LogInformation("Session {SessionId} disconnected (EOF)", sessionId);
+                        logger.LogDebug("Session {SessionId} disconnected (EOF)", sessionId);
                         break;
                     }
                     catch (OperationCanceledException)
@@ -348,7 +362,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
             {
                 _sessions.TryRemove(sessionId, out _);
                 SessionDisconnected?.Invoke(this, new SessionDisconnectedEventArgs { SessionId = sessionId });
-                logger.LogInformation("Session {SessionId} unregistered", sessionId);
+                logger.LogDebug("Session {SessionId} unregistered", sessionId);
             }
         }
     }

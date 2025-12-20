@@ -33,6 +33,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
     private readonly ILogger<UploadQueueProcessor> _logger;
     private readonly IGoogleDriveService _googleDriveService;
     private readonly IShutdownCoordinator _shutdownCoordinator;
+    private readonly IHealthMonitor _healthMonitor;
     private readonly BufferBlock<string> _uploadQueue = new();
     private readonly CancellationTokenSource _internalCts = new();
     private readonly HashSet<string> _queuedFiles = []; // Track queued files
@@ -42,11 +43,13 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
     public UploadQueueProcessor(
         ILogger<UploadQueueProcessor> logger, 
         IGoogleDriveService googleDriveService, 
-        IShutdownCoordinator shutdownCoordinator)
+        IShutdownCoordinator shutdownCoordinator,
+        IHealthMonitor healthMonitor)
     {
         _logger = logger;
         _googleDriveService = googleDriveService;
         _shutdownCoordinator = shutdownCoordinator;
+        _healthMonitor = healthMonitor;
         
         // Register with the shutdown coordinator
         _shutdownCoordinator.RegisterUploadQueue(_uploadQueue);
@@ -142,16 +145,20 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 {
                     // Use a timeout to periodically check the cancellation token
                     var receiveTask = _uploadQueue.ReceiveAsync(cancellationToken);
-                    var timeoutTask = Task.Delay(500, CancellationToken.None); // Don't pass stoppingToken here
+                    // Increased check frequency to debug
+                    var timeoutTask = Task.Delay(5000, CancellationToken.None); 
                     
                     var completedTask = await Task.WhenAny(receiveTask, timeoutTask);
                     if (completedTask == timeoutTask)
                     {
                         if (cancellationToken.IsCancellationRequested && _uploadQueue.Count == 0)
                         {
-                            break; // Exit if cancellation requested and queue is empty
+                            break; 
                         }
-                        continue; // Otherwise retry
+                        // Log periodically if queue is idle but running
+                        if (DateTime.UtcNow.Second % 30 < 5) 
+                             _logger.LogTrace("Upload queue idle. Queue count: {Count}", _uploadQueue.Count);
+                        continue; 
                     }
                     
                     filePath = await receiveTask;
@@ -176,6 +183,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 {
                     _logger.LogDebug("Processing upload for file: {FilePath}", filePath);
                     await _googleDriveService.UploadFileAsync(filePath, cancellationToken);
+                    _healthMonitor.RecordUploadSuccess();
                     
                     // Only delete the file if upload was successful and not cancelling
                     if (!cancellationToken.IsCancellationRequested && File.Exists(filePath))
@@ -201,6 +209,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 }
                 catch (Exception ex)
                 {
+                    _healthMonitor.RecordUploadFailure();
                     _logger.LogError(ex, "Error processing upload for file: {FilePath}", filePath);
                     
                     // Remove from tracking even if failed

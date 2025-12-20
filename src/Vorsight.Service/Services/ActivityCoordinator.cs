@@ -7,55 +7,80 @@ public interface IActivityCoordinator
 {
     Task StartMonitoringAsync(CancellationToken cancellationToken);
     ActivitySnapshot? GetCurrentActivity();
+    void UpdateActivity(Vorsight.Core.Models.ActivityData data);
+    Task RequestManualScreenshotAsync(string source);
 }
 
 public class ActivityCoordinator(
     ILogger<ActivityCoordinator> logger,
     IConfiguration config,
-    IUserActivityMonitor activityMonitor,
-    INamedPipeServer ipcServer)
+    INamedPipeServer ipcServer,
+    ICommandExecutor commandExecutor)
     : IActivityCoordinator
 {
     private readonly int _screenshotIntervalMinutes = config.GetValue("Activity:ScreenshotIntervalMinutes", 5);
+    private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(5);
     private string _lastWindowTitle = string.Empty;
     private DateTime _lastTimedScreenshot = DateTime.MinValue;
+    private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
+
+    public void UpdateActivity(Vorsight.Core.Models.ActivityData data)
+    {
+        // Convert ActivityData to Snapshot
+        var snapshot = new ActivitySnapshot
+        {
+            Timestamp = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime,
+            ActiveWindowTitle = data.ActiveWindow
+        };
+
+        _latestSnapshot = snapshot;
+
+        // Check for Window Change immediately upon receiving report
+        if (!string.IsNullOrEmpty(snapshot.ActiveWindowTitle) && 
+            snapshot.ActiveWindowTitle != _lastWindowTitle)
+        {
+            logger.LogDebug("Window changed (Agent): '{Old}' -> '{New}'", _lastWindowTitle, snapshot.ActiveWindowTitle);
+            _lastWindowTitle = snapshot.ActiveWindowTitle;
+            
+            // Fire and forget
+            _ = RequestScreenshotAsync("WindowChange", snapshot);
+        }
+    }
 
     public async Task StartMonitoringAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("Activity monitoring started. Interval: {Interval}m", _screenshotIntervalMinutes);
 
-        // Main monitoring loop - runs frequently (e.g. every second)
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var snapshot = activityMonitor.GetSnapshot();
-                _latestSnapshot = snapshot;
                 var now = DateTime.UtcNow;
 
-                // 1. Check for Window Change
-                if (!string.IsNullOrEmpty(snapshot.ActiveWindowTitle) && 
-                    snapshot.ActiveWindowTitle != _lastWindowTitle)
+                // Poll Agent for Activity
+                if (now - _lastPollTime > _pollInterval)
                 {
-                    logger.LogDebug("Window changed: '{Old}' -> '{New}' (Inactivity: {Inactivity})", 
-                        _lastWindowTitle, snapshot.ActiveWindowTitle, snapshot.TimeSinceLastInput);
-                    
-                    _lastWindowTitle = snapshot.ActiveWindowTitle;
-                    
-                    // Request Window Change Screenshot
-                    await RequestScreenshotAsync("WindowChange", snapshot);
+                    _lastPollTime = now;
+                    // Try to resolve agent path
+                    var agentPath = ResolveAgentPath();
+
+                    if (!string.IsNullOrEmpty(agentPath))
+                    {
+                        commandExecutor.RunCommandAsUser(agentPath, "activity");
+                    }
+                    else
+                    {
+                         logger.LogWarning("Agent executable not found. BaseDir: {Base}", AppContext.BaseDirectory);
+                    }
                 }
 
-                // 2. Check for Timed Screenshot
-                if (now - _lastTimedScreenshot > TimeSpan.FromMinutes(_screenshotIntervalMinutes))
+                // Check for Timed Screenshot
+                if (now - _lastTimedScreenshot > TimeSpan.FromMinutes(_screenshotIntervalMinutes) && _latestSnapshot != null)
                 {
-                    logger.LogDebug("Timed interval elapsed (Inactivity: {Inactivity})", snapshot.TimeSinceLastInput);
-                    
+                    logger.LogDebug("Timed interval elapsed");
                     _lastTimedScreenshot = now;
-                    
-                    // Request Timed Screenshot
-                    await RequestScreenshotAsync("Timed", snapshot);
+                    await RequestScreenshotAsync("Timed", _latestSnapshot.Value);
                 }
             }
             catch (Exception ex)
@@ -65,7 +90,6 @@ public class ActivityCoordinator(
 
             try
             {
-                // Pulse every 1 second
                 await Task.Delay(1000, cancellationToken);
             }
             catch (OperationCanceledException)
@@ -77,23 +101,51 @@ public class ActivityCoordinator(
         logger.LogInformation("Activity monitoring stopped");
     }
 
+    public async Task RequestManualScreenshotAsync(string source)
+    {
+        var snapshot = _latestSnapshot ?? new ActivitySnapshot 
+        { 
+            ActiveWindowTitle = "Manual Trigger", 
+            Timestamp = DateTime.UtcNow 
+        };
+        
+        await RequestScreenshotAsync(source, snapshot);
+    }
+
     private async Task RequestScreenshotAsync(string triggerType, ActivitySnapshot snapshot)
     {
         try
         {
-            var metadata = $"Type:{triggerType}|Title:{snapshot.ActiveWindowTitle}|InputInactivity:{snapshot.TimeSinceLastInput}";
-            
-            var request = new PipeMessage(PipeMessage.MessageType.ScreenshotRequest, 0)
+            var agentPath = ResolveAgentPath();
+            if (string.IsNullOrEmpty(agentPath)) 
             {
-                Metadata = metadata
-            };
+                logger.LogWarning("Cannot request screenshot: Agent not found");
+                return;
+            }
+
+            var metadata = $"Type:{triggerType}|Title:{snapshot.ActiveWindowTitle}";
+            // Launch Agent in one-shot screenshot mode
+            var args = $"screenshot \"{metadata}\"";
             
-            await ipcServer.BroadcastMessageAsync(request);
+            commandExecutor.RunCommandAsUser(agentPath, args);
+            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to request screenshot ({Trigger})", triggerType);
         }
+    }
+
+    private string ResolveAgentPath()
+    {
+         var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
+         if (!File.Exists(agentPath))
+         {
+              // Fallback for dev environment structure
+              var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"));
+              if (File.Exists(devPath)) agentPath = devPath;
+         }
+         return File.Exists(agentPath) ? agentPath : string.Empty;
     }
 
     public ActivitySnapshot? GetCurrentActivity() => _latestSnapshot;
