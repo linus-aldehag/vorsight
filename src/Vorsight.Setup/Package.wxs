@@ -1,0 +1,52 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="Vorsight" Manufacturer="Vorsight" Version="1.0.0.0" UpgradeCode="a2b3c4d5-e6f7-8901-2345-6789abcdef01">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Vorsight" />
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Vorsight" Description="Monitoring Service and Agent" Level="1">
+      <ComponentGroupRef Id="ServiceComponents" />
+      <ComponentGroupRef Id="AgentComponents" />
+    </Feature>
+    
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
+      <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
+        <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" KeyPath="yes" />
+        <ServiceInstall Id="ServiceInstaller"
+                        Type="ownProcess"
+                        Name="VorsightService"
+                        DisplayName="Vorsight Monitoring Service"
+                        Description="Monitors system usage and enforces access schedules."
+                        Start="auto"
+                        Account="LocalSystem"
+                        ErrorControl="normal" />
+        <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="VorsightService" Wait="yes" />
+      </Component>
+
+      <Component Id="ServiceConfigComponent" Guid="*" Bitness="always64">
+        <File Id="ServiceConfig" Source="..\Vorsight.Service\appsettings.json" />
+      </Component>
+      
+      <!-- Optional: Google Drive Secrets if available at build time -->
+      <!-- <Component Id="ServiceSecretsComponent" Guid="*" Bitness="always64">
+        <File Id="ServiceSecrets" Source="..\Vorsight.Service\oauth.json" />
+      </Component> -->
+    </ComponentGroup>
+
+    <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
+      <Component Id="VorsightAgentComponent" Guid="*" Bitness="always64">
+        <File Id="VorsightAgentExe" Source="..\Vorsight.Agent\bin\Release\net10.0-windows\win-x64\publish\Vorsight.Agent.exe" KeyPath="yes" />
+        <!-- Auto-start Registry Key for the Agent -->
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="VorsightAgent" Type="string" Value="[INSTALLFOLDER]Vorsight.Agent.exe" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

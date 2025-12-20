@@ -24,6 +24,7 @@ public class Worker : BackgroundService
     private readonly IActivityCoordinator _activityCoordinator;
     private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly ISessionSummaryManager _sessionSummaryManager;
+    private readonly Core.Settings.ISettingsManager _settingsManager;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
@@ -38,7 +39,8 @@ public class Worker : BackgroundService
         IHealthMonitor healthMonitor,
         IActivityCoordinator activityCoordinator,
         Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor,
-        ISessionSummaryManager sessionSummaryManager)
+        ISessionSummaryManager sessionSummaryManager,
+        Core.Settings.ISettingsManager settingsManager)
     {
         _logger = logger;
         _ipcServer = ipcServer;
@@ -52,6 +54,7 @@ public class Worker : BackgroundService
         _activityCoordinator = activityCoordinator;
         _uptimeMonitor = uptimeMonitor;
         _sessionSummaryManager = sessionSummaryManager;
+        _settingsManager = settingsManager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -64,6 +67,7 @@ public class Worker : BackgroundService
         try
         {
             // Initialize components with granular error handling
+            await TryStartComponent("SettingsManager", () => _settingsManager.InitializeAsync());
             await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
             await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
             await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
@@ -315,8 +319,9 @@ public class Worker : BackgroundService
                 var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Screenshots", dateFolder);
                 Directory.CreateDirectory(tempPath);
                 
-                // Format: screenshot-{Title}-{Ticks}.png
-                var fileName = $"screenshot-{sanitizedTitle}-{message.CreatedUtc.Ticks}.png";
+                // Format: HH-mm-ss - {Title}.png (using local time for readability)
+                var timestamp = DateTime.Now.ToString("HH-mm-ss");
+                var fileName = $"{timestamp} - {sanitizedTitle}.png";
                 var filePath = Path.Combine(tempPath, fileName);
                 
                 File.WriteAllBytes(filePath, message.Payload);

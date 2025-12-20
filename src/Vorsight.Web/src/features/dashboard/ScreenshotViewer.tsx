@@ -1,49 +1,104 @@
-import { Card, Image, Button, Title, Stack, Group, Modal } from '@mantine/core';
+import { Card, Image, Button, Title, Stack, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { useState } from 'react';
-import { VorsightApi } from '../../api/client';
+import { useState, useEffect } from 'react';
+import { VorsightApi, type DriveFile } from '../../api/client';
 
 export function ScreenshotViewer() {
     const [opened, { open, close }] = useDisclosure(false);
-    const [imgUrl, setImgUrl] = useState<string | null>(null);
+    const [latestImage, setLatestImage] = useState<DriveFile | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const loadScreenshot = async () => {
-        setLoading(true);
-        // Add timestamp to prevent caching
-        setImgUrl(`http://localhost:5050/api/media/latest-screenshot?t=${Date.now()}`);
-        setLoading(false);
-        open();
+    useEffect(() => {
+        loadLatest();
+        // Refresh every 30 seconds
+        const interval = setInterval(loadLatest, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const loadLatest = async () => {
+        try {
+            const screenshots = await VorsightApi.getScreenshots(1);
+            if (screenshots.length > 0) {
+                setLatestImage(screenshots[0]);
+            }
+        } catch (err) {
+            console.error('Failed to load latest screenshot', err);
+        }
     };
 
     const requestNew = async () => {
         setLoading(true);
         try {
             await VorsightApi.requestScreenshot();
-            // Wait a bit for upload
+            // Wait for upload then refresh
             setTimeout(() => {
-                loadScreenshot();
+                loadLatest();
+                setLoading(false);
             }, 5000);
         } catch {
             setLoading(false);
         }
     };
 
+    const formatDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleString('sv-SE', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
     return (
         <>
-            <Modal opened={opened} onClose={close} title="Latest Capture" size="xl">
-                {imgUrl && <Image src={imgUrl} radius="md" />}
-                <Group justify="center" mt="md">
-                    <Button onClick={loadScreenshot}>Refresh</Button>
-                </Group>
+            <Modal opened={opened} onClose={close} title="Latest Screenshot" size="xl" centered>
+                {latestImage && (
+                    <>
+                        <Image
+                            src={`/api/media/${latestImage.id}`}
+                            radius="md"
+                            fallbackSrc="https://placehold.co/800x600?text=Failed+to+Load"
+                        />
+                        <Group justify="space-between" mt="md">
+                            <Text size="sm">{latestImage.name}</Text>
+                            <Text size="sm" c="dimmed">{formatDate(latestImage.createdTime)}</Text>
+                        </Group>
+                    </>
+                )}
             </Modal>
 
             <Card withBorder radius="md" padding="xl">
                 <Title order={4} mb="md">Visuals</Title>
-                <Stack>
-                    <Button variant="light" onClick={loadScreenshot}>
-                        👁️ View Latest Screenshot
-                    </Button>
+                <Stack gap="md">
+                    {/* Thumbnail Preview */}
+                    {latestImage ? (
+                        <Card
+                            p={0}
+                            radius="md"
+                            withBorder
+                            style={{ cursor: 'pointer', overflow: 'hidden' }}
+                            onClick={open}
+                        >
+                            <Image
+                                src={`/api/media/${latestImage.id}`}
+                                h={160}
+                                alt="Latest screenshot"
+                                fallbackSrc="https://placehold.co/400x300?text=No+Screenshot"
+                            />
+                            <Group justify="space-between" p="xs" bg="dark.6">
+                                <Text size="xs" c="dimmed">Latest</Text>
+                                <Text size="xs" c="dimmed">{formatDate(latestImage.createdTime)}</Text>
+                            </Group>
+                        </Card>
+                    ) : (
+                        <Card p="xl" radius="md" withBorder>
+                            <Text size="sm" c="dimmed" ta="center">No screenshots yet</Text>
+                        </Card>
+                    )}
+
                     <Button variant="outline" onClick={requestNew} loading={loading}>
                         📸 Capture New
                     </Button>

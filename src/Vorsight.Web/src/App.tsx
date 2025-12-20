@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { AppShell, Group, Container, Grid, Badge, Title, Loader, Center, Stack } from '@mantine/core';
+import { AppShell, Group, Container, Badge, Title, Loader, Center, Tabs } from '@mantine/core';
 import { VorsightApi, type StatusResponse } from './api/client';
-import { HealthStats } from './features/dashboard/HealthStats';
-import { ActivityStats } from './features/dashboard/ActivityStats';
-import { ActivityMonitor } from './features/dashboard/ActivityMonitor';
-import { AuditAlert } from './features/dashboard/AuditAlert';
-import { SystemControls } from './features/controls/SystemControls';
-import { ScreenshotViewer } from './features/dashboard/ScreenshotViewer';
+import { Dashboard } from './features/dashboard/Dashboard';
+import { ScheduleManager } from './features/schedule/ScheduleManager';
+import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
+import { IconLayoutDashboard, IconClock, IconPhoto } from '@tabler/icons-react';
 
 function App() {
     const [status, setStatus] = useState<StatusResponse | null>(null);
@@ -58,31 +56,31 @@ function App() {
 
             <AppShell.Main bg="dark.8">
                 <Container size="xl">
-                    <AuditAlert audit={status.audit || null} />
-                    <Grid gutter="lg">
-                        <Grid.Col span={{ base: 12, md: 8 }}>
-                            <Title order={3} mb="lg">Health & Activity</Title>
-                            <Grid>
-                                <Grid.Col span={12}>
-                                    <ActivityMonitor activity={status.activity} />
-                                </Grid.Col>
-                                <Grid.Col span={12}>
-                                    {status.health && <HealthStats health={status.health} />}
-                                </Grid.Col>
-                                <Grid.Col span={12}>
-                                    <ActivityStats />
-                                </Grid.Col>
-                            </Grid>
-                        </Grid.Col>
+                    <Tabs defaultValue="dashboard" variant="pills" radius="md">
+                        <Tabs.List mb="lg">
+                            <Tabs.Tab value="dashboard" leftSection={<IconLayoutDashboard size={16} />}>
+                                Dashboard
+                            </Tabs.Tab>
+                            <Tabs.Tab value="schedule" leftSection={<IconClock size={16} />}>
+                                Settings
+                            </Tabs.Tab>
+                            <Tabs.Tab value="gallery" leftSection={<IconPhoto size={16} />}>
+                                Gallery
+                            </Tabs.Tab>
+                        </Tabs.List>
 
-                        <Grid.Col span={{ base: 12, md: 4 }}>
-                            <Title order={3} mb="lg">Controls</Title>
-                            <Stack gap="lg">
-                                <SystemControls />
-                                <ScreenshotViewer />
-                            </Stack>
-                        </Grid.Col>
-                    </Grid>
+                        <Tabs.Panel value="dashboard">
+                            <Dashboard status={status} />
+                        </Tabs.Panel>
+
+                        <Tabs.Panel value="schedule">
+                            <ScheduleManager />
+                        </Tabs.Panel>
+
+                        <Tabs.Panel value="gallery">
+                            <ScreenshotGallery />
+                        </Tabs.Panel>
+                    </Tabs>
                 </Container>
             </AppShell.Main>
         </AppShell>

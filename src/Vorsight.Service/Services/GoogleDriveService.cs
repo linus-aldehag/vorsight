@@ -15,6 +15,8 @@ public interface IGoogleDriveService
     Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
     Task InitializeAsync();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
+    Task<List<DriveFile>> ListScreenshotsAsync(int limit);
+    Task<Stream?> DownloadFileAsync(string fileId);
 }
 
 public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
@@ -460,6 +462,123 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to download latest screenshot");
+            return null;
+        }
+    }
+
+    public async Task<List<DriveFile>> ListScreenshotsAsync(int limit)
+    {
+        var service = await GetDriveServiceAsync(CancellationToken.None);
+        try
+        {
+            // Find the Vorsight root folder first
+            var folderRequest = service.Files.List();
+            folderRequest.Q = "mimeType = 'application/vnd.google-apps.folder' and name = 'Vorsight' and trashed = false";
+            folderRequest.Fields = "files(id)";
+            var folders = await folderRequest.ExecuteAsync();
+            
+            string query;
+            if (folders.Files?.Any() == true)
+            {
+                // Search for PNG files within Vorsight folder and all subfolders
+                var vorsightFolderId = folders.Files[0].Id;
+                query = $"mimeType = 'image/png' and '{vorsightFolderId}' in parents and trashed = false";
+                
+                _logger.LogDebug("Searching for screenshots in Vorsight folder: {FolderId}", vorsightFolderId);
+            }
+            else
+            {
+                // Fallback: if Vorsight folder not found, return empty
+                _logger.LogWarning("Vorsight folder not found in Google Drive");
+                return new List<DriveFile>();
+            }
+            
+            var listRequest = service.Files.List();
+            listRequest.Q = query;
+            listRequest.OrderBy = "createdTime desc";
+            listRequest.PageSize = limit;
+            listRequest.Fields = "files(id, name, createdTime, webViewLink, webContentLink, thumbnailLink)";
+            
+            var result = await listRequest.ExecuteAsync();
+            
+            // If no direct children found, search recursively in all subfolders
+            if (result.Files == null || !result.Files.Any())
+            {
+                var vorsightFolderId = folders.Files[0].Id;
+                // Get all folders under Vorsight recursively
+                var allFolders = await GetAllSubfoldersAsync(service, vorsightFolderId);
+                
+                if (allFolders.Any())
+                {
+                    // Build query to search in all subfolders
+                    var folderQueries = allFolders.Select(f => $"'{f}' in parents").ToList();
+                    query = $"mimeType = 'image/png' and ({string.Join(" or ", folderQueries)}) and trashed = false";
+                    
+                    listRequest = service.Files.List();
+                    listRequest.Q = query;
+                    listRequest.OrderBy = "createdTime desc";
+                    listRequest.PageSize = limit;
+                    listRequest.Fields = "files(id, name, createdTime, webViewLink, webContentLink, thumbnailLink)";
+                    
+                    result = await listRequest.ExecuteAsync();
+                }
+            }
+            
+            return result.Files?.ToList() ?? new List<DriveFile>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list screenshots");
+            return new List<DriveFile>();
+        }
+    }
+    
+    private async Task<List<string>> GetAllSubfoldersAsync(DriveService service, string parentFolderId)
+    {
+        var folderIds = new List<string>();
+        
+        try
+        {
+            var request = service.Files.List();
+            request.Q = $"mimeType = 'application/vnd.google-apps.folder' and '{parentFolderId}' in parents and trashed = false";
+            request.Fields = "files(id)";
+            request.PageSize = 100;
+            
+            var result = await request.ExecuteAsync();
+            
+            if (result.Files != null)
+            {
+                foreach (var folder in result.Files)
+                {
+                    folderIds.Add(folder.Id);
+                    // Recursively get subfolders
+                    var subfolders = await GetAllSubfoldersAsync(service, folder.Id);
+                    folderIds.AddRange(subfolders);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get subfolders for {ParentId}", parentFolderId);
+        }
+        
+        return folderIds;
+    }
+
+    public async Task<Stream?> DownloadFileAsync(string fileId)
+    {
+        var service = await GetDriveServiceAsync(CancellationToken.None);
+        try
+        {
+            var request = service.Files.Get(fileId);
+            var stream = new MemoryStream();
+            await request.DownloadAsync(stream);
+            stream.Position = 0;
+            return stream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download file {FileId}", fileId);
             return null;
         }
     }

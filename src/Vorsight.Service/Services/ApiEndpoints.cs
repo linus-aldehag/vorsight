@@ -5,6 +5,7 @@ using Vorsight.Core.IPC;
 using Vorsight.Core.Uptime;
 using Vorsight.Native;
 using Vorsight.Service.Services.Analytics;
+using Vorsight.Core.Scheduling;
 
 namespace Vorsight.Service.Services;
 
@@ -77,6 +78,69 @@ public static class ApiEndpoints
             return Results.File(stream, "image/png");
         });
 
+
+        app.MapGet("/api/media/{id}", async (
+            string id,
+            ITempFileManager tempFileManager,
+            IGoogleDriveService driveService) =>
+        {
+            // First, try to find the file locally by searching for files with this ID in the name
+            var tempPath = tempFileManager.GetTempPath();
+            var screenshotsPath = Path.Combine(tempPath, "Screenshots");
+            
+            if (Directory.Exists(screenshotsPath))
+            {
+                // Search for any file containing the Google Drive ID in its path
+                var localFiles = Directory.GetFiles(screenshotsPath, "*.png", SearchOption.AllDirectories);
+                var matchingFile = localFiles.FirstOrDefault(f => f.Contains(id) || Path.GetFileNameWithoutExtension(f).Contains(id));
+                
+                if (matchingFile != null && File.Exists(matchingFile))
+                {
+                    var fileStream = File.OpenRead(matchingFile);
+                    return Results.File(fileStream, "image/png");
+                }
+            }
+            
+            // Fallback: Download from Google Drive
+            var stream = await driveService.DownloadFileAsync(id);
+            if (stream == null) return Results.NotFound();
+            return Results.File(stream, "image/png");
+        });
+
+        // Get latest screenshot
+        app.MapGet("/api/media/latest", async (
+            ITempFileManager tempFileManager,
+            IGoogleDriveService driveService) =>
+        {
+            // First, try to get the latest local screenshot
+            var tempPath = tempFileManager.GetTempPath();
+            var screenshotsPath = Path.Combine(tempPath, "Screenshots");
+            
+            if (Directory.Exists(screenshotsPath))
+            {
+                var latestFile = Directory.GetFiles(screenshotsPath, "*.png", SearchOption.AllDirectories)
+                    .OrderByDescending(f => File.GetLastWriteTimeUtc(f))
+                    .FirstOrDefault();
+                    
+                if (latestFile != null)
+                {
+                    var fileStream = File.OpenRead(latestFile);
+                    return Results.File(fileStream, "image/png");
+                }
+            }
+            
+            // Fallback: Get from Google Drive
+            var screenshots = await driveService.ListScreenshotsAsync(1);
+            if (screenshots == null || screenshots.Count == 0)
+                return Results.NotFound();
+
+            var latest = screenshots[0];
+            var stream = await driveService.DownloadFileAsync(latest.Id);
+            if (stream == null) return Results.NotFound();
+            return Results.File(stream, "image/png");
+        });
+
+
         app.MapGet("/api/analytics/summary", (
             Services.Analytics.IActivityRepository repository) =>
         {
@@ -136,6 +200,76 @@ public static class ApiEndpoints
                 topApps,
                 lastActive = DateTimeOffset.FromUnixTimeSeconds(activities.Last().Timestamp)
             });
+        });
+        app.MapGet("/api/schedule", async (
+            IScheduleManager scheduleManager,
+            IConfiguration config) =>
+        {
+            var username = config["ChildUser:Username"] ?? "child";
+            var schedule = await scheduleManager.GetScheduleAsync(username);
+            return Results.Json(schedule);
+        });
+
+        app.MapPost("/api/schedule", async (
+            [FromBody] AccessSchedule schedule,
+            IScheduleManager scheduleManager,
+            IConfiguration config) =>
+        {
+            var username = config["ChildUser:Username"] ?? "child";
+            // Ensure we are updating the correct child
+            schedule.ChildUsername = username;
+            
+            try 
+            {
+                var existing = await scheduleManager.GetScheduleAsync(username);
+                if (existing == null)
+                {
+                    await scheduleManager.CreateScheduleAsync(schedule);
+                }
+                else
+                {
+                    // Preserve ID
+                    schedule.ScheduleId = existing.ScheduleId;
+                    await scheduleManager.UpdateScheduleAsync(schedule);
+                }
+                return Results.Ok(schedule);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        // Expanded Screenshot API
+        app.MapGet("/api/screenshots", async (
+            IGoogleDriveService driveService,
+            [FromQuery] int limit = 20) =>
+        {
+            var screenshots = await driveService.ListScreenshotsAsync(limit);
+            return Results.Json(screenshots);
+        });
+
+        // Settings API
+        app.MapGet("/api/settings", async (
+            Core.Settings.ISettingsManager settingsManager) =>
+        {
+            var settings = await settingsManager.GetSettingsAsync();
+            return Results.Json(settings);
+        });
+
+        app.MapPost("/api/settings", async (
+            [FromBody] Core.Settings.AgentSettings settings,
+            Core.Settings.ISettingsManager settingsManager) =>
+        {
+            try
+            {
+                await settingsManager.UpdateSettingsAsync(settings);
+                return Results.Ok(settings);
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
         });
     }
 }
