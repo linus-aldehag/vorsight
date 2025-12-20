@@ -1,0 +1,177 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using SocketIOClient;
+using Vorsight.Core.Identity;
+using Microsoft.Extensions.Logging;
+
+namespace Vorsight.Service.Services;
+
+public interface IServerConnection
+{
+    Task InitializeAsync();
+    Task SendHeartbeatAsync(object state);
+    Task SendActivityAsync(object activity);
+    Task SendScreenshotNotificationAsync(object screenshot);
+    bool IsConnected { get; }
+}
+
+public class ServerConnection : IServerConnection
+{
+    private readonly ILogger<ServerConnection> _logger;
+    private readonly HttpClient _httpClient;
+    private SocketIOClient.SocketIO? _socket;
+    private string? _machineId;
+    private string? _apiKey;
+    private bool _isConnected;
+    
+    private const string ServerUrl = "http://localhost:3000"; // TODO: Make configurable
+    
+    public bool IsConnected => _isConnected;
+    
+    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory)
+    {
+        _logger = logger;
+        _httpClient = httpClientFactory.CreateClient();
+        _httpClient.BaseAddress = new Uri(ServerUrl);
+    }
+    
+    public async Task InitializeAsync()
+    {
+        try
+        {
+            // Generate or load machine ID
+            _machineId = MachineIdentity.GenerateMachineId();
+            _logger.LogInformation("Machine ID: {MachineId}", _machineId);
+            
+            // Register with server
+            await RegisterMachineAsync();
+            
+            // Connect WebSocket
+            await ConnectWebSocketAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize server connection");
+        }
+    }
+    
+    private async Task RegisterMachineAsync()
+    {
+        try
+        {
+            var registrationData = new
+            {
+                machineId = _machineId,
+                name = Environment.MachineName,
+                hostname = Environment.MachineName,
+                metadata = new
+                {
+                    os = Environment.OSVersion.ToString(),
+                    version = "1.0.0",
+                    dotnetVersion = Environment.Version.ToString()
+                }
+            };
+            
+            var response = await _httpClient.PostAsJsonAsync("/api/machines/register", registrationData);
+            response.EnsureSuccessStatusCode();
+            
+            var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>();
+            _apiKey = result?.ApiKey;
+            
+            _logger.LogInformation("Successfully registered with server. API Key received.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to register machine");
+            throw;
+        }
+    }
+    
+    private async Task ConnectWebSocketAsync()
+    {
+        try
+        {
+            _socket = new SocketIOClient.SocketIO(ServerUrl);
+            
+            _socket.OnConnected += async (sender, e) =>
+            {
+                _logger.LogInformation("WebSocket connected");
+                
+                // Authenticate
+                await _socket.EmitAsync("machine:connect", new
+                {
+                    machineId = _machineId,
+                    apiKey = _apiKey
+                });
+            };
+            
+            _socket.On("machine:connected", response =>
+            {
+                _isConnected = true;
+                _logger.LogInformation("Machine authenticated with server");
+            });
+            
+            _socket.On("machine:error", response =>
+            {
+                var error = response.GetValue<JsonElement>();
+                _logger.LogError("Server error: {Error}", error);
+            });
+            
+            _socket.OnDisconnected += (sender, e) =>
+            {
+                _isConnected = false;
+                _logger.LogWarning("WebSocket disconnected");
+            };
+            
+            await _socket.ConnectAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to connect WebSocket");
+            throw;
+        }
+    }
+    
+    public async Task SendHeartbeatAsync(object state)
+    {
+        if (_socket?.Connected == true)
+        {
+            await _socket.EmitAsync("machine:heartbeat", new
+            {
+                machineId = _machineId,
+                state
+            });
+        }
+    }
+    
+    public async Task SendActivityAsync(object activity)
+    {
+        if (_socket?.Connected == true)
+        {
+            await _socket.EmitAsync("machine:activity", new
+            {
+                machineId = _machineId,
+                activity
+            });
+        }
+    }
+    
+    public async Task SendScreenshotNotificationAsync(object screenshot)
+    {
+        if (_socket?.Connected == true)
+        {
+            await _socket.EmitAsync("machine:screenshot", new
+            {
+                machineId = _machineId,
+                screenshot
+            });
+        }
+    }
+    
+    private class RegistrationResponse
+    {
+        public bool Success { get; set; }
+        public string? ApiKey { get; set; }
+        public string? MachineId { get; set; }
+    }
+}

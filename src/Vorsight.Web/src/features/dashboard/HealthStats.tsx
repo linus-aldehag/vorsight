@@ -5,7 +5,7 @@ interface HealthStatsProps {
     health: HealthReport;
 }
 
-export function HealthStats({ health }: HealthStatsProps) {
+export function HealthStats({ health: _health }: HealthStatsProps) {
     return (
         <Card withBorder padding="lg" radius="md">
             <Group justify="space-between">

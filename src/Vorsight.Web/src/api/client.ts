@@ -47,28 +47,28 @@ export interface AgentSettings {
     isMonitoringEnabled: boolean;
 }
 
-const BASE_url = 'http://localhost:5050/api';
+const BASE_URL = '/api'; // Relative URL - same server (localhost:3000)
 
 export const VorsightApi = {
     async getStatus(): Promise<StatusResponse> {
-        const res = await fetch(`${BASE_url}/status`);
+        const res = await fetch(`${BASE_URL}/status`);
         if (!res.ok) throw new Error(`Status check failed: ${res.statusText}`);
         return res.json();
     },
 
     async requestScreenshot(type: string = 'Manual'): Promise<void> {
-        const res = await fetch(`${BASE_url}/screenshot?type=${encodeURIComponent(type)}`, { method: 'POST' });
+        const res = await fetch(`${BASE_URL}/screenshot?type=${encodeURIComponent(type)}`, { method: 'POST' });
         if (!res.ok) throw new Error('Screenshot request failed');
     },
 
     async systemAction(action: 'shutdown' | 'logout'): Promise<ApiResponse> {
-        const res = await fetch(`${BASE_url}/system/${action}`, { method: 'POST' });
+        const res = await fetch(`${BASE_URL}/system/${action}`, { method: 'POST' });
         if (!res.ok) throw new Error(`System action ${action} failed`);
         return res.json();
     },
 
     async networkAction(action: 'ping', target: string): Promise<ApiResponse> {
-        const res = await fetch(`${BASE_url}/network`, {
+        const res = await fetch(`${BASE_URL}/network`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, target })
@@ -77,39 +77,42 @@ export const VorsightApi = {
         return res.json();
     },
 
-    async getSchedule(): Promise<AccessSchedule | null> {
-        const response = await fetch(`${BASE_url}/schedule`);
+    async getSchedule(machineId?: string): Promise<AccessSchedule | null> {
+        const url = machineId ? `${BASE_URL}/schedule?machineId=${machineId}` : `${BASE_URL}/schedule`;
+        const response = await fetch(url);
         if (response.status === 404) return null;
         if (!response.ok) throw new Error('Failed to fetch schedule');
         const text = await response.text();
-        if (!text) return null; // Handle empty response
+        if (!text) return null;
         return JSON.parse(text);
     },
 
-    async saveSchedule(schedule: AccessSchedule): Promise<AccessSchedule> {
-        const response = await fetch(`${BASE_url}/schedule`, {
+    async saveSchedule(machineId: string, schedule: AccessSchedule): Promise<AccessSchedule> {
+        const response = await fetch(`${BASE_URL}/schedule`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(schedule)
+            body: JSON.stringify({ machineId, ...schedule })
         });
         if (!response.ok) throw new Error('Failed to save schedule');
         return response.json();
     },
 
-    async getScreenshots(limit: number = 20): Promise<DriveFile[]> {
-        const response = await fetch(`${BASE_url}/screenshots?limit=${limit}`);
+    async getScreenshots(machineId: string, limit: number = 20): Promise<DriveFile[]> {
+        const response = await fetch(`${BASE_URL}/screenshots/${machineId}?limit=${limit}`);
         if (!response.ok) throw new Error('Failed to fetch screenshots');
         return response.json();
     },
 
-    async getActivitySummary(): Promise<ActivitySummary> {
-        const res = await fetch(`${BASE_url}/analytics/summary`);
+    async getActivitySummary(machineId?: string): Promise<ActivitySummary> {
+        const url = machineId ? `${BASE_URL}/analytics/summary?machineId=${machineId}` : `${BASE_URL}/analytics/summary`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch analytics');
         return res.json();
     },
 
-    async getSettings(): Promise<AgentSettings> {
-        const res = await fetch(`${BASE_url}/settings`);
+    async getSettings(machineId?: string): Promise<AgentSettings> {
+        const url = machineId ? `${BASE_URL}/settings?machineId=${machineId}` : `${BASE_URL}/settings`;
+        const res = await fetch(url);
         if (res.status === 404) {
             // Return defaults if settings don't exist yet
             return {
@@ -122,11 +125,11 @@ export const VorsightApi = {
         return res.json();
     },
 
-    async saveSettings(settings: AgentSettings): Promise<AgentSettings> {
-        const res = await fetch(`${BASE_url}/settings`, {
+    async saveSettings(machineId: string, settings: AgentSettings): Promise<AgentSettings> {
+        const res = await fetch(`${BASE_URL}/settings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(settings)
+            body: JSON.stringify({ machineId, ...settings })
         });
         if (!res.ok) throw new Error('Failed to save settings');
         return res.json();

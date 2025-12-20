@@ -18,7 +18,8 @@ public class ActivityCoordinator(
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
     Services.Analytics.IActivityRepository activityRepository,
-    Vorsight.Core.Settings.ISettingsManager settingsManager)
+    Vorsight.Core.Settings.ISettingsManager settingsManager,
+    IServerConnection serverConnection)
     : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -26,6 +27,7 @@ public class ActivityCoordinator(
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
     private readonly Services.Analytics.IActivityRepository _activityRepository = activityRepository;
     private readonly Vorsight.Core.Settings.ISettingsManager _settingsManager = settingsManager;
+    private readonly IServerConnection _serverConnection = serverConnection;
     private string _lastWindowTitle = string.Empty;
     private DateTime _lastTimedScreenshot = DateTime.MinValue;
     private DateTime _lastPollTime = DateTime.MinValue;
@@ -44,6 +46,18 @@ public class ActivityCoordinator(
         };
 
         _latestSnapshot = snapshot;
+        
+        // Send activity to server
+        if (_serverConnection.IsConnected)
+        {
+            _ = _serverConnection.SendActivityAsync(new
+            {
+                timestamp = snapshot.Timestamp,
+                activeWindow = snapshot.ActiveWindowTitle,
+                processName = "", // TODO: Extract from window title
+                duration = 0
+            });
+        }
 
         // Check for Window Change immediately upon receiving report
         if (!string.IsNullOrEmpty(snapshot.ActiveWindowTitle) && 
@@ -106,6 +120,24 @@ public class ActivityCoordinator(
                     _lastPollTime = now;
                     // Agent path already validated at startup
                     _commandExecutor.RunCommandAsUser(agentPath, "activity");
+                    
+                    // Send heartbeat to server
+                    if (_serverConnection.IsConnected && _latestSnapshot != null)
+                    {
+                        await _serverConnection.SendHeartbeatAsync(new
+                        {
+                            lastActivityTime = _latestSnapshot.Value.Timestamp,
+                            activeWindow = _latestSnapshot.Value.ActiveWindowTitle,
+                            screenshotCount = 0, // TODO: Get from health monitor
+                            uploadCount = 0,
+                            health = new
+                            {
+                                isMonitoring = settings.IsMonitoringEnabled,
+                                screenshotInterval = settings.ScreenshotIntervalSeconds,
+                                pingInterval = settings.PingIntervalSeconds
+                            }
+                        });
+                    }
                 }
 
                 // Check for Timed Screenshot

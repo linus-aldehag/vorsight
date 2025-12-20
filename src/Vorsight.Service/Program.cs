@@ -48,6 +48,10 @@ try
     builder.Services.AddSingleton<Vorsight.Service.Services.Analytics.IActivityRepository, Vorsight.Service.Services.Analytics.JsonFileActivityRepository>();
     builder.Services.AddSingleton<Vorsight.Service.Services.Auditing.IAuditManager, Vorsight.Service.Services.Auditing.AuditManager>();
     
+    // Server Connection (Node.js server)
+    builder.Services.AddHttpClient();
+    builder.Services.AddSingleton<IServerConnection, ServerConnection>();
+    
     // Scavenged Services
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();

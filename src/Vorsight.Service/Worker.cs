@@ -25,6 +25,7 @@ public class Worker : BackgroundService
     private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly ISessionSummaryManager _sessionSummaryManager;
     private readonly Core.Settings.ISettingsManager _settingsManager;
+    private readonly IServerConnection _serverConnection;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
@@ -40,7 +41,8 @@ public class Worker : BackgroundService
         IActivityCoordinator activityCoordinator,
         Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor,
         ISessionSummaryManager sessionSummaryManager,
-        Core.Settings.ISettingsManager settingsManager)
+        Core.Settings.ISettingsManager settingsManager,
+        IServerConnection serverConnection)
     {
         _logger = logger;
         _ipcServer = ipcServer;
@@ -55,6 +57,7 @@ public class Worker : BackgroundService
         _uptimeMonitor = uptimeMonitor;
         _sessionSummaryManager = sessionSummaryManager;
         _settingsManager = settingsManager;
+        _serverConnection = serverConnection;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -71,6 +74,7 @@ public class Worker : BackgroundService
             await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
             await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
             await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
+            await TryStartComponent("ServerConnection", () => _serverConnection.InitializeAsync());
 
             // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
             if (_ipcServer.IsRunning) // Check if valid

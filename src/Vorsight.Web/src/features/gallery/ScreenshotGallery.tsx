@@ -3,21 +3,27 @@ import { Title, SimpleGrid, Card, Image, Text, Badge, Center, Loader, Group, But
 import { useDisclosure } from '@mantine/hooks';
 import { IconRefresh } from '@tabler/icons-react';
 import { VorsightApi, type DriveFile } from '../../api/client';
+import { useMachine } from '../../context/MachineContext';
 
 export function ScreenshotGallery() {
+    const { selectedMachine } = useMachine();
     const [images, setImages] = useState<DriveFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
     const [opened, { open, close }] = useDisclosure(false);
 
     useEffect(() => {
-        loadImages();
-    }, []);
+        if (selectedMachine) {
+            loadImages();
+        }
+    }, [selectedMachine]);
 
     const loadImages = async () => {
+        if (!selectedMachine) return;
+
         setLoading(true);
         try {
-            const data = await VorsightApi.getScreenshots(24);
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 24);
             setImages(data);
         } catch (err) {
             console.error(err);

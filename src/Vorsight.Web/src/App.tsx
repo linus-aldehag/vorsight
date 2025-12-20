@@ -4,6 +4,7 @@ import { VorsightApi, type StatusResponse } from './api/client';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { ScheduleManager } from './features/schedule/ScheduleManager';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
+import { MachineSelector } from './components/MachineSelector/MachineSelector';
 import { IconLayoutDashboard, IconClock, IconPhoto } from '@tabler/icons-react';
 
 function App() {
@@ -41,6 +42,8 @@ function App() {
                         <Title order={2}>VÖRSIGHT</Title>
                         <Badge color="blue" variant="light">BETA</Badge>
                     </Group>
+
+                    <MachineSelector />
 
                     <Group>
                         <Badge

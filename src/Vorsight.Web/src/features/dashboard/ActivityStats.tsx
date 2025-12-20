@@ -1,24 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Card, Text, Group, SimpleGrid, Title, Stack, Progress, Box, Tooltip } from '@mantine/core';
 import { VorsightApi, type ActivitySummary } from '../../api/client';
+import { useMachine } from '../../context/MachineContext';
 
 export function ActivityStats() {
+    const { selectedMachine } = useMachine();
     const [summary, setSummary] = useState<ActivitySummary | null>(null);
 
     useEffect(() => {
-        const fetchSummary = async () => {
-            try {
-                const data = await VorsightApi.getActivitySummary();
-                setSummary(data);
-            } catch (err) {
-                console.error("Failed to fetch activity summary", err);
-            }
-        };
+        if (selectedMachine) {
+            fetchSummary();
+            const interval = setInterval(fetchSummary, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [selectedMachine]);
 
-        fetchSummary();
-        const interval = setInterval(fetchSummary, 30000); // 30s poll
-        return () => clearInterval(interval);
-    }, []);
+    const fetchSummary = async () => {
+        if (!selectedMachine) return;
+
+        try {
+            const data = await VorsightApi.getActivitySummary(selectedMachine.id);
+            setSummary(data);
+        } catch (err) {
+            console.error("Failed to fetch activity summary", err);
+        }
+    };
 
     if (!summary) return null;
 
