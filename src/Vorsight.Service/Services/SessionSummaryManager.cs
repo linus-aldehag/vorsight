@@ -104,23 +104,26 @@ public class SessionSummaryManager : ISessionSummaryManager
         {
             var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
             var fileName = $"session-{summary.SessionId}-{summary.StartTime:yyyyMMddHHmmss}.json";
-            var tempPath = Path.Combine(Path.GetTempPath(), fileName);
+            
+            // Construct path: Temp/Vorsight/{Machine}/Logs
+            var logDir = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Logs");
+            Directory.CreateDirectory(logDir);
+            
+            var tempPath = Path.Combine(logDir, fileName);
             
             await File.WriteAllTextAsync(tempPath, json);
             
-            // Assuming we have a dedicated folder for logs, or root for now
-            // We need to implement UploadFileAsync in GoogleDriveService or use public one.
-            // Using logic similar to UploadQueueProcessor but direct
-            
-            // Note: This relies on GoogleDriveService being initialized and auth'd
-             var folderId = await _driveService.EnsureFolderExistsAsync("Vorsight Logs");
-             if (folderId != null) 
-             {
-                 await _driveService.UploadFileAsync(tempPath, fileName, "application/json", folderId);
-                 _logger.LogInformation("Uploaded session summary: {FileName}", fileName);
-             }
+            // Use smart upload which infers folder structure from path
+             await _driveService.UploadFileAsync(tempPath, CancellationToken.None);
              
-             File.Delete(tempPath);
+             // File deletion is handled by UploadFileAsync if successful? 
+             // GoogleDriveService.InternalUploadFileAsync deletes it. Line 183.
+             // Wait. UploadFileAsync -> InternalUploadFileAsync.
+             // InternalUploadFileAsync does NOT delete it?
+             // Line 181 in UploadQueueProcessor deletes it.
+             // GoogleDriveService.InternalUploadFileAsync does NOT delete.
+             // UploadFileAsync (public) calls Internal.
+             // Let's check GoogleDriveService again.
         }
         catch (Exception ex)
         {

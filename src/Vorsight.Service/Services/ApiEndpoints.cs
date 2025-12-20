@@ -26,31 +26,52 @@ public static class ApiEndpoints
 
         app.MapPost("/api/screenshot", async (
             [FromQuery] string type, 
-            INamedPipeServer ipcServer) =>
+            IActivityCoordinator activityCoordinator) =>
         {
             var triggerType = string.IsNullOrEmpty(type) ? "ManualApi" : type;
             
-            var request = new PipeMessage(PipeMessage.MessageType.ScreenshotRequest, 0)
-            {
-                Metadata = $"Type:{triggerType}|Source:API"
-            };
-            
-            await ipcServer.BroadcastMessageAsync(request);
-            await ipcServer.BroadcastMessageAsync(request);
+            await activityCoordinator.RequestManualScreenshotAsync(triggerType);
             return Results.Ok(new { status = "Screenshot requested", type = triggerType });
         });
 
-        app.MapPost("/api/command", (
-            [FromBody] CommandRequest cmd, 
+        app.MapPost("/api/network", (
+            [FromBody] NetworkRequest req, 
             ICommandExecutor executor) =>
         {
-            if (string.IsNullOrWhiteSpace(cmd.Command))
-                return Results.BadRequest("Command is required");
+            if (req.Action.Equals("ping", StringComparison.OrdinalIgnoreCase))
+            {
+                var host = string.IsNullOrWhiteSpace(req.Target) ? "localhost" : req.Target;
+                var success = executor.RunCommandAsUser("ping", $"-n 4 {host}");
+                return success ? Results.Ok(new { status = $"Pinging {host}..." }) : Results.StatusCode(500);
+            }
+            return Results.BadRequest("Unknown network action");
+        });
 
-            var success = executor.RunCommandAsUser(cmd.Command, cmd.Arguments ?? "");
-            return success ? Results.Ok(new { status = "Command started" }) : Results.StatusCode(500);
+        app.MapPost("/api/system/shutdown", (
+            ICommandExecutor executor) =>
+        {
+            // Immediate shutdown, no delay, no message
+            var success = executor.RunCommandAsUser("shutdown", "/s /t 0");
+            return success ? Results.Ok(new { status = "Shutdown initiated" }) : Results.StatusCode(500);
+        });
+
+        app.MapPost("/api/system/logout", (
+            ICommandExecutor executor) =>
+        {
+            // Log off current user
+            var success = executor.RunCommandAsUser("shutdown", "/l");
+            return success ? Results.Ok(new { status = "Logout initiated" }) : Results.StatusCode(500);
+        });
+
+        app.MapGet("/api/media/latest-screenshot", async (
+            IGoogleDriveService driveService) =>
+        {
+            var stream = await driveService.DownloadLatestScreenshotAsync();
+            if (stream == null) return Results.NotFound("No recent screenshots found.");
+            return Results.File(stream, "image/png");
         });
     }
 }
 
-public record CommandRequest(string Command, string? Arguments);
+public record NetworkRequest(string Action, string? Target);
+public record PingRequest(string Host); // Kept for legacy compatibility if needed, but not mapped

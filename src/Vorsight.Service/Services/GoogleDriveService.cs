@@ -11,6 +11,7 @@ public interface IGoogleDriveService
 {
     Task<string> EnsureFolderExistsAsync(string folderName);
     Task<string> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId);
+    Task<Stream?> DownloadLatestScreenshotAsync();
     Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
     Task InitializeAsync();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
@@ -415,12 +416,51 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
             if (result.Status == Google.Apis.Upload.UploadStatus.Failed)
                 throw result.Exception;
 
-            return request.ResponseBody?.Id;
+            return request.ResponseBody?.Id ?? throw new Exception("Upload succeeded but no ID returned");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to direct upload file: {FileName}", fileName);
             throw;
+        }
+    }
+
+    public async Task<Stream?> DownloadLatestScreenshotAsync()
+    {
+        var service = await GetDriveServiceAsync(CancellationToken.None);
+        try
+        {
+            // Find latest screenshot (Strict)
+            var listRequest = service.Files.List();
+            listRequest.Q = "mimeType = 'image/png' and name contains 'screenshot' and trashed = false";
+            listRequest.OrderBy = "createdTime desc";
+            listRequest.PageSize = 1;
+            listRequest.Fields = "files(id, name)";
+            
+            var files = await listRequest.ExecuteAsync();
+            var latestFile = files.Files?.FirstOrDefault();
+
+            if (files.Files != null && files.Files.Count > 0)
+            {
+               _logger.LogInformation("Found {Count} screenshots. Latest: {Name} ({Id})", files.Files.Count, latestFile?.Name, latestFile?.Id);
+            }
+            else
+            {
+               _logger.LogWarning("No screenshots found in Drive matching query.");
+            }
+            
+            if (latestFile == null) return null;
+
+            var stream = new MemoryStream();
+            var getRequest = service.Files.Get(latestFile.Id);
+            await getRequest.DownloadAsync(stream);
+            stream.Position = 0;
+            return stream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to download latest screenshot");
+            return null;
         }
     }
 }

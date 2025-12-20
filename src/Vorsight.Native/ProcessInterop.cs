@@ -100,6 +100,12 @@ namespace Vorsight.Native
         [DllImport("kernel32.dll", SetLastError = true)]
         public static extern bool CloseHandle(IntPtr hObject);
 
+        [DllImport("kernel32.dll")]
+        public static extern bool ProcessIdToSessionId(uint dwProcessId, out uint pSessionId);
+
+        [DllImport("kernel32.dll")]
+        public static extern uint GetCurrentProcessId();
+
         // Process access rights
         public const uint PROCESS_ALL_ACCESS = 0x001F0FFF;
         public const uint PROCESS_QUERY_INFORMATION = 0x0400;
