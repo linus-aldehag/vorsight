@@ -9,8 +9,8 @@ namespace Vorsight.Service.Services;
 
 public interface IGoogleDriveService
 {
-    Task<string> EnsureFolderExistsAsync(string folderName);
-    Task<string> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId);
+    Task<string?> EnsureFolderExistsAsync(string folderName);
+    Task<string?> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId);
     Task<Stream?> DownloadLatestScreenshotAsync();
     Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
     Task InitializeAsync();
@@ -358,7 +358,7 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         }
     }
 
-    public async Task<string> EnsureFolderExistsAsync(string folderName)
+    public async Task<string?> EnsureFolderExistsAsync(string folderName)
     {
         // Use cached service or get new one
         var service = await GetDriveServiceAsync(CancellationToken.None);
@@ -397,7 +397,7 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         }
     }
 
-    public async Task<string> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId)
+    public async Task<string?> UploadFileAsync(string filePath, string fileName, string mimeType, string parentFolderId)
     {
         var service = await GetDriveServiceAsync(CancellationToken.None);
 
