@@ -2,22 +2,27 @@ import { Card, Image, Button, Title, Stack, Group, Modal, Text } from '@mantine/
 import { useDisclosure } from '@mantine/hooks';
 import { useState, useEffect } from 'react';
 import { VorsightApi, type DriveFile } from '../../api/client';
+import { useMachine } from '../../context/MachineContext';
 
 export function ScreenshotViewer() {
+    const { selectedMachine } = useMachine();
     const [opened, { open, close }] = useDisclosure(false);
     const [latestImage, setLatestImage] = useState<DriveFile | null>(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        loadLatest();
-        // Refresh every 30 seconds
-        const interval = setInterval(loadLatest, 30000);
-        return () => clearInterval(interval);
-    }, []);
+        if (selectedMachine) {
+            loadLatest();
+            const interval = setInterval(loadLatest, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [selectedMachine]);
 
     const loadLatest = async () => {
+        if (!selectedMachine) return;
+
         try {
-            const screenshots = await VorsightApi.getScreenshots(1);
+            const screenshots = await VorsightApi.getScreenshots(selectedMachine.id, 1);
             if (screenshots.length > 0) {
                 setLatestImage(screenshots[0]);
             }

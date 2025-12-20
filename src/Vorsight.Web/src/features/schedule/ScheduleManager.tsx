@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Title, Paper, Group, Text, Switch, Stack, Button, Loader, Alert, Divider, NumberInput, Collapse, TextInput } from '@mantine/core';
 import { IconDeviceFloppy, IconAlertCircle } from '@tabler/icons-react';
 import { VorsightApi, type AccessSchedule, type AgentSettings } from '../../api/client';
+import { useMachine } from '../../context/MachineContext';
 
 export function ScheduleManager() {
+    const { selectedMachine } = useMachine();
     const [schedule, setSchedule] = useState<AccessSchedule | null>(null);
     const [agentSettings, setAgentSettings] = useState<AgentSettings>({
         screenshotIntervalSeconds: 60,
@@ -20,14 +22,16 @@ export function ScheduleManager() {
     const [scheduleEnforcementEnabled, setScheduleEnforcementEnabled] = useState(true);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (selectedMachine) {
+            loadData();
+        }
+    }, [selectedMachine]);
 
     const loadData = async () => {
         try {
             // Load schedule (optional, may not exist)
             try {
-                const scheduleData = await VorsightApi.getSchedule();
+                const scheduleData = await VorsightApi.getSchedule(selectedMachine?.id);
                 setSchedule(scheduleData || createDefaultSchedule());
             } catch (err) {
                 console.warn('No schedule found, using defaults', err);
@@ -35,7 +39,7 @@ export function ScheduleManager() {
             }
 
             // Load agent settings from API
-            const settings = await VorsightApi.getSettings();
+            const settings = await VorsightApi.getSettings(selectedMachine?.id);
             setAgentSettings(settings);
 
             // Initialize feature toggles based on settings
@@ -66,9 +70,14 @@ export function ScheduleManager() {
         setSaving(true);
         setError(null);
         try {
+            if (!selectedMachine) {
+                setError('No machine selected');
+                return;
+            }
+
             // Update schedule with enforcement toggle
             const updatedSchedule = { ...schedule, isActive: scheduleEnforcementEnabled };
-            await VorsightApi.saveSchedule(updatedSchedule);
+            await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
 
             // Update agent settings based on feature toggles
             const updatedSettings = {
@@ -77,7 +86,7 @@ export function ScheduleManager() {
                 pingIntervalSeconds: activityTrackingEnabled ? agentSettings.pingIntervalSeconds : 0,
                 isMonitoringEnabled: screenshotEnabled || activityTrackingEnabled
             };
-            await VorsightApi.saveSettings(updatedSettings);
+            await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
         } catch (err) {
             setError('Failed to save settings');
         } finally {

@@ -114,4 +114,13 @@ yarn-error.log
 npm-debug.log
 package-lock.json
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vorsight server data
+src/Vorsight.Server/data/
+
 /src/Vorsight.Web/appsettings.Development.json
