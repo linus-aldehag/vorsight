@@ -27,9 +27,9 @@ namespace Vorsight.Native
         public struct STARTUPINFO
         {
             public uint cb;
-            public string lpReserved;
-            public string lpDesktop;
-            public string lpTitle;
+            public string? lpReserved;
+            public string? lpDesktop;
+            public string? lpTitle;
             public uint dwX;
             public uint dwY;
             public uint dwXSize;
@@ -53,14 +53,14 @@ namespace Vorsight.Native
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern bool CreateProcessAsUser(
             IntPtr hToken,
-            string lpApplicationName,
-            string lpCommandLine,
+            string? lpApplicationName,
+            string? lpCommandLine,
             IntPtr lpProcessAttributes,
             IntPtr lpThreadAttributes,
             bool bInheritHandles,
             uint dwCreationFlags,
             IntPtr lpEnvironment,
-            string lpCurrentDirectory,
+            string? lpCurrentDirectory,
             ref STARTUPINFO lpStartupInfo,
             out PROCESS_INFORMATION lpProcessInformation);
 

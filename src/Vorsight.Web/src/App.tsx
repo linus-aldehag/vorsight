@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { AppShell, Group, Container, Grid, Badge, Title, Loader, Center, Stack } from '@mantine/core';
 import { VorsightApi, type StatusResponse } from './api/client';
 import { HealthStats } from './features/dashboard/HealthStats';
+import { ActivityStats } from './features/dashboard/ActivityStats';
 import { ActivityMonitor } from './features/dashboard/ActivityMonitor';
+import { AuditAlert } from './features/dashboard/AuditAlert';
 import { SystemControls } from './features/controls/SystemControls';
 import { ScreenshotViewer } from './features/dashboard/ScreenshotViewer';
 
@@ -56,6 +58,7 @@ function App() {
 
             <AppShell.Main bg="dark.8">
                 <Container size="xl">
+                    <AuditAlert audit={status.audit || null} />
                     <Grid gutter="lg">
                         <Grid.Col span={{ base: 12, md: 8 }}>
                             <Title order={3} mb="lg">Health & Activity</Title>
@@ -65,6 +68,9 @@ function App() {
                                 </Grid.Col>
                                 <Grid.Col span={12}>
                                     {status.health && <HealthStats health={status.health} />}
+                                </Grid.Col>
+                                <Grid.Col span={12}>
+                                    <ActivityStats />
                                 </Grid.Col>
                             </Grid>
                         </Grid.Col>

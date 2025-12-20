@@ -12,8 +12,19 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     private bool _disposed;
 
     // Events for audit notifications
-    public event EventHandler<AuditEventDetectedEventArgs> CriticalEventDetected;
-    public event EventHandler<TamperingDetectedEventArgs> TamperingDetected;
+    // Events for audit notifications
+    public event EventHandler<AuditEventDetectedEventArgs>? CriticalEventDetected;
+    public event EventHandler<TamperingDetectedEventArgs>? TamperingDetected;
+
+    protected virtual void OnCriticalEventDetected(AuditEventDetectedEventArgs e)
+    {
+        CriticalEventDetected?.Invoke(this, e);
+    }
+
+    protected virtual void OnTamperingDetected(TamperingDetectedEventArgs e)
+    {
+        TamperingDetected?.Invoke(this, e);
+    }
 
     public bool IsMonitoring { get; private set; }
 

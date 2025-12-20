@@ -15,9 +15,13 @@ public class ActivityCoordinator(
     ILogger<ActivityCoordinator> logger,
     IConfiguration config,
     INamedPipeServer ipcServer,
-    ICommandExecutor commandExecutor)
+    ICommandExecutor commandExecutor,
+    Services.Analytics.IActivityRepository activityRepository)
     : IActivityCoordinator
 {
+    private readonly INamedPipeServer _ipcServer = ipcServer;
+    private readonly ICommandExecutor _commandExecutor = commandExecutor;
+    private readonly Services.Analytics.IActivityRepository _activityRepository = activityRepository;
     private readonly int _screenshotIntervalMinutes = config.GetValue("Activity:ScreenshotIntervalMinutes", 5);
     private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(5);
     private string _lastWindowTitle = string.Empty;
@@ -27,6 +31,9 @@ public class ActivityCoordinator(
 
     public void UpdateActivity(Vorsight.Core.Models.ActivityData data)
     {
+        // Persist to Repository
+        _activityRepository.AddActivity(data);
+
         // Convert ActivityData to Snapshot
         var snapshot = new ActivitySnapshot
         {
@@ -67,7 +74,7 @@ public class ActivityCoordinator(
 
                     if (!string.IsNullOrEmpty(agentPath))
                     {
-                        commandExecutor.RunCommandAsUser(agentPath, "activity");
+            _commandExecutor.RunCommandAsUser(agentPath, "activity");
                     }
                     else
                     {
@@ -127,7 +134,7 @@ public class ActivityCoordinator(
             // Launch Agent in one-shot screenshot mode
             var args = $"screenshot \"{metadata}\"";
             
-            commandExecutor.RunCommandAsUser(agentPath, args);
+            _commandExecutor.RunCommandAsUser(agentPath, args);
             await Task.CompletedTask;
         }
         catch (Exception ex)

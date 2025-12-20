@@ -13,7 +13,7 @@ namespace Vorsight.Core.IPC
     {
         private readonly string _pipeName;
         private readonly ConcurrentDictionary<uint, PipeConnection> _connections;
-        private NamedPipeServerStream _pipeServer;
+        private NamedPipeServerStream? _pipeServer;
         private volatile bool _isRunning;
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace Vorsight.Core.IPC
         private readonly ConcurrentDictionary<uint, ScreenshotBuffer> _screenshotBuffers;
         private const int MaxScreenshotsPerSession = 10;
 
-        public event EventHandler<ScreenshotReceivedEventArgs> ScreenshotReceived;
+        public event EventHandler<ScreenshotReceivedEventArgs>? ScreenshotReceived;
 
         public ScreenshotPipeHandler(string pipeName)
         {
@@ -265,9 +265,9 @@ namespace Vorsight.Core.IPC
     /// </summary>
     public class ScreenshotReceivedEventArgs : EventArgs
     {
-        public PipeMessage Message { get; set; }
+        public required PipeMessage Message { get; set; }
         public uint SessionId { get; set; }
-        public byte[] ScreenshotData { get; set; }
+        public required byte[] ScreenshotData { get; set; }
         public DateTime Timestamp { get; set; }
     }
 }

@@ -80,6 +80,13 @@ namespace Vorsight.Core.Models
         public SessionInfo()
         {
             SessionStartTime = DateTime.UtcNow;
+            Username = string.Empty;
+            UserSid = string.Empty;
+            Domain = string.Empty;
+            State = string.Empty;
+            ClientName = string.Empty;
+            ClientIpAddress = string.Empty;
+            Metadata = string.Empty;
         }
 
         /// <summary>

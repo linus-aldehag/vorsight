@@ -21,8 +21,8 @@ namespace Vorsight.Native
         /// </summary>
         [DllImport("advapi32.dll", SetLastError = true)]
         public static extern uint InitiateSystemShutdownEx(
-            string lpMachineName,
-            string lpMessage,
+            string? lpMachineName,
+            string? lpMessage,
             uint dwTimeout,
             bool bForceAppsClosed,
             bool bRebootAfterShutdown,
@@ -32,7 +32,7 @@ namespace Vorsight.Native
         /// Prevents the system from shutting down (aborts a previous InitiateSystemShutdownEx call).
         /// </summary>
         [DllImport("advapi32.dll", SetLastError = true)]
-        public static extern uint AbortSystemShutdown(string lpMachineName);
+        public static extern uint AbortSystemShutdown(string? lpMachineName);
 
         /// <summary>
         /// Locks the workstation display, saving any open documents on all desktops.

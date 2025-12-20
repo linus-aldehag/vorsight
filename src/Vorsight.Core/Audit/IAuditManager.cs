@@ -97,8 +97,8 @@ namespace Vorsight.Core.Audit
     /// </summary>
     public class AuditEventDetectedEventArgs : EventArgs
     {
-        public AuditEvent Event { get; set; }
-        public AuditEventFilter MatchingFilter { get; set; }
+        public required AuditEvent Event { get; set; }
+        public required AuditEventFilter MatchingFilter { get; set; }
         public DateTime DetectedTime { get; set; }
     }
 
@@ -107,10 +107,10 @@ namespace Vorsight.Core.Audit
     /// </summary>
     public class TamperingDetectedEventArgs : EventArgs
     {
-        public string TamperingType { get; set; } // "EventLogCleared", "FilterDisabled", etc.
-        public string Details { get; set; }
+        public required string TamperingType { get; set; }
+        public required string Details { get; set; }
         public DateTime DetectedTime { get; set; }
-        public string AffectedUsername { get; set; }
+        public required string AffectedUsername { get; set; }
     }
 }
 

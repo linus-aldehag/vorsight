@@ -13,18 +13,18 @@ namespace Vorsight.Core.IPC;
 public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = "VorsightIPC")
     : INamedPipeServer
 {
-    private NamedPipeServerStream _serverStream;
-    private CancellationTokenSource _cancellationTokenSource;
-    private Task _listenerTask;
+    private NamedPipeServerStream? _serverStream;
+    private CancellationTokenSource? _cancellationTokenSource;
+    private Task? _listenerTask;
     private readonly ConcurrentDictionary<uint, NamedPipeServerStream> _sessions = new();
     private bool _disposed;
 
     // Event for handling client connections
-    public event EventHandler<SessionConnectedEventArgs> SessionConnected;
-    public event EventHandler<SessionDisconnectedEventArgs> SessionDisconnected;
-    public event EventHandler<PipeMessageReceivedEventArgs> MessageReceived;
+    public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
+    public event EventHandler<SessionDisconnectedEventArgs>? SessionDisconnected;
+    public event EventHandler<PipeMessageReceivedEventArgs>? MessageReceived;
 
-    public bool IsRunning => !_listenerTask.IsCompleted;
+    public bool IsRunning => _listenerTask?.IsCompleted == false;
     public string PipeName { get; } = pipeName;
 
     public async Task StartAsync()

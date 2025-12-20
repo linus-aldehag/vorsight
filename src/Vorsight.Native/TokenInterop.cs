@@ -27,7 +27,7 @@ namespace Vorsight.Native
         /// </summary>
         [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         public static extern bool LookupPrivilegeValue(
-            string lpSystemName,
+            string? lpSystemName,
             string lpName,
             out long lpLuid);
 

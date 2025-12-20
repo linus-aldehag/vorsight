@@ -27,6 +27,13 @@ export interface StatusResponse {
     health: HealthReport;
     uptime: UptimeStatus;
     activity: ActivitySnapshot | null;
+    audit: AuditReport | null;
+}
+
+export interface AuditReport {
+    passed: boolean;
+    warnings: string[];
+    timestamp: string;
 }
 
 export interface ApiResponse {
@@ -63,5 +70,18 @@ export const VorsightApi = {
         });
         if (!res.ok) throw new Error('Network action failed');
         return res.json();
+    },
+
+    async getActivitySummary(): Promise<ActivitySummary> {
+        const res = await fetch(`${BASE_url}/analytics/summary`);
+        if (!res.ok) throw new Error('Failed to fetch analytics');
+        return res.json();
     }
 };
+
+export interface ActivitySummary {
+    totalActiveHours: number;
+    timeline: { hour: number; activeMinutes: number }[];
+    topApps: { name: string; percentage: number }[];
+    lastActive: string;
+}

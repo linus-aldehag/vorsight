@@ -287,16 +287,42 @@ public class Worker : BackgroundService
         {
             if (message.Payload != null && message.Payload.Length > 0)
             {
-                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Screenshots");
+                // Parse metadata for Title
+                string windowTitle = "Unknown";
+                if (!string.IsNullOrEmpty(message.Metadata))
+                {
+                    var parts = message.Metadata.Split('|');
+                    foreach (var part in parts)
+                    {
+                        var kvp = part.Split(':', 2);
+                        if (kvp.Length == 2 && kvp[0] == "Title")
+                        {
+                            windowTitle = kvp[1];
+                            break;
+                        }
+                    }
+                }
+
+                // Sanitize filename
+                var invalidChars = Path.GetInvalidFileNameChars();
+                var sanitizedTitle = new string(windowTitle.Where(ch => !invalidChars.Contains(ch)).ToArray());
+                // Truncate if too long (max 50 chars for title)
+                if (sanitizedTitle.Length > 50) sanitizedTitle = sanitizedTitle.Substring(0, 50);
+                if (string.IsNullOrWhiteSpace(sanitizedTitle)) sanitizedTitle = "Unknown";
+
+                // Create Date-based folder structure
+                var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Screenshots", dateFolder);
                 Directory.CreateDirectory(tempPath);
                 
-                var fileName = $"screenshot-{sessionId}-{message.CreatedUtc.Ticks}.png";
+                // Format: screenshot-{Title}-{Ticks}.png
+                var fileName = $"screenshot-{sanitizedTitle}-{message.CreatedUtc.Ticks}.png";
                 var filePath = Path.Combine(tempPath, fileName);
                 
                 File.WriteAllBytes(filePath, message.Payload);
-                _logger.LogInformation("Screenshot saved to temp: {FilePath}", filePath);
+                _logger.LogInformation("Screenshot saved: {FilePath}", filePath);
                 
-                // Enqueue for upload
+                // Enqueue for upload (Smart upload will preserve folder structure)
                 _uploadQueueProcessor.EnqueueFileAsync(filePath, CancellationToken.None);
                 
                 // Record success
