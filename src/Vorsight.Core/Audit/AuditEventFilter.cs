@@ -64,12 +64,12 @@ public class AuditEventFilter
         public const int SpaAuditingFailure = 4675;
     }
 
-    public string FilterId { get; set; }
+    public required string FilterId { get; set; }
     public EventLogSource Source { get; set; }
     public int EventId { get; set; }
-    public string Description { get; set; }
+    public required string Description { get; set; }
     public bool IsEnabled { get; set; }
-    public string TargetUsername { get; set; }
+    public string? TargetUsername { get; set; }
     public DateTime CreatedUtc { get; set; }
 
     /// <summary>
@@ -87,7 +87,6 @@ public class AuditEventFilter
 
     public AuditEventFilter()
     {
-        FilterId = Guid.NewGuid().ToString();
         CreatedUtc = DateTime.UtcNow;
         IsEnabled = true;
     }
@@ -96,6 +95,7 @@ public class AuditEventFilter
     {
         return new AuditEventFilter
         {
+            FilterId = Guid.NewGuid().ToString(),
             Description = "Admin Account Creation Detected",
             Source = EventLogSource.Security,
             EventId = CriticalEventIds.UserAccountCreated,
@@ -108,6 +108,7 @@ public class AuditEventFilter
     {
         return new AuditEventFilter
         {
+            FilterId = Guid.NewGuid().ToString(),
             Description = "Global Group Membership Change",
             Source = EventLogSource.Security,
             EventId = CriticalEventIds.GroupMembershipAdded,

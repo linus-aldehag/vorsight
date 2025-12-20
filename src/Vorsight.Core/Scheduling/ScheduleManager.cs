@@ -20,13 +20,13 @@ namespace Vorsight.Core.Scheduling
         private readonly ILogger<ScheduleManager> _logger;
         private readonly string _schedulePath;
         private readonly ConcurrentDictionary<string, AccessSchedule> _schedules = new();
-        private CancellationTokenSource _enforcementCts;
-        private Task _enforcementTask;
+        private CancellationTokenSource? _enforcementCts;
+        private Task? _enforcementTask;
         private bool _disposed;
         private bool _isEnforcementRunning;
 
-        public event EventHandler<AccessThresholdEventArgs> AccessTimeExpiring;
-        public event EventHandler<AccessThresholdEventArgs> AccessTimeExpired;
+        public event EventHandler<AccessThresholdEventArgs>? AccessTimeExpiring;
+        public event EventHandler<AccessThresholdEventArgs>? AccessTimeExpired;
 
         public bool IsEnforcementRunning => _isEnforcementRunning;
 

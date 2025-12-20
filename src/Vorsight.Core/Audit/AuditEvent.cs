@@ -5,11 +5,11 @@
 /// </summary>
 public record AuditEvent
 {
-    public string EventId { get; set; }
-    public string EventType { get; set; }
-    public string Username { get; set; }
+    public required string EventId { get; set; }
+    public required string EventType { get; set; }
+    public required string Username { get; set; }
     public DateTime Timestamp { get; set; }
-    public string Details { get; set; }
+    public required string Details { get; set; }
     public bool IsFlagged { get; set; }
-    public string SourceLogName { get; set; }
+    public required string SourceLogName { get; set; }
 }
