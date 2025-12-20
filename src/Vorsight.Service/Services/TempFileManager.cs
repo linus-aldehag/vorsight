@@ -9,6 +9,11 @@ public interface ITempFileManager
     /// Starts the periodic cleanup process
     /// </summary>
     void StartPeriodicCleanup(CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Gets the temp path for this machine
+    /// </summary>
+    string GetTempPath();
 }
 
 /// <summary>
@@ -27,6 +32,8 @@ public class TempFileManager(
     
     private static readonly TimeSpan MinAgeForRetry = TimeSpan.FromMinutes(5);
 
+    public string GetTempPath() => _tempPath;
+    
     public void StartPeriodicCleanup(CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Starting periodic cleanup (cleanup every {CleanupInterval}, retry every {RetryInterval})", 

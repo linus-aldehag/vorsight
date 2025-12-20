@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Vorsight.Native\Vorsight.Native.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="client_secrets.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('client_secrets.json')" />
+  </ItemGroup>
+
 </Project>

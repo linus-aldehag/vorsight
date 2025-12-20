@@ -52,6 +52,7 @@ try
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
+    builder.Services.AddSingleton<Vorsight.Core.Settings.ISettingsManager, Vorsight.Core.Settings.SettingsManager>();
 
     // Add hosted service
     builder.Services.AddHostedService<Worker>();

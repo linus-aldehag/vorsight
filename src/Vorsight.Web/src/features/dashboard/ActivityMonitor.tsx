@@ -52,7 +52,11 @@ export function ActivityMonitor({ activity }: ActivityMonitorProps) {
                 </div>
 
                 <Text size="xs" c="dimmed" mt="md">
-                    Last snapshot: {new Date(activity.timestamp).toLocaleTimeString()}
+                    Last snapshot: {new Date(activity.timestamp).toLocaleString('sv-SE', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    })}
                 </Text>
             </Stack>
         </Card>

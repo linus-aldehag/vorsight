@@ -293,7 +293,7 @@ namespace Vorsight.Core.Scheduling
                             else if (!schedule.IsAccessAllowedNow())
                             {
                                 // Access time expired or outside window
-                                _logger.LogWarning("Access window closed for {ChildUsername}", 
+                                _logger.LogWarning("Access denied for {ChildUsername} (Outside Allowed Hours)", 
                                     schedule.ChildUsername);
 
                                 await ForceLogoffAsync(schedule.ChildUsername);

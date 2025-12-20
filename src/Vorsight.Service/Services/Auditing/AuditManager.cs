@@ -60,16 +60,20 @@ public class AuditManager : IAuditManager
                 warnings.Add("Google Drive ParentFolderId is missing in configuration.");
             }
 
-            // 2. Check Agent Binary
-            var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
-            if (!File.Exists(agentPath))
+            // Check if Agent executable exists
+            var agentPath = _config.GetValue<string>("Agent:ExecutablePath");
+            if (string.IsNullOrEmpty(agentPath) || !File.Exists(agentPath))
             {
-                // Try dev path
-                var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"));
-                 if (!File.Exists(devPath))
-                 {
-                     warnings.Add("Agent executable (wuapihost.exe) not found.");
-                 }
+                // Try fallback paths
+                var fallbackPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
+                if (!File.Exists(fallbackPath))
+                {
+                    var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"));
+                    if (!File.Exists(devPath))
+                    {
+                        warnings.Add("Agent executable not found.");
+                    }
+                }
             }
 
             // 3. Check Disk Space (Generic check on Temp path)

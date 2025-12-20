@@ -13,17 +13,19 @@ public interface IActivityCoordinator
 
 public class ActivityCoordinator(
     ILogger<ActivityCoordinator> logger,
+    ILoggerFactory loggerFactory,
     IConfiguration config,
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
-    Services.Analytics.IActivityRepository activityRepository)
+    Services.Analytics.IActivityRepository activityRepository,
+    Vorsight.Core.Settings.ISettingsManager settingsManager)
     : IActivityCoordinator
 {
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly INamedPipeServer _ipcServer = ipcServer;
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
     private readonly Services.Analytics.IActivityRepository _activityRepository = activityRepository;
-    private readonly int _screenshotIntervalMinutes = config.GetValue("Activity:ScreenshotIntervalMinutes", 5);
-    private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(5);
+    private readonly Vorsight.Core.Settings.ISettingsManager _settingsManager = settingsManager;
     private string _lastWindowTitle = string.Empty;
     private DateTime _lastTimedScreenshot = DateTime.MinValue;
     private DateTime _lastPollTime = DateTime.MinValue;
@@ -57,42 +59,66 @@ public class ActivityCoordinator(
 
     public async Task StartMonitoringAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("Activity monitoring started. Interval: {Interval}m", _screenshotIntervalMinutes);
+        var monitorLogger = _loggerFactory.CreateLogger<ActivityCoordinator>();
+        
+        // Validate agent executable exists before starting monitoring
+        var agentPath = ResolveAgentPath();
+        if (string.IsNullOrEmpty(agentPath))
+        {
+            monitorLogger.LogWarning("Agent executable not found at startup. Activity monitoring will be disabled.");
+            monitorLogger.LogWarning("Configure Agent:ExecutablePath in appsettings.json to enable activity monitoring. BaseDir: {Base}", AppContext.BaseDirectory);
+            
+            // Wait for cancellation instead of spinning with warnings
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                monitorLogger.LogInformation("Activity monitoring stopped (agent not configured)");
+            }
+            return;
+        }
+
+        monitorLogger.LogInformation("Activity monitoring started with agent: {AgentPath}", agentPath);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
+                // Get current settings
+                var settings = await _settingsManager.GetSettingsAsync();
+                
+                if (!settings.IsMonitoringEnabled)
+                {
+                    // Monitoring disabled, just wait
+                    await Task.Delay(5000, cancellationToken);
+                    continue;
+                }
+
                 var now = DateTime.UtcNow;
+                var pollInterval = TimeSpan.FromSeconds(settings.PingIntervalSeconds);
+                var screenshotInterval = TimeSpan.FromSeconds(settings.ScreenshotIntervalSeconds);
 
                 // Poll Agent for Activity
-                if (now - _lastPollTime > _pollInterval)
+                if (now - _lastPollTime > pollInterval)
                 {
                     _lastPollTime = now;
-                    // Try to resolve agent path
-                    var agentPath = ResolveAgentPath();
-
-                    if (!string.IsNullOrEmpty(agentPath))
-                    {
-            _commandExecutor.RunCommandAsUser(agentPath, "activity");
-                    }
-                    else
-                    {
-                         logger.LogWarning("Agent executable not found. BaseDir: {Base}", AppContext.BaseDirectory);
-                    }
+                    // Agent path already validated at startup
+                    _commandExecutor.RunCommandAsUser(agentPath, "activity");
                 }
 
                 // Check for Timed Screenshot
-                if (now - _lastTimedScreenshot > TimeSpan.FromMinutes(_screenshotIntervalMinutes) && _latestSnapshot != null)
+                if (now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
                 {
-                    logger.LogDebug("Timed interval elapsed");
+                    monitorLogger.LogDebug("Timed interval elapsed");
                     _lastTimedScreenshot = now;
                     await RequestScreenshotAsync("Timed", _latestSnapshot.Value);
                 }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error in activity monitoring loop");
+                monitorLogger.LogError(ex, "Error in activity monitoring loop");
             }
 
             try
@@ -105,7 +131,7 @@ public class ActivityCoordinator(
             }
         }
         
-        logger.LogInformation("Activity monitoring stopped");
+        monitorLogger.LogInformation("Activity monitoring stopped");
     }
 
     public async Task RequestManualScreenshotAsync(string source)
@@ -145,15 +171,37 @@ public class ActivityCoordinator(
 
     private string ResolveAgentPath()
     {
-         var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
-         if (!File.Exists(agentPath))
-         {
-              // Fallback for dev environment structure
-              var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"));
-              if (File.Exists(devPath)) agentPath = devPath;
-         }
-         return File.Exists(agentPath) ? agentPath : string.Empty;
+        // First, try the configured path
+        var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
+        if (!string.IsNullOrEmpty(configuredPath) && File.Exists(configuredPath))
+        {
+            return configuredPath;
+        }
+
+        // Fallback 1: Look for wuapihost.exe in the same directory (production)
+        var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
+        if (File.Exists(agentPath))
+        {
+            return agentPath;
+        }
+
+        // Fallback 2: Look for Vorsight.Agent.exe in dev environment
+        var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"));
+        if (File.Exists(devPath))
+        {
+            return devPath;
+        }
+
+        // Fallback 3: Look for wuapihost.exe in dev environment (if renamed manually)
+        var devPathRenamed = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"));
+        if (File.Exists(devPathRenamed))
+        {
+            return devPathRenamed;
+        }
+
+        return string.Empty;
     }
+
 
     public ActivitySnapshot? GetCurrentActivity() => _latestSnapshot;
 }

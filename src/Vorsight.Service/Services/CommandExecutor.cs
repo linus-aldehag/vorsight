@@ -30,7 +30,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c {command} {arguments}",
+                    Arguments = $"/c \"\"{command}\" {arguments}\"",  // Quote the command to prevent PATH resolution
                     UseShellExecute = false,
                     CreateNoWindow = true // Or false if we want to see it
                 };
