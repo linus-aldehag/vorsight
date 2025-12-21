@@ -1,67 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
-     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
-  
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <!-- Property definitions for user input -->
+    <!-- Properties for user input (no empty values in v5) -->
     <Property Id="SERVER_HOST" Value="localhost" />
     <Property Id="SERVER_PORT" Value="3000" />
-    <Property Id="PRESHARED_KEY" Value="" />
-    <Property Id="GDRIVE_FOLDER_ID" Value="" />
-    
-    <!-- Custom dialog for configuration -->
+    <Property Id="PRESHARED_KEY" Secure="yes" />
+    <Property Id="GDRIVE_FOLDER_ID" />
+
+    <!-- Custom Dialog for Configuration -->
     <UI>
-      <Dialog Id="ConfigDialog" Width="370" Height="270" Title="Vorsight Configuration">
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Transparent="yes">
-          <Text>{\WixUI_Font_Title}Server Configuration</Text>
-        </Control>
+      <Dialog Id="ConfigDialog" Width="370" Height="270" Title="Vörsight Configuration">
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Text="{\WixUI_Font_Title}Server Configuration" Transparent="yes" />
         
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="30">
-          <Text>Please configure the connection to your Vorsight server. The pre-shared key is required for secure communication.</Text>
-        </Control>
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="30" Text="Please configure the connection to your Vörsight server. The pre-shared key is required for secure communication." />
         
         <!-- Server Host -->
-        <Control Id="ServerHostLabel" Type="Text" X="25" Y="60" Width="100" Height="15">
-          <Text>Server Hostname/IP:</Text>
-        </Control>
+        <Control Id="ServerHostLabel" Type="Text" X="25" Y="60" Width="100" Height="15" Text="Server Hostname/IP:" />
         <Control Id="ServerHostEdit" Type="Edit" X="25" Y="75" Width="320" Height="18" Property="SERVER_HOST" />
         
         <!-- Server Port -->
-        <Control Id="ServerPortLabel" Type="Text" X="25" Y="100" Width="100" Height="15">
-          <Text>Server Port:</Text>
-        </Control>
+        <Control Id="ServerPortLabel" Type="Text" X="25" Y="100" Width="100" Height="15" Text="Server Port:" />
         <Control Id="ServerPortEdit" Type="Edit" X="25" Y="115" Width="100" Height="18" Property="SERVER_PORT" />
         
         <!-- Pre-shared Key -->
-        <Control Id="PskLabel" Type="Text" X="25" Y="140" Width="100" Height="15">
-          <Text>Pre-Shared Key (Required):</Text>
-        </Control>
+        <Control Id="PskLabel" Type="Text" X="25" Y="140" Width="100" Height="15" Text="Pre-Shared Key (Required):" />
         <Control Id="PskEdit" Type="Edit" X="25" Y="155" Width="320" Height="18" Property="PRESHARED_KEY" Password="yes" />
         
         <!-- Google Drive Folder ID (Optional) -->
-        <Control Id="GDriveFolderIdLabel" Type="Text" X="25" Y="180" Width="150" Height="15">
-          <Text>Google Drive Folder ID (Optional):</Text>
-        </Control>
+        <Control Id="GDriveFolderIdLabel" Type="Text" X="25" Y="180" Width="150" Height="15" Text="Google Drive Folder ID (Optional):" />
         <Control Id="GDriveFolderIdEdit" Type="Edit" X="25" Y="195" Width="320" Height="18" Property="GDRIVE_FOLDER_ID" />
         
         <!-- Navigation buttons -->
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
-          <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+          <Publish Event="NewDialog" Value="InstallDirDlg" />
         </Control>
-        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
-          <Publish Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-          <!-- Validate PSK is not empty -->
-          <Condition Action="disable">
-            <![CDATA[PRESHARED_KEY = ""]]>
-          </Condition>
-          <Condition Action="enable">
-            <![CDATA[PRESHARED_KEY <> ""]]>
-          </Condition>
+        
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next" Disabled="yes">
+          <Publish Event="NewDialog" Value="VerifyReadyDlg" Condition="PRESHARED_KEY" />
+          <Condition Action="enable">PRESHARED_KEY</Condition>
+          <Condition Action="disable">NOT PRESHARED_KEY</Condition>
         </Control>
+        
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
-          <Publish Event="SpawnDialog" Value="CancelDlg">1</Publish>
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
         </Control>
       </Dialog>
     </UI>
   </Fragment>
-</Wix>
+</Include>
