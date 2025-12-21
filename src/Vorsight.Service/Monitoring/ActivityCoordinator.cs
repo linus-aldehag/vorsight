@@ -1,7 +1,10 @@
 using Vorsight.Core.IPC;
 using Vorsight.Native;
 
-namespace Vorsight.Service.Services;
+using Vorsight.Service.SystemOperations;
+using Vorsight.Service.Server;
+
+namespace Vorsight.Service.Monitoring;
 
 public interface IActivityCoordinator
 {

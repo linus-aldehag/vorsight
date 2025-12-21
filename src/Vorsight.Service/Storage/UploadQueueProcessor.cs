@@ -1,10 +1,13 @@
 using System.Threading.Tasks.Dataflow;
 
-namespace Vorsight.Service.Services;
+using Vorsight.Service.SystemOperations;
+using Vorsight.Service.Monitoring;
 
 /// <summary>
 /// Handles processing of screenshot uploads from a queue
 /// </summary>
+namespace Vorsight.Service.Storage;
+
 public interface IUploadQueueProcessor
 {
     /// <summary>

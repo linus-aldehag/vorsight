@@ -1,7 +1,7 @@
-using Vorsight.Service.Services;
+using Vorsight.Service.Storage;
 using System.Text;
 
-namespace Vorsight.Service.Services.Auditing;
+namespace Vorsight.Service.Auditing;
 
 public class AuditReport
 {

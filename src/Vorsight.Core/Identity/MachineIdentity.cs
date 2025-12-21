@@ -39,13 +39,14 @@ public static class MachineIdentity
             var guid = new Guid(hash.Take(16).ToArray());
             return guid.ToString();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fallback to machine name + random GUID
             return $"{Environment.MachineName}-{Guid.NewGuid()}";
         }
     }
     
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static string? GetCpuId()
     {
         try
@@ -60,6 +61,7 @@ public static class MachineIdentity
         return null;
     }
     
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static string? GetMotherboardSerial()
     {
         try

@@ -1,7 +1,7 @@
 using System.Threading.Tasks.Dataflow;
 using Timer = System.Threading.Timer;
 
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.SystemOperations;
 
 /// <summary>
 /// Interface for coordinating graceful shutdown of the application

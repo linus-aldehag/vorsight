@@ -58,8 +58,8 @@ public interface INamedPipeServer : IDisposable
 /// </summary>
 public class PipeMessageReceivedEventArgs : EventArgs
 {
-    public PipeMessage Message { get; set; }
-    public uint SessionId { get; set; }
+    public required PipeMessage Message { get; set; }
+    public required uint SessionId { get; set; }
 }
 
 /// <summary>
@@ -67,8 +67,8 @@ public class PipeMessageReceivedEventArgs : EventArgs
 /// </summary>
 public class SessionConnectedEventArgs : EventArgs
 {
-    public uint SessionId { get; set; }
-    public string Username { get; set; }
+    public required uint SessionId { get; set; }
+    public string? Username { get; set; }
 }
 
 /// <summary>
@@ -76,6 +76,6 @@ public class SessionConnectedEventArgs : EventArgs
 /// </summary>
 public class SessionDisconnectedEventArgs : EventArgs
 {
-    public uint SessionId { get; set; }
-    public string Reason { get; set; }
+    public required uint SessionId { get; set; }
+    public string? Reason { get; set; }
 }

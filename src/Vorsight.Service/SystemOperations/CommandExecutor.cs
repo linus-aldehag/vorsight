@@ -1,6 +1,6 @@
 using Vorsight.Native;
 
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.SystemOperations;
 
 public interface ICommandExecutor
 {
@@ -87,9 +87,9 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     // 5. Create Process as User
                     if (Vorsight.Native.ProcessHelper.TryCreateProcessAsUser(
                         hUserToken,
-                        null, // Application Name
+                        null!, // Application Name
                         $"\"{command}\" {arguments}", // Command Line
-                        null, // Working Directory (default)
+                        null!, // Working Directory (default)
                         out var pid))
                     {
                         logger.LogInformation("Successfully started process {Pid} as user", pid);
