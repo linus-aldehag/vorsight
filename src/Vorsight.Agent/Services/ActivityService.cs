@@ -22,7 +22,8 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
             {
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 SessionId = sessionId,
-                ActiveWindow = activeWindow
+                ActiveWindow = activeWindow,
+                ProcessName = snapshot.ProcessName
             };
 
             // Log locally for debugging

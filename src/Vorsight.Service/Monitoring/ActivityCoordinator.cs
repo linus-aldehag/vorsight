@@ -29,44 +29,68 @@ public class ActivityCoordinator(
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
     private readonly Vorsight.Core.Settings.ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
-    private string _lastWindowTitle = string.Empty;
+    private string _currentWindow = string.Empty;
+    private string _currentProcess = string.Empty;
+    private DateTime _currentActivityStart = DateTime.MinValue;
     private DateTime _lastTimedScreenshot = DateTime.MinValue;
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
 
     public void UpdateActivity(Vorsight.Core.Models.ActivityData data)
     {
-        // Convert ActivityData to Snapshot
-        var snapshot = new ActivitySnapshot
-        {
-            Timestamp = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime,
-            ActiveWindowTitle = data.ActiveWindow
-        };
+        var now = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime;
 
-        _latestSnapshot = snapshot;
-        
-        // Send activity to server
-        if (_serverConnection.IsConnected)
+        // Initialize tracking if needed
+        if (_currentActivityStart == DateTime.MinValue)
         {
-            _ = _serverConnection.SendActivityAsync(new
+            _currentWindow = data.ActiveWindow;
+            _currentProcess = data.ProcessName;
+            _currentActivityStart = now;
+        }
+
+        // Check if window changed
+        if (data.ActiveWindow != _currentWindow)
+        {
+            var duration = (int)(now - _currentActivityStart).TotalSeconds;
+
+            // Send PREVIOUS activity if it had a meaningful duration
+            if (_serverConnection.IsConnected && duration > 0)
             {
-                timestamp = snapshot.Timestamp,
-                activeWindow = snapshot.ActiveWindowTitle,
-                processName = "", // TODO: Extract from window title
-                duration = 0
-            });
+                _ = _serverConnection.SendActivityAsync(new
+                {
+                    timestamp = _currentActivityStart,
+                    activeWindow = _currentWindow,
+                    processName = _currentProcess,
+                    duration = duration
+                });
+            }
+
+            logger.LogDebug("Activity changed: '{Old}' ({Dur}s) -> '{New}'", _currentWindow, duration, data.ActiveWindow);
+
+            // Trigger Screenshot on Window Change
+            if (!string.IsNullOrEmpty(data.ActiveWindow))
+            {
+                _ = RequestScreenshotAsync("WindowChange", new ActivitySnapshot 
+                { 
+                    ActiveWindowTitle = data.ActiveWindow,
+                    ProcessName = data.ProcessName,
+                    Timestamp = now 
+                });
+            }
+
+            // Update state
+            _currentWindow = data.ActiveWindow;
+            _currentProcess = data.ProcessName;
+            _currentActivityStart = now;
         }
 
-        // Check for Window Change immediately upon receiving report
-        if (!string.IsNullOrEmpty(snapshot.ActiveWindowTitle) && 
-            snapshot.ActiveWindowTitle != _lastWindowTitle)
+        // Always update latest snapshot for Heartbeat/Dashboard
+        _latestSnapshot = new ActivitySnapshot
         {
-            logger.LogDebug("Window changed (Agent): '{Old}' -> '{New}'", _lastWindowTitle, snapshot.ActiveWindowTitle);
-            _lastWindowTitle = snapshot.ActiveWindowTitle;
-            
-            // Fire and forget
-            _ = RequestScreenshotAsync("WindowChange", snapshot);
-        }
+            Timestamp = now,
+            ActiveWindowTitle = data.ActiveWindow,
+            ProcessName = data.ProcessName
+        };
     }
 
     public async Task StartMonitoringAsync(CancellationToken cancellationToken)
@@ -169,6 +193,7 @@ public class ActivityCoordinator(
         var snapshot = _latestSnapshot ?? new ActivitySnapshot 
         { 
             ActiveWindowTitle = "Manual Trigger", 
+            ProcessName = "System",
             Timestamp = DateTime.UtcNow 
         };
         

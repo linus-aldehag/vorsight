@@ -9,6 +9,8 @@ import { useMachine } from './context/MachineContext';
 import { LayoutDashboard, Settings, Image as ImageIcon } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
+import { ActivityPage } from './features/activity/ActivityPage';
+import { Activity } from 'lucide-react';
 
 export function App() {
     return (
@@ -115,6 +117,14 @@ function MainLayout() {
                         <ImageIcon size={16} />
                         GALLERY
                     </Button>
+                    <Button
+                        variant={currentView === 'activity' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('activity')}
+                        className={cn("gap-2", currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                    >
+                        <Activity size={16} />
+                        ACTIVITY
+                    </Button>
                 </div>
             </div>
 
@@ -123,6 +133,7 @@ function MainLayout() {
                 {currentView === 'dashboard' && status && <Dashboard status={status} />}
                 {currentView === 'settings' && <ScheduleManager />}
                 {currentView === 'gallery' && <ScreenshotGallery />}
+                {currentView === 'activity' && <ActivityPage />}
             </main>
         </div>
     );
