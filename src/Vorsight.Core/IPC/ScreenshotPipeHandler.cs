@@ -121,7 +121,7 @@ namespace Vorsight.Core.IPC
                 {
                     Message = message,
                     SessionId = message.SessionId,
-                    ScreenshotData = message.Payload,
+                    ScreenshotData = message.Payload!,
                     Timestamp = message.CreatedUtc
                 });
             }
@@ -139,7 +139,7 @@ namespace Vorsight.Core.IPC
         /// <summary>
         /// Retrieves the most recent screenshot for a session.
         /// </summary>
-        public byte[] GetLatestScreenshot(uint sessionId)
+        public byte[]? GetLatestScreenshot(uint sessionId)
         {
             if (_screenshotBuffers.TryGetValue(sessionId, out var buffer))
             {
@@ -176,23 +176,26 @@ namespace Vorsight.Core.IPC
                 _pipe = pipe;
             }
 
-            public async Task<PipeMessage> ReadMessageAsync()
+            public async Task<PipeMessage?> ReadMessageAsync()
             {
                 try
                 {
                     byte[] lengthBuffer = new byte[4];
-                    await _pipe.ReadAsync(lengthBuffer, 0, 4);
+                    int bytesRead = _pipe.Read(lengthBuffer, 0, 4);
+                    if (bytesRead != 4)
+                        return null!;
+                    
                     int messageLength = BitConverter.ToInt32(lengthBuffer, 0);
 
                     if (messageLength <= 0 || messageLength > 10 * 1024 * 1024) // 10MB max
-                        return null;
+                        return null!;
 
                     byte[] messageData = new byte[messageLength];
                     int totalRead = 0;
 
                     while (totalRead < messageLength)
                     {
-                        int read = await _pipe.ReadAsync(messageData, totalRead, messageLength - totalRead);
+                        int read = _pipe.Read(messageData, totalRead, messageLength - totalRead);
                         if (read == 0) break;
                         totalRead += read;
                     }
@@ -206,7 +209,7 @@ namespace Vorsight.Core.IPC
                 }
             }
 
-            private PipeMessage DeserializeMessage(byte[] data)
+            private PipeMessage? DeserializeMessage(byte[] data)
             {
                 // TODO: Implement proper serialization (e.g., using System.Text.Json or protobuf)
                 return new PipeMessage();
@@ -236,7 +239,7 @@ namespace Vorsight.Core.IPC
             {
                 lock (_lock)
                 {
-                    _buffer[_currentIndex] = message.Payload;
+                    _buffer[_currentIndex] = message.Payload!;
                     _currentIndex = (_currentIndex + 1) % _buffer.Length;
                 }
             }

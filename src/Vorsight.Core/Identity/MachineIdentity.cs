@@ -9,6 +9,7 @@ public static class MachineIdentity
     /// <summary>
     /// Generates a stable, hardware-based machine ID
     /// </summary>
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public static string GenerateMachineId()
     {
         try

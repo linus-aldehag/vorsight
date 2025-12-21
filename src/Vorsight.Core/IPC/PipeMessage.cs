@@ -69,7 +69,7 @@ public class PipeMessage
         CreatedUtc = DateTime.UtcNow;
     }
 
-    public PipeMessage(MessageType type, uint sessionId, string userSid = null)
+    public PipeMessage(MessageType type, uint sessionId, string? userSid = null)
         : this()
     {
         Type = type;

@@ -29,7 +29,7 @@ namespace Vorsight.Core.Scheduling
 
         public bool IsEnforcementRunning => _isEnforcementRunning;
 
-        public ScheduleManager(ILogger<ScheduleManager> logger, string schedulePath = null)
+        public ScheduleManager(ILogger<ScheduleManager> logger, string? schedulePath = null)
         {
             _logger = logger;
             _schedulePath = schedulePath ?? Path.Combine(
