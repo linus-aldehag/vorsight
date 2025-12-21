@@ -47,7 +47,22 @@ router.post('/register', (req, res) => {
 // Get all machines
 router.get('/', (req, res) => {
     try {
-        const machines = db.prepare('SELECT * FROM machines ORDER BY last_seen DESC').all();
+        const rows = db.prepare('SELECT * FROM machines ORDER BY last_seen DESC').all();
+        const machines = rows.map(row => {
+            const lastSeen = row.last_seen ? new Date(row.last_seen + 'Z') : null; // Ensure UTC interpretation if needed
+            // If last_seen is typically stored as ISO string in 'last_seen' column
+            // 60 seconds timeout for online status
+            const isOnline = lastSeen && (Date.now() - new Date(row.last_seen).getTime() < 60 * 1000);
+
+            return {
+                id: row.id,
+                name: row.name,
+                hostname: row.hostname,
+                lastSeen: row.last_seen,
+                isOnline: !!isOnline,
+                metadata: row.metadata ? JSON.parse(row.metadata) : {}
+            };
+        });
         res.json(machines);
     } catch (error) {
         console.error('Get machines error:', error);

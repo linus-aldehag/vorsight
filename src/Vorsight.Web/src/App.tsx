@@ -43,22 +43,16 @@ function App() {
             padding="md"
         >
             <AppShell.Header>
-                <Group h="100%" px="md" justify="space-between">
-                    <Group>
+                <Group h="100%" px="md">
+                    <Group style={{ flex: 1 }}>
                         <Title order={2}>VÖRSIGHT</Title>
                         <Badge color="blue" variant="light">BETA</Badge>
                     </Group>
 
                     <MachineSelector />
 
-                    <Group>
-                        <Badge
-                            size="lg"
-                            color={status.uptime.isTracking ? 'green' : 'orange'}
-                            variant="dot"
-                        >
-                            {status.uptime.isTracking ? 'ONLINE' : 'IDLE'}
-                        </Badge>
+                    <Group style={{ flex: 1 }} justify="flex-end">
+                        {/* Right side placeholder */}
                     </Group>
                 </Group>
             </AppShell.Header>

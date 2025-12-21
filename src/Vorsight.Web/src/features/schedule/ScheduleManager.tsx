@@ -162,18 +162,18 @@ export function ScheduleManager() {
                 <Stack>
                     {/* Screenshot Monitoring Section */}
                     <Paper p="md" withBorder>
-                        <Group justify="space-between" mb="md">
+                        <Group mb="md">
+                            <Switch
+                                size="lg"
+                                checked={screenshotEnabled}
+                                onChange={(e) => setScreenshotEnabled(e.currentTarget.checked)}
+                            />
                             <div>
                                 <Title order={4}>Screenshot Monitoring</Title>
                                 <Text size="sm" c="dimmed">
                                     Automatically capture screenshots at regular intervals
                                 </Text>
                             </div>
-                            <Switch
-                                size="lg"
-                                checked={screenshotEnabled}
-                                onChange={(e) => setScreenshotEnabled(e.currentTarget.checked)}
-                            />
                         </Group>
 
                         <Collapse in={screenshotEnabled}>
@@ -196,18 +196,18 @@ export function ScheduleManager() {
 
                     {/* Activity Tracking Section */}
                     <Paper p="md" withBorder>
-                        <Group justify="space-between" mb="md">
+                        <Group mb="md">
+                            <Switch
+                                size="lg"
+                                checked={activityTrackingEnabled}
+                                onChange={(e) => setActivityTrackingEnabled(e.currentTarget.checked)}
+                            />
                             <div>
                                 <Title order={4}>Activity Tracking</Title>
                                 <Text size="sm" c="dimmed">
                                     Monitor active windows and send status updates
                                 </Text>
                             </div>
-                            <Switch
-                                size="lg"
-                                checked={activityTrackingEnabled}
-                                onChange={(e) => setActivityTrackingEnabled(e.currentTarget.checked)}
-                            />
                         </Group>
 
                         <Collapse in={activityTrackingEnabled}>
@@ -230,18 +230,18 @@ export function ScheduleManager() {
 
                     {/* Schedule Enforcement Section */}
                     <Paper p="md" withBorder>
-                        <Group justify="space-between" mb="md">
+                        <Group mb="md">
+                            <Switch
+                                size="lg"
+                                checked={scheduleEnforcementEnabled}
+                                onChange={(e) => setScheduleEnforcementEnabled(e.currentTarget.checked)}
+                            />
                             <div>
                                 <Title order={4}>Schedule Enforcement</Title>
                                 <Text size="sm" c="dimmed">
                                     Restrict access to specific time windows
                                 </Text>
                             </div>
-                            <Switch
-                                size="lg"
-                                checked={scheduleEnforcementEnabled}
-                                onChange={(e) => setScheduleEnforcementEnabled(e.currentTarget.checked)}
-                            />
                         </Group>
 
                         <Collapse in={scheduleEnforcementEnabled}>
