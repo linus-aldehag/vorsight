@@ -12,7 +12,9 @@ public interface IServerConnection
     Task SendHeartbeatAsync(object state);
     Task SendActivityAsync(object activity);
     Task SendScreenshotNotificationAsync(object screenshot);
+    Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     bool IsConnected { get; }
+    event EventHandler<CommandReceivedEventArgs>? CommandReceived;
 }
 
 public class ServerConnection : IServerConnection
@@ -27,6 +29,7 @@ public class ServerConnection : IServerConnection
     private const string ServerUrl = "http://localhost:3000"; // TODO: Make configurable
     
     public bool IsConnected => _isConnected;
+    public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     
     public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory)
     {
@@ -116,6 +119,31 @@ public class ServerConnection : IServerConnection
                 var error = response.GetValue<JsonElement>();
                 _logger.LogError("Server error: {Error}", error);
             });
+
+            _socket.On("server:command", response =>
+            {
+                try 
+                {
+                    var data = response.GetValue<JsonElement>();
+                    if (data.TryGetProperty("type", out var typeElement))
+                    {
+                        var type = typeElement.GetString();
+                        if (!string.IsNullOrEmpty(type))
+                        {
+                            CommandReceived?.Invoke(this, new CommandReceivedEventArgs 
+                            { 
+                                CommandType = type,
+                                Data = data
+                            });
+                            _logger.LogInformation("Received command from server: {Type}", type);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse server command");
+                }
+            });
             
             _socket.OnDisconnected += (sender, e) =>
             {
@@ -165,6 +193,32 @@ public class ServerConnection : IServerConnection
                 machineId = _machineId,
                 screenshot
             });
+        }
+    }
+
+    public async Task<string?> UploadFileAsync(byte[] fileData, string fileName)
+    {
+        try
+        {
+            using var content = new MultipartFormDataContent();
+            using var fileContent = new ByteArrayContent(fileData);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            content.Add(fileContent, "file", fileName);
+
+            var response = await _httpClient.PostAsync("/api/media/upload", content);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+            if (result.TryGetProperty("id", out var idElement))
+            {
+                return idElement.GetString();
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload file to server");
+            return null;
         }
     }
     

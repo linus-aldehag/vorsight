@@ -1,16 +1,19 @@
 import { Button, Group, Card, Title, Stack } from '@mantine/core';
 import { useState } from 'react';
 import { VorsightApi } from '../../api/client';
+import { useMachine } from '../../context/MachineContext';
 
 export function SystemControls() {
+    const { selectedMachine } = useMachine();
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<string | null>(null);
 
     const handleSystem = async (action: 'shutdown' | 'logout') => {
+        if (!selectedMachine) return;
         setLoading(true);
         setStatus(`Executing ${action}...`);
         try {
-            const res = await VorsightApi.systemAction(action);
+            const res = await VorsightApi.systemAction(action, selectedMachine.id);
             setStatus(res.status);
         } catch (e) {
             setStatus('Failed');

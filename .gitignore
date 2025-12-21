@@ -73,6 +73,7 @@ appsettings.*.local.json
 
 # Local development settings (if not committed)
 appsettings.local.json
+appsettings.Development.json
 
 # Entity Framework
 *.edmx.diagram
@@ -123,4 +124,5 @@ yarn-error.log*
 # Vorsight server data
 src/Vorsight.Server/data/
 
-/src/Vorsight.Web/appsettings.Development.json
+# Server public folder (React build output)
+src/Vorsight.Server/public/
