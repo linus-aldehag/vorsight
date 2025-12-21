@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { VorsightApi, type StatusResponse } from './api/client';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { ScheduleManager } from './features/schedule/ScheduleManager';
@@ -9,10 +10,39 @@ import { LayoutDashboard, Settings, Image as ImageIcon } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 
-function App() {
-    const { selectedMachine } = useMachine();
+export function App() {
+    return (
+        <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/:view" element={<MainLayout />} />
+            <Route path="/:machineId/:view" element={<MainLayout />} />
+        </Routes>
+    );
+}
+
+function MainLayout() {
+    const { machineId, view } = useParams();
+    const navigate = useNavigate();
+    const { selectedMachine, selectMachine } = useMachine();
     const [status, setStatus] = useState<StatusResponse | null>(null);
-    const [activeTab, setActiveTab] = useState('dashboard');
+
+    // Sync URL machineId with context
+    useEffect(() => {
+        if (machineId && selectedMachine?.id !== machineId) {
+            selectMachine(machineId);
+        } else if (!machineId && selectedMachine) {
+            // If no machine in URL but one is selected, update URL
+            navigate(`/${selectedMachine.id}/${view || 'dashboard'}`, { replace: true });
+        }
+    }, [machineId, selectedMachine, view, navigate, selectMachine]);
+
+    // Updates when machine changes in context
+    useEffect(() => {
+        if (selectedMachine && machineId !== selectedMachine.id) {
+            navigate(`/${selectedMachine.id}/${view || 'dashboard'}`);
+        }
+    }, [selectedMachine, machineId, view, navigate]);
+
 
     useEffect(() => {
         if (selectedMachine) {
@@ -33,14 +63,15 @@ function App() {
         }
     };
 
-    if (!status && selectedMachine) {
-        // Initial loading state - could be fancier
-        return (
-            <div className="flex h-screen items-center justify-center bg-background text-primary">
-                <div className="animate-pulse"> INITIALIZING UPLINK... </div>
-            </div>
-        );
-    }
+    const handleNavigation = (newView: string) => {
+        if (selectedMachine) {
+            navigate(`/${selectedMachine.id}/${newView}`);
+        } else {
+            navigate(`/${newView}`);
+        }
+    };
+
+    const currentView = view || 'dashboard';
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col font-mono selection:bg-primary/20">
@@ -61,25 +92,25 @@ function App() {
             <div className="border-b border-white/5 py-2">
                 <div className="container mx-auto px-6 flex gap-2">
                     <Button
-                        variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('dashboard')}
-                        className={cn("gap-2", activeTab === 'dashboard' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        variant={currentView === 'dashboard' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('dashboard')}
+                        className={cn("gap-2", currentView === 'dashboard' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
                         <LayoutDashboard size={16} />
                         DASHBOARD
                     </Button>
                     <Button
-                        variant={activeTab === 'settings' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('settings')}
-                        className={cn("gap-2", activeTab === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        variant={currentView === 'settings' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('settings')}
+                        className={cn("gap-2", currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
                         <Settings size={16} />
                         SETTINGS
                     </Button>
                     <Button
-                        variant={activeTab === 'gallery' ? 'default' : 'ghost'}
-                        onClick={() => setActiveTab('gallery')}
-                        className={cn("gap-2", activeTab === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        variant={currentView === 'gallery' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('gallery')}
+                        className={cn("gap-2", currentView === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
                         <ImageIcon size={16} />
                         GALLERY
@@ -89,12 +120,10 @@ function App() {
 
             {/* Main Content */}
             <main className="flex-1 p-6 container mx-auto overflow-hidden">
-                {activeTab === 'dashboard' && status && <Dashboard status={status} />}
-                {activeTab === 'settings' && <ScheduleManager />}
-                {activeTab === 'gallery' && <ScreenshotGallery />}
+                {currentView === 'dashboard' && status && <Dashboard status={status} />}
+                {currentView === 'settings' && <ScheduleManager />}
+                {currentView === 'gallery' && <ScreenshotGallery />}
             </main>
         </div>
     );
 }
-
-export default App;

@@ -4,7 +4,7 @@ import { useMachine } from '../../context/MachineContext';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { Input } from '../../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
+import { Card } from '../../components/ui/card';
 import { Save, AlertCircle, Clock, Eye, Activity } from 'lucide-react';
 
 export function ScheduleManager() {
@@ -157,104 +157,125 @@ export function ScheduleManager() {
             {schedule && (
                 <div className="space-y-6">
                     {/* Screenshot Monitoring */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
-                            <Switch checked={screenshotEnabled} onCheckedChange={setScreenshotEnabled} />
-                            <div className="space-y-1">
-                                <CardTitle className="text-base flex items-center gap-2">
+                    {/* Screenshot Monitoring */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 pr-0 flex items-start">
+                            <Switch checked={screenshotEnabled} onCheckedChange={setScreenshotEnabled} className="mt-1" />
+                        </div>
+
+                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+
+                        <div className="flex-1 py-6 pr-6 pl-0">
+                            <div className="space-y-1 mb-4">
+                                <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Eye size={16} className="text-primary" />
                                     Screenshot Monitoring
-                                </CardTitle>
-                                <CardDescription>Capture interval customization</CardDescription>
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Capture interval customization</p>
                             </div>
-                        </CardHeader>
-                        {screenshotEnabled && (
-                            <CardContent className="space-y-4 pt-0 pl-[4.5rem]">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Interval (seconds)</label>
-                                    <Input
-                                        type="number"
-                                        value={agentSettings.screenshotIntervalSeconds}
-                                        onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: parseInt(e.target.value) || 60 })}
-                                        min={10}
-                                        max={600}
-                                        className="font-mono bg-background/50"
-                                    />
-                                    <p className="text-xs text-muted-foreground">Range: 10 - 600 seconds</p>
+
+                            {screenshotEnabled && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Interval (seconds)</label>
+                                        <Input
+                                            type="number"
+                                            value={agentSettings.screenshotIntervalSeconds}
+                                            onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: parseInt(e.target.value) || 60 })}
+                                            min={10}
+                                            max={600}
+                                            className="font-mono bg-background/50"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Range: 10 - 600 seconds</p>
+                                    </div>
                                 </div>
-                            </CardContent>
-                        )}
+                            )}
+                        </div>
                     </Card>
 
                     {/* Activity Tracking */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
-                            <Switch checked={activityTrackingEnabled} onCheckedChange={setActivityTrackingEnabled} />
-                            <div className="space-y-1">
-                                <CardTitle className="text-base flex items-center gap-2">
+                    {/* Activity Tracking */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 pr-0 flex items-start">
+                            <Switch checked={activityTrackingEnabled} onCheckedChange={setActivityTrackingEnabled} className="mt-1" />
+                        </div>
+
+                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+
+                        <div className="flex-1 py-6 pr-6 pl-0">
+                            <div className="space-y-1 mb-4">
+                                <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Activity size={16} className="text-primary" />
                                     Activity Tracking
-                                </CardTitle>
-                                <CardDescription>Heartbeat and window monitoring</CardDescription>
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Heartbeat and window monitoring</p>
                             </div>
-                        </CardHeader>
-                        {activityTrackingEnabled && (
-                            <CardContent className="space-y-4 pt-0 pl-[4.5rem]">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Ping Interval (seconds)</label>
-                                    <Input
-                                        type="number"
-                                        value={agentSettings.pingIntervalSeconds}
-                                        onChange={(e) => setAgentSettings({ ...agentSettings, pingIntervalSeconds: parseInt(e.target.value) || 30 })}
-                                        min={5}
-                                        max={300}
-                                        className="font-mono bg-background/50"
-                                    />
-                                    <p className="text-xs text-muted-foreground">Range: 5 - 300 seconds</p>
+
+                            {activityTrackingEnabled && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Ping Interval (seconds)</label>
+                                        <Input
+                                            type="number"
+                                            value={agentSettings.pingIntervalSeconds}
+                                            onChange={(e) => setAgentSettings({ ...agentSettings, pingIntervalSeconds: parseInt(e.target.value) || 30 })}
+                                            min={5}
+                                            max={300}
+                                            className="font-mono bg-background/50"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Range: 5 - 300 seconds</p>
+                                    </div>
                                 </div>
-                            </CardContent>
-                        )}
+                            )}
+                        </div>
                     </Card>
 
                     {/* Schedule Enforcement */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
-                            <Switch checked={scheduleEnforcementEnabled} onCheckedChange={setScheduleEnforcementEnabled} />
-                            <div className="space-y-1">
-                                <CardTitle className="text-base flex items-center gap-2">
+                    {/* Schedule Enforcement */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 pr-0 flex items-start">
+                            <Switch checked={scheduleEnforcementEnabled} onCheckedChange={setScheduleEnforcementEnabled} className="mt-1" />
+                        </div>
+
+                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+
+                        <div className="flex-1 py-6 pr-6 pl-0">
+                            <div className="space-y-1 mb-4">
+                                <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Clock size={16} className="text-primary" />
                                     Access Control
-                                </CardTitle>
-                                <CardDescription>Time window enforcement</CardDescription>
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Time window enforcement</p>
                             </div>
-                        </CardHeader>
-                        {scheduleEnforcementEnabled && (
-                            <CardContent className="space-y-6 pt-0 pl-[4.5rem]">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Start Time (24h)</label>
-                                        <Input
-                                            value={getStartTime(schedule)}
-                                            onChange={(e) => updateStartTime(e.target.value)}
-                                            placeholder="08:00"
-                                            className="font-mono bg-background/50"
-                                        />
+
+                            {scheduleEnforcementEnabled && (
+                                <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Start Time (24h)</label>
+                                            <Input
+                                                value={getStartTime(schedule)}
+                                                onChange={(e) => updateStartTime(e.target.value)}
+                                                placeholder="08:00"
+                                                className="font-mono bg-background/50"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">End Time (24h)</label>
+                                            <Input
+                                                value={getEndTime(schedule)}
+                                                onChange={(e) => updateEndTime(e.target.value)}
+                                                placeholder="22:00"
+                                                className="font-mono bg-background/50"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">End Time (24h)</label>
-                                        <Input
-                                            value={getEndTime(schedule)}
-                                            onChange={(e) => updateEndTime(e.target.value)}
-                                            placeholder="22:00"
-                                            className="font-mono bg-background/50"
-                                        />
-                                    </div>
+                                    <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-4">
+                                        Outside of these hours, the system will enforce logout policies. Ensure critical services are excluded from OS-level enforcement if necessary.
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-4">
-                                    Outside of these hours, the system will enforce logout policies. Ensure critical services are excluded from OS-level enforcement if necessary.
-                                </p>
-                            </CardContent>
-                        )}
+                            )}
+                        </div>
                     </Card>
                 </div>
             )}
