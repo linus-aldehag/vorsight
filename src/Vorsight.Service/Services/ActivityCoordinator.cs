@@ -17,7 +17,6 @@ public class ActivityCoordinator(
     IConfiguration config,
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
-    Services.Analytics.IActivityRepository activityRepository,
     Vorsight.Core.Settings.ISettingsManager settingsManager,
     IServerConnection serverConnection)
     : IActivityCoordinator
@@ -25,7 +24,6 @@ public class ActivityCoordinator(
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly INamedPipeServer _ipcServer = ipcServer;
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
-    private readonly Services.Analytics.IActivityRepository _activityRepository = activityRepository;
     private readonly Vorsight.Core.Settings.ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
     private string _lastWindowTitle = string.Empty;
@@ -35,9 +33,6 @@ public class ActivityCoordinator(
 
     public void UpdateActivity(Vorsight.Core.Models.ActivityData data)
     {
-        // Persist to Repository
-        _activityRepository.AddActivity(data);
-
         // Convert ActivityData to Snapshot
         var snapshot = new ActivitySnapshot
         {
