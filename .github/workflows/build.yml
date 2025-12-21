@@ -46,9 +46,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: |
-          src/Vorsight.Web/package-lock.json
-          src/Vorsight.Server/package-lock.json
+        cache-dependency-path: 'src/**/package-lock.json'
 
     - name: Build React Web App
       working-directory: src/Vorsight.Web
