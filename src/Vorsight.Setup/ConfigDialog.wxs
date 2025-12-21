@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
     <!-- Properties for user input -->
     <Property Id="SERVER_HOST" Value="localhost" />
@@ -32,7 +32,6 @@
         
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next" Disabled="yes">
           <Publish Event="NewDialog" Value="VerifyReadyDlg" Condition="PRESHARED_KEY" />
-          <Publish Event="AddLocal" Value="Next" Condition="PRESHARED_KEY"><![CDATA[1]]></Publish>
           <Publish Event="Enable" Value="Next" Condition="PRESHARED_KEY" />
           <Publish Event="Disable" Value="Next" Condition="NOT PRESHARED_KEY" />
         </Control>
@@ -43,4 +42,4 @@
       </Dialog>
     </UI>
   </Fragment>
-</Wix>
+</Include>

@@ -49,12 +49,18 @@ jobs:
     - name: Build React Web App
       working-directory: src/Vorsight.Web
       run: |
-        npm ci
+        npm install
+        npm run build
+
+    - name: Build Node.js Server
+      working-directory: src/Vorsight.Server
+      run: |
+        npm install
         npm run build
 
     - name: Install Server Dependencies
       working-directory: src/Vorsight.Server
-      run: npm ci --production
+      run: npm install --production
 
     - name: Create Deployment Package
       run: |
