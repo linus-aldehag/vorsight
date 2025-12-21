@@ -33,7 +33,7 @@ namespace Vorsight.Core.Scheduling
         /// <summary>
         /// Gets the global schedule.
         /// </summary>
-        Task<AccessSchedule> GetScheduleAsync();
+        Task<AccessSchedule?> GetScheduleAsync();
 
         /// <summary>
         /// Gets all active schedules.

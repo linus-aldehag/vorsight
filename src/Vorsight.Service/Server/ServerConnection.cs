@@ -39,6 +39,7 @@ public class ServerConnection : IServerConnection
         _httpClient.BaseAddress = new Uri(ServerUrl);
     }
     
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task InitializeAsync()
     {
         try

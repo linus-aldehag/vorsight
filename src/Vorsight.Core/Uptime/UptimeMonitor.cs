@@ -10,7 +10,7 @@ public class UptimeMonitor
     private readonly TimeSpan _threshold = TimeSpan.FromMinutes(5);
     private readonly object _lock = new();
 
-    public UptimeMonitor(string storageDirectory = null)
+    public UptimeMonitor(string? storageDirectory = null)
     {
         // Default to a folder in LocalApplicationData if not specified
         if (string.IsNullOrEmpty(storageDirectory))
@@ -81,14 +81,14 @@ public class UptimeMonitor
                 else
                 {
                     // If in-memory state drifted from file state (e.g. app restart), add new
-                    intervals.Add(new UptimeInterval { Start = _currentStart.Value, End = newEnd });
+                    intervals.Add(new UptimeInterval { Start = _currentStart!.Value, End = newEnd });
                     SaveIntervals(intervals);
                 }
             }
             else
             {
                 // Should have been added by AppendInterval, but just in case
-                intervals.Add(new UptimeInterval { Start = _currentStart.Value, End = newEnd });
+                intervals.Add(new UptimeInterval { Start = _currentStart!.Value, End = newEnd });
                 SaveIntervals(intervals);
             }
         }

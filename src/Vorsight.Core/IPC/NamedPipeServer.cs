@@ -13,7 +13,6 @@ namespace Vorsight.Core.IPC;
 public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = "VorsightIPC")
     : INamedPipeServer
 {
-    private NamedPipeServerStream? _serverStream;
     private CancellationTokenSource? _cancellationTokenSource;
     private Task? _listenerTask;
     private readonly ConcurrentDictionary<uint, NamedPipeServerStream> _sessions = new();
@@ -27,6 +26,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
     public bool IsRunning => _listenerTask?.IsCompleted == false;
     public string PipeName { get; } = pipeName;
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task StartAsync()
     {
         ThrowIfDisposed();
@@ -382,7 +382,6 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         try
         {
             _cancellationTokenSource?.Cancel();
-            _serverStream?.Dispose();
             foreach (var session in _sessions.Values)
             {
                 try { session?.Dispose(); } catch { }

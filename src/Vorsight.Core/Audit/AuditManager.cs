@@ -140,6 +140,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private EventLogWatcher? _securityLogWatcher;
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task StartMonitoringAsync()
     {
         ThrowIfDisposed();
@@ -189,6 +190,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         return "*[System[(EventID=4720 or EventID=4732 or EventID=4728 or EventID=4672)]]"; 
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private void SecurityLogWatcher_EventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
     {
         try
@@ -238,6 +240,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         });
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task StopMonitoringAsync()
     {
         ThrowIfDisposed();
@@ -282,6 +285,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             throw new ObjectDisposedException(nameof(AuditManager));
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public void Dispose()
     {
         if (_disposed)
