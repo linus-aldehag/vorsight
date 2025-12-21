@@ -326,14 +326,15 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     {
         var service = await GetDriveServiceAsync(cancellationToken);
             
-        // Get the directory structure relative to temp path
-        var tempPath = Path.GetTempPath();
-        var relativePath = Path.GetRelativePath(tempPath, Path.GetDirectoryName(filePath) ?? "");
+        // Use /Vorsight/MachineName/YYYY-MM-DD structure
+        var machineName = Environment.MachineName;
+        var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+        var folderPath = $"Vorsight/{machineName}/{dateFolder}";
             
         // Create all necessary folders
-        var folderId = await GetOrCreateFolderAsync(service, relativePath, cancellationToken);
+        var folderId = await GetOrCreateFolderAsync(service, folderPath, cancellationToken);
             
-        _logger.LogInformation("Starting upload of file: {FilePath} to folder: {FolderId}", filePath, folderId);
+        _logger.LogInformation("Starting upload of file: {FilePath} to folder: {FolderPath} ({FolderId})", filePath, folderPath, folderId);
             
         var fileMetadata = new DriveFile
         {

@@ -50,16 +50,6 @@ public class HealthAuditManager : IHealthAuditManager
 
         try
         {
-            // 1. Check Google Drive Connection
-            // We assume GoogleDriveService has a way to check, or we try a lightweight op?
-            // Since we don't have an explicit Test method, we'll rely on the service being initialized.
-            // If we wanted to be robust, we'd add checks. For now, check folder ID configuration.
-            var folderId = _config["GoogleDrive:ParentFolderId"];
-            if (string.IsNullOrEmpty(folderId))
-            {
-                warnings.Add("Google Drive ParentFolderId is missing in configuration.");
-            }
-
             // Check if Agent executable exists
             var agentPath = _config.GetValue<string>("Agent:ExecutablePath");
             if (string.IsNullOrEmpty(agentPath) || !File.Exists(agentPath))

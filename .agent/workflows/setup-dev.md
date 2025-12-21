@@ -30,11 +30,21 @@ Create `src/Vorsight.Service/appsettings.Development.json`:
 
 ```json
 {
+  "Kestrel": {
+    "Endpoints": {
+      "Http": {
+        "Url": "http://localhost:5050"
+      }
+    }
+  },
+  "Server": {
+    "Url": "http://localhost:3000"
+  },
   "Service": {
-    "PresharedKey": "local-dev-psk-change-this"
+    "PresharedKey": "dev-psk-key-change-in-production"
   },
   "Agent": {
-    "ExecutablePath": "C:\\checkout-dir\\vorsight\\src\\Vorsight.Agent\\bin\\Debug\\net10.0-windows\\win-x64\\Vorsight.Agent.exe"
+    "ExecutablePath": "C:\\repos\\vorsight\\src\\Vorsight.Agent\\bin\\Debug\\net10.0-windows\\win-x64\\Vorsight.Agent.exe"
   },
   "IPC": {
     "PipeName": "VorsightIPC_Dev"
