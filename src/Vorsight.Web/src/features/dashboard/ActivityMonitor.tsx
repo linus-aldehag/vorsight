@@ -1,4 +1,5 @@
-import { Card, Text, Stack, Title, Badge, Group } from '@mantine/core';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
 import type { ActivitySnapshot } from '../../api/client';
 
 interface ActivityMonitorProps {
@@ -6,59 +7,66 @@ interface ActivityMonitorProps {
 }
 
 export function ActivityMonitor({ activity }: ActivityMonitorProps) {
-    if (!activity) return <Card><Text>No activity data</Text></Card>;
+    if (!activity) return (
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6">
+                <div className="text-sm text-muted-foreground">No activity data</div>
+            </CardContent>
+        </Card>
+    );
 
     // Creative Status Logic
     const getStatus = (title: string, idleTime: string) => {
         // Parse "00:05:30" format
-        if (idleTime && !idleTime.startsWith("00:00")) return { label: 'AFK / Idle', color: 'yellow' };
+        if (idleTime && !idleTime.startsWith("00:00")) return { label: 'AFK / Idle', variant: 'outline' as const, className: 'text-warning border-warning' };
 
         const t = (title || '').toLowerCase();
-        if (t.includes('code') || t.includes('studio') || t.includes('vim') || t.includes('jetbrains')) return { label: '👨‍💻 Coding', color: 'blue' };
-        if (t.includes('discord') || t.includes('spotify') || t.includes('music')) return { label: '🎵 Chilling', color: 'grape' };
-        if (t.includes('chrome') || t.includes('firefox') || t.includes('edge') || t.includes('brave')) return { label: '🌐 Browsing', color: 'cyan' };
-        if (t.includes('game') || t.includes('steam') || t.includes('hero') || t.includes('league')) return { label: '🎮 Gaming', color: 'green' };
-        if (t.includes('chat') || t.includes('slack') || t.includes('teams')) return { label: '💬 Chatting', color: 'indigo' };
+        if (t.includes('code') || t.includes('studio') || t.includes('vim') || t.includes('jetbrains')) return { label: '👨‍💻 Coding', variant: 'default' as const, className: 'bg-primary text-primary-foreground' };
+        if (t.includes('discord') || t.includes('spotify') || t.includes('music')) return { label: '🎵 Chilling', variant: 'secondary' as const, className: 'bg-purple-900 text-purple-100' };
+        if (t.includes('chrome') || t.includes('firefox') || t.includes('edge') || t.includes('brave')) return { label: '🌐 Browsing', variant: 'secondary' as const, className: 'bg-blue-900 text-blue-100' };
+        if (t.includes('game') || t.includes('steam') || t.includes('hero') || t.includes('league')) return { label: '🎮 Gaming', variant: 'secondary' as const, className: 'bg-green-900 text-green-100' };
+        if (t.includes('chat') || t.includes('slack') || t.includes('teams')) return { label: '💬 Chatting', variant: 'secondary' as const, className: 'bg-indigo-900 text-indigo-100' };
 
-        return { label: 'Working', color: 'gray' };
+        return { label: 'Working', variant: 'secondary' as const, className: 'bg-muted text-muted-foreground' };
     };
 
     const status = getStatus(activity.activeWindowTitle, activity.timeSinceLastInput);
 
     return (
-        <Card withBorder padding="xl" radius="md" bg="var(--mantine-color-body)">
-            <Group justify="space-between" mb="xs">
-                <Title order={3}>Current Activity</Title>
-                <Badge color={status.color} size="lg" variant="light">{status.label}</Badge>
-            </Group>
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-semibold tracking-wide text-foreground uppercase">Current Activity</CardTitle>
+                <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    <div>
+                        <div className="text-xs uppercase font-bold text-muted-foreground mb-1">
+                            Active Window
+                        </div>
+                        <div className="text-lg font-medium truncate" title={activity.activeWindowTitle}>
+                            {activity.activeWindowTitle || 'IDLE / Desktop'}
+                        </div>
+                    </div>
 
-            <Stack>
-                <div>
-                    <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                        Active Window
-                    </Text>
-                    <Text size="lg" fw={500} truncate="end">
-                        {activity.activeWindowTitle || 'IDLE / Desktop'}
-                    </Text>
+                    <div>
+                        <div className="text-xs uppercase font-bold text-muted-foreground mb-1">
+                            Time Since Input
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+                            {activity.timeSinceLastInput}
+                        </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground pt-2 border-t border-white/5">
+                        Last snapshot: {new Date(activity.timestamp).toLocaleString('sv-SE', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        })}
+                    </div>
                 </div>
-
-                <div>
-                    <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                        Time Since Input
-                    </Text>
-                    <Text size="xl" fw={700} variant="gradient" gradient={{ from: 'indigo', to: 'cyan', deg: 45 }}>
-                        {activity.timeSinceLastInput}
-                    </Text>
-                </div>
-
-                <Text size="xs" c="dimmed" mt="md">
-                    Last snapshot: {new Date(activity.timestamp).toLocaleString('sv-SE', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    })}
-                </Text>
-            </Stack>
+            </CardContent>
         </Card>
     );
 }

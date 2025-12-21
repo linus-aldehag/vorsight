@@ -1,7 +1,8 @@
-import { Button, Group, Card, Title, Stack } from '@mantine/core';
 import { useState } from 'react';
 import { VorsightApi } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { Button } from '../../components/ui/button';
+import { Power, LogOut } from 'lucide-react';
 
 export function SystemControls() {
     const { selectedMachine } = useMachine();
@@ -24,25 +25,35 @@ export function SystemControls() {
     };
 
     return (
-        <Stack gap="md">
+        <div className="space-y-6">
 
-            <Card withBorder radius="md" padding="xl">
-                <Title order={4} mb="md">System Power</Title>
-                <Group>
-                    <Button color="orange" onClick={() => handleSystem('logout')} loading={loading}>
-                        Log Out
-                    </Button>
-                    <Button color="red" onClick={() => handleSystem('shutdown')} loading={loading}>
-                        Shutdown
-                    </Button>
-                </Group>
-            </Card>
+
+            <div className="grid grid-cols-2 gap-3">
+                <Button
+                    variant="outline"
+                    className="border-warning text-warning hover:bg-warning/10 hover:text-warning"
+                    onClick={() => handleSystem('logout')}
+                    disabled={loading}
+                >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    LOG OUT
+                </Button>
+                <Button
+                    variant="destructive"
+                    className="bg-destructive/10 text-destructive border border-destructive/50 hover:bg-destructive/20"
+                    onClick={() => handleSystem('shutdown')}
+                    disabled={loading}
+                >
+                    <Power className="mr-2 h-4 w-4" />
+                    SHUT DOWN
+                </Button>
+            </div>
 
             {status && (
-                <Card bg="blue.1" padding="sm" radius="md">
-                    <Title order={6} ta="center" c="blue.9">{status}</Title>
-                </Card>
+                <div className="p-2 text-xs font-mono text-center text-primary border border-primary/20 bg-primary/5">
+                    {status}
+                </div>
             )}
-        </Stack>
+        </div>
     );
 }

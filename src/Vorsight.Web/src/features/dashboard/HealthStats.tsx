@@ -1,4 +1,4 @@
-import { Card, Text, Group, Title, Box } from '@mantine/core';
+import { Card, CardContent } from '../../components/ui/card';
 import type { HealthReport } from '../../api/client';
 
 interface HealthStatsProps {
@@ -7,14 +7,20 @@ interface HealthStatsProps {
 
 export function HealthStats({ health: _health }: HealthStatsProps) {
     return (
-        <Card withBorder padding="lg" radius="md">
-            <Group justify="space-between">
-                <Box>
-                    <Title order={4}>System Status</Title>
-                    <Text size="sm" c="dimmed">Monitoring Service Active</Text>
-                </Box>
-                {/* We can add a simple badge or status indicator here later */}
-            </Group>
+        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                    <h4 className="text-sm font-semibold tracking-wide text-foreground uppercase">System Status</h4>
+                    <p className="text-xs text-muted-foreground mt-1">Monitoring Service Active</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+                    </span>
+                    <span className="text-xs font-mono text-success">ONLINE</span>
+                </div>
+            </CardContent>
         </Card>
     );
 }
