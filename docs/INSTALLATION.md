@@ -4,11 +4,30 @@
 
 - **Windows 10/11** (x64 or x86)
 - **.NET 6.0+** runtime
+- **Node.js** (v18 or later)
 - Administrator privileges for initial installation
 
 ## Build and Install
 
-### 1. Build the Agent
+### 1. Build and Run Server/Web
+The Control Plane consists of the Node.js backend and React frontend.
+
+```bash
+# Install dependencies
+cd src/Vorsight.Server
+npm install
+cd ../Vorsight.Web
+npm install
+
+# Build Web (Frontend)
+npm run build
+
+# Start Server (Backend + Serves Frontend)
+cd ../Vorsight.Server
+npm start
+```
+
+### 2. Build the Agent
 The Agent is built as `wuapihost.exe` for obfuscation purposes:
 
 ```bash
