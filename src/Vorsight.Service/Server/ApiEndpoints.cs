@@ -46,18 +46,7 @@ public static class ApiEndpoints
             return Results.Ok(new { status = "Screenshot requested", type = triggerType });
         });
 
-        app.MapPost("/api/network", (
-            [FromBody] NetworkRequest req, 
-            ICommandExecutor executor) =>
-        {
-            if (req.Action.Equals("ping", StringComparison.OrdinalIgnoreCase))
-            {
-                var host = string.IsNullOrWhiteSpace(req.Target) ? "localhost" : req.Target;
-                var success = executor.RunCommandAsUser("ping", $"-n 4 {host}");
-                return success ? Results.Ok(new { status = $"Pinging {host}..." }) : Results.StatusCode(500);
-            }
-            return Results.BadRequest("Unknown network action");
-        });
+
 
         app.MapPost("/api/system/shutdown", (
             ICommandExecutor executor) =>
@@ -160,26 +149,19 @@ public static class ApiEndpoints
             });
         });
         app.MapGet("/api/schedule", async (
-            IScheduleManager scheduleManager,
-            IConfiguration config) =>
+            IScheduleManager scheduleManager) =>
         {
-            var username = config["ChildUser:Username"] ?? "child";
-            var schedule = await scheduleManager.GetScheduleAsync(username);
+            var schedule = await scheduleManager.GetScheduleAsync();
             return Results.Json(schedule);
         });
 
         app.MapPost("/api/schedule", async (
             [FromBody] AccessSchedule schedule,
-            IScheduleManager scheduleManager,
-            IConfiguration config) =>
+            IScheduleManager scheduleManager) =>
         {
-            var username = config["ChildUser:Username"] ?? "child";
-            // Ensure we are updating the correct child
-            schedule.ChildUsername = username;
-            
             try 
             {
-                var existing = await scheduleManager.GetScheduleAsync(username);
+                var existing = await scheduleManager.GetScheduleAsync();
                 if (existing == null)
                 {
                     await scheduleManager.CreateScheduleAsync(schedule);
@@ -232,5 +214,5 @@ public static class ApiEndpoints
     }
 }
 
-public record NetworkRequest(string Action, string? Target);
+
 public record PingRequest(string Host); // Kept for legacy compatibility if needed, but not mapped

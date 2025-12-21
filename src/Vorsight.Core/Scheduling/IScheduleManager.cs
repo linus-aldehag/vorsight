@@ -16,7 +16,7 @@ namespace Vorsight.Core.Scheduling
         Task InitializeAsync();
 
         /// <summary>
-        /// Creates a new access schedule for a child.
+        /// Creates a new access schedule.
         /// </summary>
         Task<AccessSchedule> CreateScheduleAsync(AccessSchedule schedule);
 
@@ -31,9 +31,9 @@ namespace Vorsight.Core.Scheduling
         Task DeleteScheduleAsync(string scheduleId);
 
         /// <summary>
-        /// Gets schedule for a specific child username.
+        /// Gets the global schedule.
         /// </summary>
-        Task<AccessSchedule> GetScheduleAsync(string childUsername);
+        Task<AccessSchedule> GetScheduleAsync();
 
         /// <summary>
         /// Gets all active schedules.
@@ -41,31 +41,31 @@ namespace Vorsight.Core.Scheduling
         Task<IEnumerable<AccessSchedule>> GetAllSchedulesAsync();
 
         /// <summary>
-        /// Checks if a child currently has access.
+        /// Checks if access is currently allowed.
         /// </summary>
-        Task<bool> IsAccessAllowedAsync(string childUsername);
+        Task<bool> IsAccessAllowedAsync();
 
         /// <summary>
         /// Gets time remaining in current access window.
         /// </summary>
-        Task<TimeSpan?> GetTimeRemainingAsync(string childUsername);
+        Task<TimeSpan?> GetTimeRemainingAsync();
 
         /// <summary>
         /// Gets time until next access window opens.
         /// </summary>
-        Task<TimeSpan?> GetTimeUntilAccessAsync(string childUsername);
+        Task<TimeSpan?> GetTimeUntilAccessAsync();
 
         /// <summary>
-        /// Forces logoff for a child account.
+        /// Forces logoff.
         /// This is "The Threshold" in action - called when access time expires.
         /// </summary>
-        Task<bool> ForceLogoffAsync(string childUsername);
+        Task<bool> ForceLogoffAsync();
 
         /// <summary>
         /// Prevents re-login by locking the user account or setting policies.
         /// Called after ForceLogoff to maintain the lock.
         /// </summary>
-        Task PreventReloginAsync(string childUsername);
+        Task PreventReloginAsync();
 
         /// <summary>
         /// Event raised when access time is about to expire (e.g., 5 min warning).
@@ -98,7 +98,6 @@ namespace Vorsight.Core.Scheduling
     /// </summary>
     public class AccessThresholdEventArgs : EventArgs
     {
-        public string ChildUsername { get; set; }
         public uint SessionId { get; set; }
         public TimeSpan? TimeRemaining { get; set; }
         public DateTime EventTime { get; set; }
