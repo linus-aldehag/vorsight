@@ -1,8 +1,8 @@
-using System.Net.Http.Json;
 using System.Text.Json;
 using SocketIOClient;
 using Vorsight.Core.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 
 namespace Vorsight.Service.Server;
 
@@ -27,16 +27,17 @@ public class ServerConnection : IServerConnection
     private string? _apiKey;
     private bool _isConnected;
     
-    private const string ServerUrl = "http://localhost:3000"; // TODO: Make configurable
+    private readonly string _serverUrl;
     
     public bool IsConnected => _isConnected;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     
-    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory)
+    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient();
-        _httpClient.BaseAddress = new Uri(ServerUrl);
+        _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
+        _httpClient.BaseAddress = new Uri(_serverUrl);
     }
     
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -96,7 +97,7 @@ public class ServerConnection : IServerConnection
     {
         try
         {
-            _socket = new SocketIOClient.SocketIO(ServerUrl);
+            _socket = new SocketIOClient.SocketIO(_serverUrl);
             
             _socket.OnConnected += async (sender, e) =>
             {
