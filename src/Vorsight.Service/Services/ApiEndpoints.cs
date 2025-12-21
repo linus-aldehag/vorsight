@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Uptime;
 using Vorsight.Native;
-using Vorsight.Service.Services.Analytics;
+using Vorsight.Native;
 using Vorsight.Core.Scheduling;
 
 namespace Vorsight.Service.Services;
@@ -141,64 +141,17 @@ public static class ApiEndpoints
         });
 
 
-        app.MapGet("/api/analytics/summary", (
-            Services.Analytics.IActivityRepository repository) =>
+        app.MapGet("/api/analytics/summary", () =>
         {
-            var end = DateTimeOffset.UtcNow;
-            var start = end.AddHours(-24);
+            // Activity persistance has been moved to the server.
+            // This local endpoint returns empty data for compatibility.
             
-            var activities = repository.GetActivities(start, end).ToList();
-            if (activities.Count == 0) return Results.Json(new { totalActiveHours = 0, timeline = new object[0], topApps = new object[0] });
-
-            // 1. Total Active Time (Approximate: Count * 5 seconds) / 3600
-            // Since we poll every 5s, each record = 5s of activity
-            // Filter out "Idle"? ActivityData doesn't strictly have "Idle" bool yet, 
-            // but we assumed earlier "InputIdleSeconds" which was removed.
-            // For now, if Agent reports, it means the computer is ON.
-            // If "ActiveWindow" is "LockApp" or similar, we might exclude it?
-            // User requested "Active Applications", so let's count everything except maybe invalid/empty titles?
-            // Actually, "InputIdleSeconds" was removed, so we only know what window is FOCUSED.
-            // Assumption: If Service is running + Agent reports => User is effectively "Active" or at least computer is used.
-            // Refinement: If window is "Windows Default Lock Screen", maybe count as Idle?
-            
-            double totalSeconds = activities.Count * 5; 
-            double totalActiveHours = Math.Round(totalSeconds / 3600, 2);
-
-            // 2. Timeline (Group by Hour)
-            var timeline = activities
-                .GroupBy(a => DateTimeOffset.FromUnixTimeSeconds(a.Timestamp).LocalDateTime.Hour)
-                .Select(g => new 
-                { 
-                    hour = g.Key, 
-                    activeMinutes = Math.Min(60, (int)Math.Round(g.Count() * 5.0 / 60)) 
-                })
-                .OrderBy(t => t.hour)
-                .ToList();
-
-            // 3. Top Apps
-            var topApps = activities
-                .GroupBy(a => a.ActiveWindow)
-                .Where(g => !string.IsNullOrEmpty(g.Key))
-                .Select(g => new 
-                { 
-                    name = g.Key, 
-                    seconds = g.Count() * 5 
-                })
-                .OrderByDescending(x => x.seconds)
-                .Take(5)
-                .Select(x => new 
-                { 
-                    name = x.name, 
-                    percentage = Math.Round((double)x.seconds / totalSeconds * 100, 1) 
-                })
-                .ToList();
-
             return Results.Json(new 
             { 
-                totalActiveHours, 
-                timeline, 
-                topApps,
-                lastActive = DateTimeOffset.FromUnixTimeSeconds(activities.Last().Timestamp)
+                totalActiveHours = 0, 
+                timeline = new object[0], 
+                topApps = new object[0],
+                lastActive = DateTimeOffset.UtcNow
             });
         });
         app.MapGet("/api/schedule", async (

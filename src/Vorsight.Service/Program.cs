@@ -49,7 +49,6 @@ try
     builder.Services.AddSingleton<ITempFileManager, TempFileManager>();
     builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
     builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
-    builder.Services.AddSingleton<Vorsight.Service.Services.Analytics.IActivityRepository, Vorsight.Service.Services.Analytics.JsonFileActivityRepository>();
     builder.Services.AddSingleton<Vorsight.Service.Services.Auditing.IAuditManager, Vorsight.Service.Services.Auditing.AuditManager>();
     
     // Server Connection (Node.js server)

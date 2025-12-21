@@ -16,10 +16,7 @@ export function ActivityMonitor({ activity }: ActivityMonitorProps) {
     );
 
     // Creative Status Logic
-    const getStatus = (title: string, idleTime: string) => {
-        // Parse "00:05:30" format
-        if (idleTime && !idleTime.startsWith("00:00")) return { label: 'AFK / Idle', variant: 'outline' as const, className: 'text-warning border-warning' };
-
+    const getStatus = (title: string) => {
         const t = (title || '').toLowerCase();
         if (t.includes('code') || t.includes('studio') || t.includes('vim') || t.includes('jetbrains')) return { label: '👨‍💻 Coding', variant: 'default' as const, className: 'bg-primary text-primary-foreground' };
         if (t.includes('discord') || t.includes('spotify') || t.includes('music')) return { label: '🎵 Chilling', variant: 'secondary' as const, className: 'bg-purple-900 text-purple-100' };
@@ -30,7 +27,7 @@ export function ActivityMonitor({ activity }: ActivityMonitorProps) {
         return { label: 'Working', variant: 'secondary' as const, className: 'bg-muted text-muted-foreground' };
     };
 
-    const status = getStatus(activity.activeWindowTitle, activity.timeSinceLastInput);
+    const status = getStatus(activity.activeWindowTitle);
 
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -46,15 +43,6 @@ export function ActivityMonitor({ activity }: ActivityMonitorProps) {
                         </div>
                         <div className="text-lg font-medium truncate" title={activity.activeWindowTitle}>
                             {activity.activeWindowTitle || 'IDLE / Desktop'}
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="text-xs uppercase font-bold text-muted-foreground mb-1">
-                            Time Since Input
-                        </div>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                            {activity.timeSinceLastInput}
                         </div>
                     </div>
 
