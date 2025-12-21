@@ -87,22 +87,35 @@ Download the latest `VorsightSetup.msi` from [GitHub Releases](../../releases):
 
 The service starts automatically and begins monitoring.
 
-### Raspberry Pi Server Setup
+### Linux Server Setup
+
+The server runs on any Linux system (Ubuntu, Debian, Raspberry Pi OS, etc.).
 
 Download `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases):
 
+**Example using Raspberry Pi:**
 ```bash
-# Transfer to Pi
-scp vors ight-server-*.tar.gz pi@raspberrypi:~/
+# Transfer to server
+scp vorsight-server-*.tar.gz user@server:~/
 
 # SSH and install
-ssh pi@raspberrypi
+ssh user@server
 tar -xzf vorsight-server-*.tar.gz
 cd vorsight-server
 sudo ./install.sh
 ```
 
-See [Pi Deployment Guide](deploy/pi/README.md) for detailed instructions.
+**Example using Ubuntu/Debian server:**
+```bash
+# Same process - the server is Linux-agnostic
+scp vorsight-server-*.tar.gz user@ubuntu-server:~/
+ssh user@ubuntu-server
+tar -xzf vorsight-server-*.tar.gz
+cd vorsight-server
+sudo ./install.sh
+```
+
+See [Linux Deployment Guide](deploy/pi/README.md) for detailed instructions.
 
 ## Development Setup
 

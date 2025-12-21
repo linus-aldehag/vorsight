@@ -1,14 +1,14 @@
-# Vörsight Pi Server Deployment
+# Vörsight Linux Server Deployment
 
-This directory contains everything needed to deploy the Vörsight server to a Raspberry Pi.
+This guide covers deploying the Vörsight server to any Linux system. Examples use Raspberry Pi, but the server runs on Ubuntu, Debian, or any systemd-based Linux distribution.
 
 ## Prerequisites
 
-- Raspberry Pi (3 or later recommended)
-- Raspberry Pi OS (Debian-based)
-- Node.js 25+ installed on Pi
-- SSH access to Pi
+- Linux server (Raspberry Pi, Ubuntu, Debian, etc.)
+- Node.js 25+ installed
+- SSH access
 - At least 1GB free space
+- systemd (for service management)
 
 ## Quick Start
 

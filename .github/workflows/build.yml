@@ -34,8 +34,8 @@ jobs:
         name: VorsightSetup
         path: src/Vorsight.Setup/bin/Release/VorsightSetup.msi
 
-  build-pi:
-    name: Build Pi Deployment Package
+  build-linux-server:
+    name: Build Linux Server Package
     runs-on: ubuntu-latest
 
     steps:
@@ -83,36 +83,50 @@ jobs:
         VERSION="${GITHUB_REF_NAME}"
         tar -czf vorsight-server-${VERSION}.tar.gz vorsight-server/
 
-    - name: Upload Pi Deployment Package
+    - name: Upload Linux Server Package
       uses: actions/upload-artifact@v4
       with:
-        name: VorsightPiServer
+        name: VorsightLinuxServer
         path: deploy/pi/vorsight-server-*.tar.gz
 
   create-release:
     name: Create GitHub Release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-windows, build-pi]
+    if: github.ref == 'refs/heads/main'
+    needs: [build-windows, build-linux-server]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Version
+      id: version
+      run: |
+        # Generate version: v<date>-<short-sha>
+        VERSION="v$(date +'%Y.%m.%d')-${GITHUB_SHA::7}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
     - name: Download Windows Installer
       uses: actions/download-artifact@v4
       with:
         name: VorsightSetup
         path: artifacts/
 
-    - name: Download Pi Package
+    - name: Download Linux Server Package
       uses: actions/download-artifact@v4
       with:
-        name: VorsightPiServer
+        name: VorsightLinuxServer
         path: artifacts/
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
         files: |
           artifacts/VorsightSetup.msi
           artifacts/vorsight-server-*.tar.gz
