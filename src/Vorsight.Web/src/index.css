@@ -1,35 +1,28 @@
 @import "tailwindcss";
 
 @theme {
+  /* Theme colors are now set dynamically via JavaScript in ThemeContext */
+  /* Default fallback values */
   --color-background: #050505;
   --color-surface: #0D1117;
   --color-foreground: #ffffff;
-
   --color-primary: #00D1FF;
   --color-primary-foreground: #050505;
-
   --color-secondary: #0D1117;
   --color-secondary-foreground: #ffffff;
-
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
-
   --color-accent: #0D1117;
   --color-accent-foreground: #ffffff;
-
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
-
   --color-card: #050505;
   --color-card-foreground: #ffffff;
-
   --color-popover: #050505;
   --color-popover-foreground: #ffffff;
-
   --color-border: #00D1FF;
   --color-input: #0D1117;
   --color-ring: #00D1FF;
-
   --color-warning: #FFB800;
   --color-success: #00FF41;
 
@@ -55,10 +48,18 @@
 
 /* Base Styles */
 @layer base {
+  :root {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-mono);
     -webkit-font-smoothing: antialiased;
+  }
+
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   }
 }
