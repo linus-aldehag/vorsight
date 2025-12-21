@@ -1,7 +1,7 @@
 using System.Text.Json;
-using Vorsight.Service.Services;
+using Vorsight.Service.Monitoring;
 
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Storage;
 
 public class SessionSummary
 {

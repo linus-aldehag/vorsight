@@ -4,7 +4,7 @@ using SocketIOClient;
 using Vorsight.Core.Identity;
 using Microsoft.Extensions.Logging;
 
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Server;
 
 public interface IServerConnection
 {

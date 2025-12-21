@@ -1,4 +1,4 @@
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Utilities;
 
 /// <summary>
 /// Extension methods for common operations

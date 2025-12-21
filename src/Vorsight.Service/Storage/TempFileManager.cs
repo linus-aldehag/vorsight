@@ -1,4 +1,4 @@
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Storage;
 
 /// <summary>
 /// Service for managing temporary file cleanup and retry logic

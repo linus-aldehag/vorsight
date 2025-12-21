@@ -1,4 +1,4 @@
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Monitoring;
 
 /// <summary>
 /// Monitors the health and activity of the application

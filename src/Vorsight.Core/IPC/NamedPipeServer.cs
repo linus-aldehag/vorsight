@@ -119,6 +119,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         logger.LogDebug("Message broadcast to {SessionCount} sessions", _sessions.Count);
     }
 
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
     {
         bool fallbackToDefaultSecurity = false;
@@ -128,7 +129,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                NamedPipeServerStream pipeServer = null;
+                NamedPipeServerStream? pipeServer = null;
                 try
                 {
                     // Strategy 1: World Access (Preferred)

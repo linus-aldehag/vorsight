@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Vorsight.Native;
 
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Agents;
 
 public interface IAgentLauncher
 {
@@ -107,7 +107,7 @@ public class AgentLauncher : IAgentLauncher
                         var cmdLine = $"\"{_agentPath}\" screenshot";
                         
                         // Working directory: Agent folder
-                        var workingDir = Path.GetDirectoryName(_agentPath);
+                        var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
 
                         if (ProcessHelper.TryCreateProcessAsUser(newToken, _agentPath, cmdLine, workingDir, out var newPid))
                         {

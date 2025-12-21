@@ -1,4 +1,4 @@
-namespace Vorsight.Service.Services;
+namespace Vorsight.Service.Server;
 
 public class CommandReceivedEventArgs : EventArgs
 {

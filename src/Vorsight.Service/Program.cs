@@ -3,7 +3,12 @@ using Vorsight.Core.Audit;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Scheduling;
 using Vorsight.Service;
-using Vorsight.Service.Services;
+using Vorsight.Service.Agents;
+using Vorsight.Service.IPC;
+using Vorsight.Service.Server;
+using Vorsight.Service.Monitoring;
+using Vorsight.Service.Storage;
+using Vorsight.Service.SystemOperations;
 
 // Configure Serilog for structured logging
 Log.Logger = new LoggerConfiguration()
@@ -49,7 +54,7 @@ try
     builder.Services.AddSingleton<ITempFileManager, TempFileManager>();
     builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
     builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
-    builder.Services.AddSingleton<Vorsight.Service.Services.Auditing.IAuditManager, Vorsight.Service.Services.Auditing.AuditManager>();
+
     
     // Server Connection (Node.js server)
     builder.Services.AddHttpClient();
@@ -61,6 +66,12 @@ try
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
     builder.Services.AddSingleton<Vorsight.Core.Settings.ISettingsManager, Vorsight.Core.Settings.SettingsManager>();
+
+    // Agents and IPC Handlers
+    builder.Services.AddSingleton<ScreenshotHandler>();
+    builder.Services.AddSingleton<ActivityLogHandler>();
+    builder.Services.AddSingleton<IIpcMessageRouter, IpcMessageRouter>();
+    builder.Services.AddSingleton<IServerCommandProcessor, ServerCommandProcessor>();
 
     // Add hosted service
     builder.Services.AddHostedService<Worker>();

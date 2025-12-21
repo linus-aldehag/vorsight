@@ -5,7 +5,9 @@ using Google.Apis.Util.Store;
 using DriveFile = Google.Apis.Drive.v3.Data.File;
 using File = System.IO.File;
 
-namespace Vorsight.Service.Services;
+using Vorsight.Service.Utilities;
+
+namespace Vorsight.Service.Storage;
 
 public interface IGoogleDriveService
 {
@@ -30,7 +32,7 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     private bool _isShuttingDown;
     
     // Cache drive service to avoid re-authenticating every time
-    private DriveService _driveServiceInstance;
+    private DriveService? _driveServiceInstance;
     
     public GoogleDriveService(
         IConfiguration config, 

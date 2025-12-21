@@ -4,10 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Uptime;
 using Vorsight.Native;
-using Vorsight.Native;
+
 using Vorsight.Core.Scheduling;
 
-namespace Vorsight.Service.Services;
+using Vorsight.Service.Monitoring;
+using Vorsight.Service.SystemOperations;
+using Vorsight.Service.Storage;
+using Vorsight.Service.Auditing;
+
+namespace Vorsight.Service.Server;
 
 public static class ApiEndpoints
 {
@@ -17,7 +22,7 @@ public static class ApiEndpoints
             IHealthMonitor healthMonitor, 
             UptimeMonitor uptimeMonitor, 
             IActivityCoordinator activityCoordinator,
-            Services.Auditing.IAuditManager auditManager) =>
+            IAuditManager auditManager) =>
         {
             // Trigger audit if needed (it throttles itself)
             var audit = await auditManager.PerformAuditAsync();
