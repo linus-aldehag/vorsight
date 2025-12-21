@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Title, SimpleGrid, Card, Image, Text, Badge, Center, Loader, Group, Button, Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
-import { IconRefresh } from '@tabler/icons-react';
+import { Card, CardContent } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { RefreshCw, X, Maximize2 } from 'lucide-react';
 import { VorsightApi, type DriveFile } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 
@@ -10,7 +11,7 @@ export function ScreenshotGallery() {
     const [images, setImages] = useState<DriveFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
-    const [opened, { open, close }] = useDisclosure(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         if (selectedMachine) {
@@ -34,7 +35,7 @@ export function ScreenshotGallery() {
 
     const handleImageClick = (img: DriveFile) => {
         setSelectedImage(img);
-        open();
+        setIsModalOpen(true);
     };
 
     const formatDate = (dateStr: string) => {
@@ -49,66 +50,80 @@ export function ScreenshotGallery() {
         });
     };
 
-    if (loading && images.length === 0) return <Center h={200}><Loader /></Center>;
+    if (loading && images.length === 0) return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
 
     return (
-        <>
-            <Group justify="space-between" mb="lg">
-                <Title order={3}>Screenshot Gallery</Title>
-                <Button leftSection={<IconRefresh size={16} />} variant="light" onClick={loadImages} loading={loading}>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
+                <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
+                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                     Refresh
                 </Button>
-            </Group>
+            </div>
 
             {images.length === 0 ? (
-                <Center p="xl"><Text c="dimmed">No screenshots found.</Text></Center>
+                <div className="p-20 text-center border border-dashed border-border rounded-lg text-muted-foreground">
+                    No screenshots found.
+                </div>
             ) : (
-                <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {images.map((img) => (
                         <Card
                             key={img.id}
-                            p="sm"
-                            radius="md"
-                            withBorder
-                            style={{ cursor: 'pointer' }}
+                            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
                             onClick={() => handleImageClick(img)}
                         >
-                            <Card.Section>
-                                <Image
+                            <div className="aspect-video relative bg-black">
+                                <img
                                     src={`/api/media/${img.id}`}
-                                    h={160}
+                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                                     alt={img.name}
-                                    fallbackSrc="https://placehold.co/600x400?text=No+Preview"
                                 />
-                            </Card.Section>
-                            <Group justify="space-between" mt="xs">
-                                <Text size="xs" c="dimmed">
-                                    {formatDate(img.createdTime)}
-                                </Text>
-                                <Badge size="xs" variant="light">
-                                    Drive
-                                </Badge>
-                            </Group>
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Maximize2 className="text-white" />
+                                </div>
+                            </div>
+                            <CardContent className="p-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                        {formatDate(img.createdTime)}
+                                    </span>
+                                    <Badge variant="outline" className="text-[10px] h-5">
+                                        DRIVE
+                                    </Badge>
+                                </div>
+                            </CardContent>
                         </Card>
                     ))}
-                </SimpleGrid>
+                </div>
             )}
 
-            <Modal opened={opened} onClose={close} size="xl" title="Screenshot Viewer" centered>
-                {selectedImage && (
-                    <>
-                        <Image
-                            src={`/api/media/${selectedImage.id}`}
-                            radius="md"
-                            fallbackSrc="https://placehold.co/800x600?text=Failed+to+Load+Image"
-                        />
-                        <Group justify="space-between" mt="md">
-                            <Text size="sm">{selectedImage.name}</Text>
-                            <Text size="sm" c="dimmed">{formatDate(selectedImage.createdTime)}</Text>
-                        </Group>
-                    </>
-                )}
-            </Modal>
-        </>
+            {/* Simple Modal */}
+            {isModalOpen && selectedImage && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4" onClick={() => setIsModalOpen(false)}>
+                    <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute -top-10 right-0 text-white hover:text-primary"
+                        >
+                            <X size={24} />
+                        </button>
+                        <div className="relative border border-primary/30 bg-black">
+                            <div className="absolute inset-0 z-10 scanline pointer-events-none opacity-30" />
+                            <img
+                                src={`/api/media/${selectedImage.id}`}
+                                className="max-w-full max-h-[85vh] object-contain"
+                                alt="Full screenshot"
+                            />
+                        </div>
+                        <div className="mt-2 flex justify-between text-mono text-sm text-primary/80">
+                            <span>{selectedImage.name}</span>
+                            <span>{formatDate(selectedImage.createdTime)}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

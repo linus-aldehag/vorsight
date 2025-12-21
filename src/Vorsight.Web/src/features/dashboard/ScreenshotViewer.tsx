@@ -1,14 +1,16 @@
-import { Card, Image, Button, Title, Stack, Group, Modal, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { VorsightApi, type DriveFile } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Camera, X, Maximize2 } from 'lucide-react';
 
 export function ScreenshotViewer() {
     const { selectedMachine } = useMachine();
-    const [opened, { open, close }] = useDisclosure(false);
     const [latestImage, setLatestImage] = useState<DriveFile | null>(null);
     const [loading, setLoading] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         if (selectedMachine) {
@@ -59,57 +61,79 @@ export function ScreenshotViewer() {
     };
 
     return (
-        <>
-            <Modal opened={opened} onClose={close} title="Latest Screenshot" size="xl" centered>
-                {latestImage && (
+        <Card className="h-full flex flex-col border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg tracking-wide text-primary flex items-center gap-2">
+                    <Camera size={18} />
+                    SCREENSHOT
+                </CardTitle>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={requestNew}
+                    disabled={loading}
+                    className="h-8 border-primary/50 text-primary hover:bg-primary/10 hover:text-primary"
+                >
+                    {loading ? 'CAPTURING...' : 'CAPTURE'}
+                </Button>
+            </CardHeader>
+            <CardContent className="flex-1 min-h-0 relative group p-0 bg-black">
+                {latestImage ? (
                     <>
-                        <Image
-                            src={`/api/media/${latestImage.id}`}
-                            radius="md"
-                            fallbackSrc="https://placehold.co/800x600?text=Failed+to+Load"
-                        />
-                        <Group justify="space-between" mt="md">
-                            <Text size="sm">{latestImage.name}</Text>
-                            <Text size="sm" c="dimmed">{formatDate(latestImage.createdTime)}</Text>
-                        </Group>
-                    </>
-                )}
-            </Modal>
-
-            <Card withBorder radius="md" padding="xl">
-                <Title order={4} mb="md">Visuals</Title>
-                <Stack gap="md">
-                    {/* Thumbnail Preview */}
-                    {latestImage ? (
-                        <Card
-                            p={0}
-                            radius="md"
-                            withBorder
-                            style={{ cursor: 'pointer', overflow: 'hidden' }}
-                            onClick={open}
+                        <div className="absolute inset-0 z-10 scanline pointer-events-none opacity-50" />
+                        <div
+                            className="w-full h-full relative cursor-pointer"
+                            onClick={() => setIsModalOpen(true)}
                         >
-                            <Image
+                            <img
                                 src={`/api/media/${latestImage.id}`}
-                                h={160}
+                                className="w-full h-full object-cover"
                                 alt="Latest screenshot"
-                                fallbackSrc="https://placehold.co/400x300?text=No+Screenshot"
                             />
-                            <Group justify="space-between" p="xs" bg="dark.6">
-                                <Text size="xs" c="dimmed">Latest</Text>
-                                <Text size="xs" c="dimmed">{formatDate(latestImage.createdTime)}</Text>
-                            </Group>
-                        </Card>
-                    ) : (
-                        <Card p="xl" radius="md" withBorder>
-                            <Text size="sm" c="dimmed" ta="center">No screenshots yet</Text>
-                        </Card>
-                    )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-xs p-2 flex justify-between text-muted-foreground border-t border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span>{latestImage.name}</span>
+                                <span>{formatDate(latestImage.createdTime)}</span>
+                            </div>
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-1 rounded">
+                                <Maximize2 size={16} className="text-white" />
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground text-sm font-mono p-12 text-center">
+                        No screenshot available
+                        <br />
+                        Waiting for update...
+                    </div>
+                )}
+            </CardContent>
 
-                    <Button variant="outline" onClick={requestNew} loading={loading}>
-                        📸 Capture New
-                    </Button>
-                </Stack>
-            </Card>
-        </>
+            {/* Portal Modal */}
+            {isModalOpen && latestImage && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4" onClick={() => setIsModalOpen(false)}>
+                    <div className="relative max-w-[95vw] max-h-[95vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => setIsModalOpen(false)}
+                            className="absolute -top-10 right-0 text-white hover:text-primary p-2"
+                        >
+                            <X size={32} />
+                        </button>
+                        <div className="relative border border-primary/30 bg-black shadow-2xl shadow-primary/20">
+                            <div className="absolute inset-0 z-10 scanline pointer-events-none opacity-30" />
+                            <img
+                                src={`/api/media/${latestImage.id}`}
+                                className="max-w-full max-h-[85vh] object-contain"
+                                alt="Full screenshot"
+                            />
+                        </div>
+                        <div className="mt-2 flex justify-between text-mono text-sm text-primary/80">
+                            <span>{latestImage.name}</span>
+                            <span>{formatDate(latestImage.createdTime)}</span>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+        </Card>
     );
 }

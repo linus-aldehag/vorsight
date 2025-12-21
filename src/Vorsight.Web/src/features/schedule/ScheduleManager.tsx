@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Title, Paper, Group, Text, Switch, Stack, Button, Loader, Alert, Divider, NumberInput, Collapse, TextInput } from '@mantine/core';
-import { IconDeviceFloppy, IconAlertCircle } from '@tabler/icons-react';
 import { VorsightApi, type AccessSchedule, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { Button } from '../../components/ui/button';
+import { Switch } from '../../components/ui/switch';
+import { Input } from '../../components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
+import { Save, AlertCircle, Clock, Eye, Activity } from 'lucide-react';
 
 export function ScheduleManager() {
     const { selectedMachine } = useMachine();
@@ -29,7 +32,7 @@ export function ScheduleManager() {
 
     const loadData = async () => {
         try {
-            // Load schedule (optional, may not exist)
+            // Load schedule
             try {
                 const scheduleData = await VorsightApi.getSchedule(selectedMachine?.id);
                 setSchedule(scheduleData || createDefaultSchedule());
@@ -38,11 +41,11 @@ export function ScheduleManager() {
                 setSchedule(createDefaultSchedule());
             }
 
-            // Load agent settings from API
+            // Load agent settings
             const settings = await VorsightApi.getSettings(selectedMachine?.id);
             setAgentSettings(settings);
 
-            // Initialize feature toggles based on settings
+            // Initialize toggles
             setScreenshotEnabled(settings.screenshotIntervalSeconds > 0);
             setActivityTrackingEnabled(settings.pingIntervalSeconds > 0);
             setScheduleEnforcementEnabled(schedule?.isActive ?? true);
@@ -75,11 +78,9 @@ export function ScheduleManager() {
                 return;
             }
 
-            // Update schedule with enforcement toggle
             const updatedSchedule = { ...schedule, isActive: scheduleEnforcementEnabled };
             await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
 
-            // Update agent settings based on feature toggles
             const updatedSettings = {
                 ...agentSettings,
                 screenshotIntervalSeconds: screenshotEnabled ? agentSettings.screenshotIntervalSeconds : 0,
@@ -94,19 +95,16 @@ export function ScheduleManager() {
         }
     };
 
-    // Helper functions for time window management
     const getStartTime = (sched: AccessSchedule): string => {
         if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
-            const window = sched.allowedTimeWindows[0];
-            return window.startTime || '08:00';
+            return sched.allowedTimeWindows[0].startTime || '08:00';
         }
         return '08:00';
     };
 
     const getEndTime = (sched: AccessSchedule): string => {
         if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
-            const window = sched.allowedTimeWindows[0];
-            return window.endTime || '22:00';
+            return sched.allowedTimeWindows[0].endTime || '22:00';
         }
         return '22:00';
     };
@@ -117,7 +115,7 @@ export function ScheduleManager() {
         setSchedule({
             ...schedule,
             allowedTimeWindows: [{
-                dayOfWeek: 0, // 0 = Sunday, applies to all days
+                dayOfWeek: 0,
                 startTime: time,
                 endTime: endTime
             }]
@@ -130,155 +128,136 @@ export function ScheduleManager() {
         setSchedule({
             ...schedule,
             allowedTimeWindows: [{
-                dayOfWeek: 0, // 0 = Sunday, applies to all days
+                dayOfWeek: 0,
                 startTime: startTime,
                 endTime: time
             }]
         });
     };
 
-    if (loading) return <Loader />;
+    if (loading) return <div className="text-center text-muted-foreground animate-pulse p-10">Loading configuration...</div>;
 
     return (
-        <Stack gap="lg">
-            <Group justify="space-between">
-                <Title order={3}>Settings</Title>
-                <Button
-                    leftSection={<IconDeviceFloppy size={16} />}
-                    loading={saving}
-                    onClick={handleSave}
-                >
-                    Save Changes
+        <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold tracking-tight">System Configuration</h3>
+                <Button onClick={handleSave} disabled={saving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
-            </Group>
+            </div>
 
             {error && (
-                <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
+                <div className="bg-destructive/10 text-destructive border border-destructive/50 p-4 rounded-md flex items-center gap-2">
+                    <AlertCircle size={16} />
                     {error}
-                </Alert>
+                </div>
             )}
 
             {schedule && (
-                <Stack>
-                    {/* Screenshot Monitoring Section */}
-                    <Paper p="md" withBorder>
-                        <Group mb="md">
-                            <Switch
-                                size="lg"
-                                checked={screenshotEnabled}
-                                onChange={(e) => setScreenshotEnabled(e.currentTarget.checked)}
-                            />
-                            <div>
-                                <Title order={4}>Screenshot Monitoring</Title>
-                                <Text size="sm" c="dimmed">
-                                    Automatically capture screenshots at regular intervals
-                                </Text>
+                <div className="space-y-6">
+                    {/* Screenshot Monitoring */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
+                            <Switch checked={screenshotEnabled} onCheckedChange={setScreenshotEnabled} />
+                            <div className="space-y-1">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Eye size={16} className="text-primary" />
+                                    Screenshot Monitoring
+                                </CardTitle>
+                                <CardDescription>Capture interval customization</CardDescription>
                             </div>
-                        </Group>
+                        </CardHeader>
+                        {screenshotEnabled && (
+                            <CardContent className="space-y-4 pt-0 pl-[4.5rem]">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Interval (seconds)</label>
+                                    <Input
+                                        type="number"
+                                        value={agentSettings.screenshotIntervalSeconds}
+                                        onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: parseInt(e.target.value) || 60 })}
+                                        min={10}
+                                        max={600}
+                                        className="font-mono bg-background/50"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Range: 10 - 600 seconds</p>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
 
-                        <Collapse in={screenshotEnabled}>
-                            <Stack gap="xs">
-                                <Text size="sm" fw={500}>Screenshot Interval (seconds)</Text>
-                                <NumberInput
-                                    value={agentSettings.screenshotIntervalSeconds}
-                                    onChange={(val) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: typeof val === 'number' ? val : 60 })}
-                                    min={10}
-                                    max={600}
-                                    step={10}
-                                    disabled={!screenshotEnabled}
-                                />
-                                <Text size="xs" c="dimmed">How often to capture screenshots (10-600s)</Text>
-                            </Stack>
-                        </Collapse>
-                    </Paper>
-
-                    <Divider />
-
-                    {/* Activity Tracking Section */}
-                    <Paper p="md" withBorder>
-                        <Group mb="md">
-                            <Switch
-                                size="lg"
-                                checked={activityTrackingEnabled}
-                                onChange={(e) => setActivityTrackingEnabled(e.currentTarget.checked)}
-                            />
-                            <div>
-                                <Title order={4}>Activity Tracking</Title>
-                                <Text size="sm" c="dimmed">
-                                    Monitor active windows and send status updates
-                                </Text>
+                    {/* Activity Tracking */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
+                            <Switch checked={activityTrackingEnabled} onCheckedChange={setActivityTrackingEnabled} />
+                            <div className="space-y-1">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Activity size={16} className="text-primary" />
+                                    Activity Tracking
+                                </CardTitle>
+                                <CardDescription>Heartbeat and window monitoring</CardDescription>
                             </div>
-                        </Group>
+                        </CardHeader>
+                        {activityTrackingEnabled && (
+                            <CardContent className="space-y-4 pt-0 pl-[4.5rem]">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Ping Interval (seconds)</label>
+                                    <Input
+                                        type="number"
+                                        value={agentSettings.pingIntervalSeconds}
+                                        onChange={(e) => setAgentSettings({ ...agentSettings, pingIntervalSeconds: parseInt(e.target.value) || 30 })}
+                                        min={5}
+                                        max={300}
+                                        className="font-mono bg-background/50"
+                                    />
+                                    <p className="text-xs text-muted-foreground">Range: 5 - 300 seconds</p>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
 
-                        <Collapse in={activityTrackingEnabled}>
-                            <Stack gap="xs">
-                                <Text size="sm" fw={500}>Status Ping Interval (seconds)</Text>
-                                <NumberInput
-                                    value={agentSettings.pingIntervalSeconds}
-                                    onChange={(val) => setAgentSettings({ ...agentSettings, pingIntervalSeconds: typeof val === 'number' ? val : 30 })}
-                                    min={5}
-                                    max={300}
-                                    step={5}
-                                    disabled={!activityTrackingEnabled}
-                                />
-                                <Text size="xs" c="dimmed">How often to send heartbeat (5-300s)</Text>
-                            </Stack>
-                        </Collapse>
-                    </Paper>
-
-                    <Divider />
-
-                    {/* Schedule Enforcement Section */}
-                    <Paper p="md" withBorder>
-                        <Group mb="md">
-                            <Switch
-                                size="lg"
-                                checked={scheduleEnforcementEnabled}
-                                onChange={(e) => setScheduleEnforcementEnabled(e.currentTarget.checked)}
-                            />
-                            <div>
-                                <Title order={4}>Schedule Enforcement</Title>
-                                <Text size="sm" c="dimmed">
-                                    Restrict access to specific time windows
-                                </Text>
+                    {/* Schedule Enforcement */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-4">
+                            <Switch checked={scheduleEnforcementEnabled} onCheckedChange={setScheduleEnforcementEnabled} />
+                            <div className="space-y-1">
+                                <CardTitle className="text-base flex items-center gap-2">
+                                    <Clock size={16} className="text-primary" />
+                                    Access Control
+                                </CardTitle>
+                                <CardDescription>Time window enforcement</CardDescription>
                             </div>
-                        </Group>
-
-                        <Collapse in={scheduleEnforcementEnabled}>
-                            <Stack gap="md">
-                                <Text size="sm" c="dimmed">
-                                    Define the time window when access is allowed (e.g., 08:00 to 20:00).
-                                    Outside these hours, the user will be logged off.
-                                </Text>
-
-                                <Group>
-                                    <Stack gap="xs">
-                                        <Text size="sm">Start Time (24h)</Text>
-                                        <TextInput
-                                            placeholder="HH:MM (e.g., 08:00)"
+                        </CardHeader>
+                        {scheduleEnforcementEnabled && (
+                            <CardContent className="space-y-6 pt-0 pl-[4.5rem]">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Start Time (24h)</label>
+                                        <Input
                                             value={getStartTime(schedule)}
                                             onChange={(e) => updateStartTime(e.target.value)}
-                                            disabled={!scheduleEnforcementEnabled}
-                                            styles={{ input: { fontFamily: 'monospace' } }}
+                                            placeholder="08:00"
+                                            className="font-mono bg-background/50"
                                         />
-                                    </Stack>
-
-                                    <Stack gap="xs">
-                                        <Text size="sm">End Time (24h)</Text>
-                                        <TextInput
-                                            placeholder="HH:MM (e.g., 20:00)"
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">End Time (24h)</label>
+                                        <Input
                                             value={getEndTime(schedule)}
                                             onChange={(e) => updateEndTime(e.target.value)}
-                                            disabled={!scheduleEnforcementEnabled}
-                                            styles={{ input: { fontFamily: 'monospace' } }}
+                                            placeholder="22:00"
+                                            className="font-mono bg-background/50"
                                         />
-                                    </Stack>
-                                </Group>
-                            </Stack>
-                        </Collapse>
-                    </Paper>
-                </Stack>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-4">
+                                    Outside of these hours, the system will enforce logout policies. Ensure critical services are excluded from OS-level enforcement if necessary.
+                                </p>
+                            </CardContent>
+                        )}
+                    </Card>
+                </div>
             )}
-        </Stack>
+        </div>
     );
 }
