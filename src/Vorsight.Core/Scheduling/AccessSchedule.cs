@@ -14,16 +14,6 @@ namespace Vorsight.Core.Scheduling
         public string ScheduleId { get; set; }
 
         /// <summary>
-        /// Child username this schedule applies to.
-        /// </summary>
-        public string ChildUsername { get; set; }
-
-        /// <summary>
-        /// Days of the week access is allowed (bitmask: Monday=1, Tuesday=2, etc.)
-        /// </summary>
-        public DayOfWeek[] AllowedDays { get; set; }
-
-        /// <summary>
         /// Start time of access window (24-hour format, UTC).
         /// </summary>
         public TimeSpan StartTime { get; set; }
@@ -32,11 +22,6 @@ namespace Vorsight.Core.Scheduling
         /// End time of access window (24-hour format, UTC).
         /// </summary>
         public TimeSpan EndTime { get; set; }
-
-        /// <summary>
-        /// Maximum daily screen time in minutes (0 = unlimited).
-        /// </summary>
-        public int MaxDailyMinutes { get; set; }
 
         /// <summary>
         /// Whether this schedule is currently active/enforced.
@@ -49,27 +34,12 @@ namespace Vorsight.Core.Scheduling
         /// </summary>
         public string TimeZoneId { get; set; }
 
-        /// <summary>
-        /// When this schedule was created.
-        /// </summary>
-        public DateTime CreatedUtc { get; set; }
-
-        /// <summary>
-        /// Last time this schedule was modified.
-        /// </summary>
-        public DateTime ModifiedUtc { get; set; }
-
         public AccessSchedule()
         {
             ScheduleId = Guid.NewGuid().ToString();
-            CreatedUtc = DateTime.UtcNow;
-            ModifiedUtc = DateTime.UtcNow;
             TimeZoneId = TimeZoneInfo.Local.Id;
-            AllowedDays = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, 
-                                  DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
             StartTime = TimeSpan.FromHours(9);  // 9 AM
             EndTime = TimeSpan.FromHours(22);   // 10 PM
-            MaxDailyMinutes = 0;                // Unlimited
         }
 
         /// <summary>
@@ -82,9 +52,6 @@ namespace Vorsight.Core.Scheduling
 
             var tz = TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
             var now = TimeZoneInfo.ConvertTime(DateTime.UtcNow, tz);
-
-            if (!Array.Exists(AllowedDays, d => d == now.DayOfWeek))
-                return false;
 
             var currentTime = now.TimeOfDay;
             return currentTime >= StartTime && currentTime < EndTime;
@@ -110,13 +77,8 @@ namespace Vorsight.Core.Scheduling
             if (currentTime < StartTime)
                 return StartTime - currentTime;
 
-            // After end time, find next allowed day
+            // After end time, find next allowed day - which is TOMORROW since we removed AllowedDays
             var nextDay = now.AddDays(1);
-            while (!Array.Exists(AllowedDays, d => d == nextDay.DayOfWeek))
-            {
-                nextDay = nextDay.AddDays(1);
-            }
-
             var nextAccessTime = nextDay.Date.Add(StartTime);
             return nextAccessTime - now;
         }

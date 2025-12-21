@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,12 +12,13 @@ namespace Vorsight.Core.Scheduling
     /// <summary>
     /// Implementation of schedule management and enforcement.
     /// Monitors access windows and enforces logoff when time expires.
+    /// Manages a SINGLE global schedule for the machine.
     /// </summary>
     public class ScheduleManager : IScheduleManager
     {
         private readonly ILogger<ScheduleManager> _logger;
         private readonly string _schedulePath;
-        private readonly ConcurrentDictionary<string, AccessSchedule> _schedules = new();
+        private AccessSchedule? _currentSchedule;
         private CancellationTokenSource? _enforcementCts;
         private Task? _enforcementTask;
         private bool _disposed;
@@ -36,7 +35,7 @@ namespace Vorsight.Core.Scheduling
             _schedulePath = schedulePath ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "Vorsight",
-                "schedules.json");
+                "access_schedule.json");
         }
 
         public async Task InitializeAsync()
@@ -48,26 +47,24 @@ namespace Vorsight.Core.Scheduling
                 if (File.Exists(_schedulePath))
                 {
                     var json = await File.ReadAllTextAsync(_schedulePath);
-                    var schedules = JsonSerializer.Deserialize<List<AccessSchedule>>(json);
+                    _currentSchedule = JsonSerializer.Deserialize<AccessSchedule>(json);
                     
-                    foreach (var schedule in schedules)
+                    if (_currentSchedule != null)
                     {
-                        _schedules.TryAdd(schedule.ScheduleId, schedule);
+                        _logger.LogInformation("Loaded schedule {ScheduleId} from {Path}", 
+                            _currentSchedule.ScheduleId, _schedulePath);
                     }
-
-                    _logger.LogInformation("Loaded {ScheduleCount} schedules from {Path}", 
-                        schedules.Count, _schedulePath);
                 }
                 else
                 {
-                    _logger.LogInformation("No schedules file found at {Path}", _schedulePath);
-                    Directory.CreateDirectory(Path.GetDirectoryName(_schedulePath));
+                    _logger.LogInformation("No schedule file found at {Path}", _schedulePath);
+                    Directory.CreateDirectory(Path.GetDirectoryName(_schedulePath)!);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error initializing schedules");
-                throw;
+                _logger.LogError(ex, "Error initializing schedule");
+                // Don't throw, just start empty
             }
         }
 
@@ -79,15 +76,11 @@ namespace Vorsight.Core.Scheduling
                 throw new ArgumentNullException(nameof(schedule));
 
             schedule.ScheduleId ??= Guid.NewGuid().ToString();
-            schedule.CreatedUtc = DateTime.UtcNow;
-            schedule.ModifiedUtc = DateTime.UtcNow;
+            
+            _currentSchedule = schedule;
 
-            if (!_schedules.TryAdd(schedule.ScheduleId, schedule))
-                throw new InvalidOperationException($"Schedule {schedule.ScheduleId} already exists");
-
-            await PersistSchedulesAsync();
-            _logger.LogInformation("Created schedule {ScheduleId} for {ChildUsername}", 
-                schedule.ScheduleId, schedule.ChildUsername);
+            await PersistScheduleAsync();
+            _logger.LogInformation("Created/Overwrote schedule {ScheduleId}", schedule.ScheduleId);
 
             return schedule;
         }
@@ -99,12 +92,9 @@ namespace Vorsight.Core.Scheduling
             if (schedule == null)
                 throw new ArgumentNullException(nameof(schedule));
 
-            schedule.ModifiedUtc = DateTime.UtcNow;
+            _currentSchedule = schedule;
 
-            if (!_schedules.TryUpdate(schedule.ScheduleId, schedule, _schedules[schedule.ScheduleId]))
-                throw new InvalidOperationException($"Schedule {schedule.ScheduleId} not found");
-
-            await PersistSchedulesAsync();
+            await PersistScheduleAsync();
             _logger.LogInformation("Updated schedule {ScheduleId}", schedule.ScheduleId);
 
             return schedule;
@@ -114,105 +104,94 @@ namespace Vorsight.Core.Scheduling
         {
             ThrowIfDisposed();
 
-            if (!_schedules.TryRemove(scheduleId, out _))
-                throw new InvalidOperationException($"Schedule {scheduleId} not found");
+            _currentSchedule = null;
+            
+            try
+            {
+                if (File.Exists(_schedulePath))
+                    File.Delete(_schedulePath);
+            }
+            catch (Exception ex) 
+            {
+                _logger.LogError(ex, "Error deleting schedule file");
+            }
 
-            await PersistSchedulesAsync();
-            _logger.LogInformation("Deleted schedule {ScheduleId}", scheduleId);
+            _logger.LogInformation("Deleted schedule");
+            await Task.CompletedTask;
         }
 
-        public async Task<AccessSchedule> GetScheduleAsync(string childUsername)
+        public async Task<AccessSchedule?> GetScheduleAsync()
         {
             ThrowIfDisposed();
-
-            var schedule = _schedules.Values.FirstOrDefault(s => s.ChildUsername == childUsername);
-            return await Task.FromResult(schedule);
+            return await Task.FromResult(_currentSchedule);
         }
 
         public async Task<IEnumerable<AccessSchedule>> GetAllSchedulesAsync()
         {
             ThrowIfDisposed();
-            return await Task.FromResult(_schedules.Values.ToList());
+            if (_currentSchedule != null)
+                return await Task.FromResult(new[] { _currentSchedule });
+            return await Task.FromResult(Array.Empty<AccessSchedule>());
         }
 
-        public async Task<bool> IsAccessAllowedAsync(string childUsername)
+        public async Task<bool> IsAccessAllowedAsync()
         {
             ThrowIfDisposed();
 
-            var schedule = await GetScheduleAsync(childUsername);
-            if (schedule == null)
+            if (_currentSchedule == null)
                 return false;
-
-            return await Task.FromResult(schedule.IsAccessAllowedNow());
+            
+            return await Task.FromResult(_currentSchedule?.IsAccessAllowedNow() ?? true); 
         }
 
-        public async Task<TimeSpan?> GetTimeRemainingAsync(string childUsername)
+        public async Task<TimeSpan?> GetTimeRemainingAsync()
         {
             ThrowIfDisposed();
-
-            var schedule = await GetScheduleAsync(childUsername);
-            return await Task.FromResult(schedule?.GetTimeRemaining());
+            return await Task.FromResult(_currentSchedule?.GetTimeRemaining());
         }
 
-        public async Task<TimeSpan?> GetTimeUntilAccessAsync(string childUsername)
+        public async Task<TimeSpan?> GetTimeUntilAccessAsync()
         {
             ThrowIfDisposed();
-
-            var schedule = await GetScheduleAsync(childUsername);
-            return await Task.FromResult(schedule?.GetTimeUntilAccess());
+            return await Task.FromResult(_currentSchedule?.GetTimeUntilAccess());
         }
 
-        public async Task<bool> ForceLogoffAsync(string childUsername)
+        public async Task<bool> ForceLogoffAsync()
         {
             ThrowIfDisposed();
 
             try
             {
-                _logger.LogWarning("Forcing logoff for {ChildUsername}", childUsername);
+                _logger.LogWarning("Forcing logoff");
                 
-                // Force logoff using Windows API
                 var result = ShutdownHelper.TryForceLogoff();
                 
                 if (result)
                 {
-                    _logger.LogInformation("Logoff initiated for {ChildUsername}", childUsername);
+                    _logger.LogInformation("Logoff initiated");
                     AccessTimeExpired?.Invoke(this, new AccessThresholdEventArgs
                     {
-                        ChildUsername = childUsername,
                         EventTime = DateTime.UtcNow
                     });
                 }
                 else
                 {
-                    _logger.LogError("Failed to force logoff for {ChildUsername}", childUsername);
+                    _logger.LogError("Failed to force logoff");
                 }
 
                 return await Task.FromResult(result);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error forcing logoff for {ChildUsername}", childUsername);
+                _logger.LogError(ex, "Error forcing logoff");
                 return false;
             }
         }
 
-        public async Task PreventReloginAsync(string childUsername)
+        public async Task PreventReloginAsync()
         {
             ThrowIfDisposed();
-
-            try
-            {
-                _logger.LogInformation("Preventing re-login for {ChildUsername}", childUsername);
-                
-                // Note: In production, this would involve account lockout policies
-                // For now, just log the action
-                
-                await Task.CompletedTask;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error preventing re-login for {ChildUsername}", childUsername);
-            }
+            await Task.CompletedTask; 
         }
 
         public async Task StartEnforcementAsync()
@@ -246,10 +225,7 @@ namespace Vorsight.Core.Scheduling
                 {
                     await _enforcementTask;
                 }
-                catch (OperationCanceledException)
-                {
-                    // Expected
-                }
+                catch (OperationCanceledException) { }
             }
 
             _logger.LogInformation("Schedule enforcement stopped");
@@ -266,7 +242,10 @@ namespace Vorsight.Core.Scheduling
                 {
                     try
                     {
-                        foreach (var schedule in _schedules.Values.Where(s => s.IsActive))
+                        // Enforce the single global schedule if it exists and is active
+                        var schedule = _currentSchedule;
+
+                        if (schedule != null && schedule.IsActive)
                         {
                             var timeRemaining = schedule.GetTimeRemaining();
 
@@ -277,12 +256,11 @@ namespace Vorsight.Core.Scheduling
                                     DateTime.UtcNow - lastWarningTime > TimeSpan.FromMinutes(1))
                                 {
                                     _logger.LogWarning(
-                                        "Access expiring soon for {ChildUsername}: {TimeRemaining} remaining",
-                                        schedule.ChildUsername, timeRemaining.Value);
+                                        "Access expiring soon: {TimeRemaining} remaining",
+                                        timeRemaining.Value);
 
                                     AccessTimeExpiring?.Invoke(this, new AccessThresholdEventArgs
                                     {
-                                        ChildUsername = schedule.ChildUsername,
                                         TimeRemaining = timeRemaining,
                                         EventTime = DateTime.UtcNow
                                     });
@@ -293,10 +271,8 @@ namespace Vorsight.Core.Scheduling
                             else if (!schedule.IsAccessAllowedNow())
                             {
                                 // Access time expired or outside window
-                                _logger.LogWarning("Access denied for {ChildUsername} (Outside Allowed Hours)", 
-                                    schedule.ChildUsername);
-
-                                await ForceLogoffAsync(schedule.ChildUsername);
+                                _logger.LogWarning("Access denied (Outside Allowed Hours)");
+                                await ForceLogoffAsync();
                             }
                         }
 
@@ -319,24 +295,26 @@ namespace Vorsight.Core.Scheduling
             }
         }
 
-        private async Task PersistSchedulesAsync()
+        private async Task PersistScheduleAsync()
         {
             try
             {
-                var directory = Path.GetDirectoryName(_schedulePath);
-                Directory.CreateDirectory(directory);
+                if (_currentSchedule == null) return;
 
-                var json = JsonSerializer.Serialize(_schedules.Values.ToList(), new JsonSerializerOptions
+                var directory = Path.GetDirectoryName(_schedulePath);
+                if (directory != null) Directory.CreateDirectory(directory);
+
+                var json = JsonSerializer.Serialize(_currentSchedule, new JsonSerializerOptions
                 {
                     WriteIndented = true
                 });
 
                 await File.WriteAllTextAsync(_schedulePath, json);
-                _logger.LogDebug("Schedules persisted to {Path}", _schedulePath);
+                _logger.LogDebug("Schedule persisted to {Path}", _schedulePath);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error persisting schedules");
+                _logger.LogError(ex, "Error persisting schedule");
             }
         }
 
