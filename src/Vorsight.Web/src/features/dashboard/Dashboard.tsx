@@ -48,7 +48,7 @@ export function Dashboard({ status }: DashboardProps) {
                         <CardTitle className="text-sm tracking-wide text-primary">AUDIT LOG</CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 p-0">
-                        <AuditAlert audit={status.audit || null} />
+                        <AuditAlert />
                     </CardContent>
                 </Card>
             </div>

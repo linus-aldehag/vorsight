@@ -8,6 +8,7 @@ export interface ActivityLogEntry {
     active_window: string;
     process_name: string;
     duration: number;
+    username?: string;
 }
 
 export function useActivity(machineId: string | undefined, limit: number = 100) {

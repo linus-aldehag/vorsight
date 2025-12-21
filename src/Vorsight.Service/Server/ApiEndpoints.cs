@@ -22,7 +22,7 @@ public static class ApiEndpoints
             IHealthMonitor healthMonitor, 
             UptimeMonitor uptimeMonitor, 
             IActivityCoordinator activityCoordinator,
-            IAuditManager auditManager) =>
+            IHealthAuditManager auditManager) =>
         {
             // Trigger audit if needed (it throttles itself)
             var audit = await auditManager.PerformAuditAsync();

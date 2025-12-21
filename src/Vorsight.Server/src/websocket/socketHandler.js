@@ -74,20 +74,54 @@ module.exports = (io) => {
 
                 // Store activity
                 db.prepare(`
-          INSERT INTO activity_history (machine_id, timestamp, active_window, process_name, duration)
-          VALUES (?, ?, ?, ?, ?)
+          INSERT INTO activity_history (machine_id, timestamp, active_window, process_name, duration, username)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).run(
                     machineId,
                     activity.timestamp,
                     activity.activeWindow,
                     activity.processName,
-                    activity.duration
+                    activity.duration,
+                    activity.username || null
                 );
 
                 // Broadcast to web clients watching this machine
                 io.to(`machine:${machineId}`).emit('activity:update', activity);
             } catch (error) {
                 console.error('Activity error:', error);
+            }
+        });
+
+        // Audit event
+        socket.on('machine:audit', (data) => {
+            try {
+                const { machineId, auditEvent } = data;
+
+                if (!machineId || !auditEvent) {
+                    console.error('Audit event missing machineId or auditEvent');
+                    return;
+                }
+
+                // Store audit event
+                db.prepare(`
+          INSERT INTO audit_events (machine_id, event_id, event_type, username, timestamp, details, source_log_name, is_flagged)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+                    machineId,
+                    auditEvent.eventId,
+                    auditEvent.eventType,
+                    auditEvent.username,
+                    auditEvent.timestamp,
+                    auditEvent.details,
+                    auditEvent.sourceLogName,
+                    auditEvent.isFlagged ? 1 : 0
+                );
+
+                // Broadcast to web clients
+                io.to(`machine:${machineId}`).emit('audit:alert', auditEvent);
+                io.emit('audit:global', { machineId, auditEvent, timestamp: new Date().toISOString() });
+            } catch (error) {
+                console.error('Audit event processing error:', error);
             }
         });
 

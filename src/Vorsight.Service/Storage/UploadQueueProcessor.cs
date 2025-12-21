@@ -105,7 +105,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
     
     public async Task CompleteAsync(TimeSpan? timeout = null)
     {
-        var actualTimeout = timeout ?? TimeSpan.FromSeconds(10);
+        var actualTimeout = timeout ?? TimeSpan.FromSeconds(3); // Reduced from 10s to 3s
         
         _logger.LogInformation("Completing upload queue with {Count} items", _uploadQueue.Count);
         _uploadQueue.Complete();
@@ -119,7 +119,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 
                 if (completedTask == timeoutTask && !_processorTask.IsCompleted)
                 {
-                    _logger.LogWarning("Upload processor did not complete within timeout");
+                    _logger.LogWarning("Upload processor did not complete within {Timeout}s, canceling...", actualTimeout.TotalSeconds);
                     await _internalCts.CancelAsync();
                 }
                 else
@@ -133,7 +133,8 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
             }
         }
         
-        await _googleDriveService.WaitForPendingUploadsAsync(actualTimeout);
+        // Reduced timeout for waiting on Google Drive uploads
+        await _googleDriveService.WaitForPendingUploadsAsync(TimeSpan.FromSeconds(2));
     }
     
     private async Task ProcessUploadsAsync(CancellationToken cancellationToken)

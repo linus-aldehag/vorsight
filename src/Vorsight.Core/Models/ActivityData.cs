@@ -8,4 +8,5 @@ public class ActivityData
     public string ActiveWindow { get; set; } = string.Empty;
     public string ProcessName { get; set; } = string.Empty;
     public int DurationSeconds { get; set; }
+    public string Username { get; set; } = string.Empty;
 }

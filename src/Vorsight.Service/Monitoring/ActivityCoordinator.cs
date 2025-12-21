@@ -61,7 +61,8 @@ public class ActivityCoordinator(
                     timestamp = _currentActivityStart,
                     activeWindow = _currentWindow,
                     processName = _currentProcess,
-                    duration = duration
+                    duration = duration,
+                    username = Environment.UserName
                 });
             }
 

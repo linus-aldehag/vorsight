@@ -79,6 +79,7 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     {
         var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
         
+        // Release semaphore if we're blocked
         if (_uploadSemaphore.CurrentCount == 0)
         {
             _logger.LogInformation("Waiting for ongoing uploads to complete...");
@@ -93,34 +94,39 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         List<Task> uploadsToWait;
         lock (_uploadsLock)
         {
-            uploadsToWait = _activeUploads.ToList();
+            // Filter out already completed, canceled, or faulted tasks
+            uploadsToWait = _activeUploads
+                .Where(t => !t.IsCompleted && !t.IsCanceled && !t.IsFaulted)
+                .ToList();
         }
 
         if (uploadsToWait.Any())
         {
-            _logger.LogInformation("Waiting for {Count} active uploads to complete or timeout after {Seconds} seconds...", 
-                uploadsToWait.Count, actualTimeout.TotalSeconds);
+            _logger.LogInformation("Waiting for {Count} pending uploads (out of {Total} active tasks)...", 
+                uploadsToWait.Count, _activeUploads.Count);
                 
             try
             {
-                // Use Task.WhenAny with a timeout to avoid waiting indefinitely
-                var timeoutTask = Task.Delay(actualTimeout);
+                // Create a timeout task
+                using var cts = new CancellationTokenSource(actualTimeout);
                 var uploadTasks = Task.WhenAll(uploadsToWait);
                 
-                var completedTask = await Task.WhenAny(uploadTasks, timeoutTask);
-                if (completedTask == timeoutTask)
-                {
-                    _logger.LogWarning("Timed out waiting for uploads to complete");
-                }
-                else
-                {
-                    _logger.LogInformation("All active uploads completed successfully");
-                }
+                // Wait for either all uploads or timeout
+                await uploadTasks.WaitAsync(cts.Token);
+                _logger.LogInformation("All pending uploads completed successfully");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogWarning("Timeout waiting for uploads to complete after {Seconds}s", actualTimeout.TotalSeconds);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error waiting for uploads to complete");
             }
+        }
+        else
+        {
+            _logger.LogDebug("No pending uploads to wait for");
         }
     }
     

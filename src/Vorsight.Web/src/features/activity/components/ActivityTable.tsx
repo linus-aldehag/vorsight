@@ -20,6 +20,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Time</TableHead>
+                        <TableHead>User</TableHead>
                         <TableHead>Process</TableHead>
                         <TableHead>Window Title</TableHead>
                         <TableHead>Duration</TableHead>
@@ -28,7 +29,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                 <TableBody>
                     {activities.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
+                            <TableCell colSpan={5} className="h-24 text-center">
                                 No activity recorded.
                             </TableCell>
                         </TableRow>
@@ -38,6 +39,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                 <TableCell>
                                     {format(new Date(activity.timestamp), "MMM d, HH:mm:ss")}
                                 </TableCell>
+                                <TableCell className="font-medium">{activity.username || '-'}</TableCell>
                                 <TableCell className="font-medium">{activity.process_name}</TableCell>
                                 <TableCell className="max-w-[300px] truncate" title={activity.active_window}>
                                     {activity.active_window}
