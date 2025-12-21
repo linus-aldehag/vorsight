@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Include xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Fragment>
-    <!-- Properties for user input (no empty values in v5) -->
+    <!-- Properties for user input -->
     <Property Id="SERVER_HOST" Value="localhost" />
     <Property Id="SERVER_PORT" Value="3000" />
-    <Property Id="PRESHARED_KEY" Secure="yes" />
-    <Property Id="GDRIVE_FOLDER_ID" />
+    <Property Id="PRESHARED_KEY" Secure="yes" Hidden="yes" />
 
     <!-- Custom Dialog for Configuration -->
     <UI>
@@ -26,10 +25,6 @@
         <Control Id="PskLabel" Type="Text" X="25" Y="140" Width="100" Height="15" Text="Pre-Shared Key (Required):" />
         <Control Id="PskEdit" Type="Edit" X="25" Y="155" Width="320" Height="18" Property="PRESHARED_KEY" Password="yes" />
         
-        <!-- Google Drive Folder ID (Optional) -->
-        <Control Id="GDriveFolderIdLabel" Type="Text" X="25" Y="180" Width="150" Height="15" Text="Google Drive Folder ID (Optional):" />
-        <Control Id="GDriveFolderIdEdit" Type="Edit" X="25" Y="195" Width="320" Height="18" Property="GDRIVE_FOLDER_ID" />
-        
         <!-- Navigation buttons -->
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
           <Publish Event="NewDialog" Value="InstallDirDlg" />
@@ -37,8 +32,9 @@
         
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next" Disabled="yes">
           <Publish Event="NewDialog" Value="VerifyReadyDlg" Condition="PRESHARED_KEY" />
-          <Condition Action="enable">PRESHARED_KEY</Condition>
-          <Condition Action="disable">NOT PRESHARED_KEY</Condition>
+          <Publish Event="AddLocal" Value="Next" Condition="PRESHARED_KEY"><![CDATA[1]]></Publish>
+          <Publish Event="Enable" Value="Next" Condition="PRESHARED_KEY" />
+          <Publish Event="Disable" Value="Next" Condition="NOT PRESHARED_KEY" />
         </Control>
         
         <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
@@ -47,4 +43,4 @@
       </Dialog>
     </UI>
   </Fragment>
-</Include>
+</Wix>

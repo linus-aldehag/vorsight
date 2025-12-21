@@ -13,11 +13,7 @@
       <ComponentGroupRef Id="AgentComponents" />
     </Feature>
     
-    <!-- Property declarations for configuration -->
-    <Property Id="SERVER_HOST" Value="localhost" />
-    <Property Id="SERVER_PORT" Value="3000" />
-    <Property Id="PRESHARED_KEY" Secure="yes" />
-    <Property Id="GDRIVE_FOLDER_ID" />
+    <!-- Properties moved to ConfigDialog.wxs -->
     
     <!-- UI Configuration -->
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
