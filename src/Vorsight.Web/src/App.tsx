@@ -102,12 +102,12 @@ function MainLayout() {
                         DASHBOARD
                     </Button>
                     <Button
-                        variant={currentView === 'settings' ? 'default' : 'ghost'}
-                        onClick={() => handleNavigation('settings')}
-                        className={cn("gap-2", currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        variant={currentView === 'activity' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('activity')}
+                        className={cn("gap-2", currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
-                        <Settings size={16} />
-                        SETTINGS
+                        <Activity size={16} />
+                        ACTIVITY
                     </Button>
                     <Button
                         variant={currentView === 'gallery' ? 'default' : 'ghost'}
@@ -115,15 +115,15 @@ function MainLayout() {
                         className={cn("gap-2", currentView === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
                         <ImageIcon size={16} />
-                        GALLERY
+                        SCREENSHOTS
                     </Button>
                     <Button
-                        variant={currentView === 'activity' ? 'default' : 'ghost'}
-                        onClick={() => handleNavigation('activity')}
-                        className={cn("gap-2", currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        variant={currentView === 'settings' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('settings')}
+                        className={cn("gap-2", currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
                     >
-                        <Activity size={16} />
-                        ACTIVITY
+                        <Settings size={16} />
+                        SETTINGS
                     </Button>
                 </div>
             </div>
