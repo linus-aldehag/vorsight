@@ -11,10 +11,26 @@
     <Feature Id="Main" Title="Vorsight" Description="Monitoring Service and Agent" Level="1">
       <ComponentGroupRef Id="ServiceComponents" />
       <ComponentGroupRef Id="AgentComponents" />
+      <ComponentGroupRef Id="ConfigComponents" />
     </Feature>
     
+    <!-- Property declarations for configuration -->
+    <Property Id="SERVER_HOST" Value="localhost" />
+    <Property Id="SERVER_PORT" Value="3000" />
+    <Property Id="PRESHARED_KEY" Value="" />
+    <Property Id="GDRIVE_FOLDER_ID" Value="" />
+    
+    <!-- UI Configuration -->
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    
+    <!-- Custom UI to insert our configuration dialog -->
+    <UI>
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ConfigDialog" Order="3">1</Publish>
+    </UI>
   </Package>
+
+  <!-- Import custom dialog -->
+  <?include ConfigDialog.wxs ?>
 
   <Fragment>
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
@@ -48,5 +64,30 @@
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="VorsightAgent" Type="string" Value="[INSTALLFOLDER]Vorsight.Agent.exe" />
       </Component>
     </ComponentGroup>
+    
+    <!-- Configuration update component -->
+    <ComponentGroup Id="ConfigComponents" Directory="INSTALLFOLDER">
+      <Component Id="ConfigScriptComponent" Guid="*" Bitness="always64">
+        <File Id="UpdateConfigScript" Source="UpdateConfig.ps1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+  
+  <!-- Custom Action to update configuration -->
+  <Fragment>
+    <CustomAction Id="UpdateConfiguration"
+                  Property="UpdateConfigPS"
+                  Value="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]UpdateConfig.ps1&quot; -InstallDir &quot;[INSTALLFOLDER]&quot; -ServerHost &quot;[SERVER_HOST]&quot; -ServerPort &quot;[SERVER_PORT]&quot; -PresharedKey &quot;[PRESHARED_KEY]&quot; -GDriveFolderId &quot;[GDRIVE_FOLDER_ID]&quot;"
+                  Execute="immediate" />
+    
+    <CustomAction Id="UpdateConfigPS"
+                  Impersonate="no"
+                  Execute="deferred"
+                  Return="check" />
+    
+    <InstallExecuteSequence>
+      <Custom Action="UpdateConfiguration" Before="UpdateConfigPS">NOT Installed</Custom>
+      <Custom Action="UpdateConfigPS" After="InstallFiles">NOT Installed</Custom>
+    </InstallExecuteSequence>
   </Fragment>
 </Wix>

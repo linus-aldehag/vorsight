@@ -34,7 +34,7 @@ Create `src/Vorsight.Service/appsettings.Development.json`:
     "PresharedKey": "local-dev-psk-change-this"
   },
   "Agent": {
-    "ExecutablePath": "C:\\repos\\vorsight\\src\\Vorsight.Agent\\bin\\Debug\\net10.0-windows\\win-x64\\Vorsight.Agent.exe"
+    "ExecutablePath": "C:\\checkout-dir\\vorsight\\src\\Vorsight.Agent\\bin\\Debug\\net10.0-windows\\win-x64\\Vorsight.Agent.exe"
   },
   "IPC": {
     "PipeName": "VorsightIPC_Dev"
