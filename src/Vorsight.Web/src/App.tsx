@@ -5,25 +5,31 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { ScheduleManager } from './features/schedule/ScheduleManager';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
 import { MachineSelector } from './components/MachineSelector/MachineSelector';
+import { useMachine } from './context/MachineContext';
 import { IconLayoutDashboard, IconClock, IconPhoto } from '@tabler/icons-react';
 
 function App() {
+    const { selectedMachine } = useMachine();
     const [status, setStatus] = useState<StatusResponse | null>(null);
 
     useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const data = await VorsightApi.getStatus();
-                setStatus(data);
-            } catch (e) {
-                console.error(e);
-            }
-        };
+        if (selectedMachine) {
+            fetchStatus();
+            const interval = setInterval(fetchStatus, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [selectedMachine]);
 
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 3000);
-        return () => clearInterval(interval);
-    }, []);
+    const fetchStatus = async () => {
+        if (!selectedMachine) return;
+
+        try {
+            const data = await VorsightApi.getStatus(selectedMachine.id);
+            setStatus(data);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     if (!status) return (
         <Center h="100vh">

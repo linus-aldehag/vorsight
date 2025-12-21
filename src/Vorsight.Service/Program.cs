@@ -25,6 +25,10 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    Log.Debug($"Environment: {builder.Environment.EnvironmentName}");
+    Log.Debug($"ContentRootPath: {builder.Environment.ContentRootPath}");
+    Log.Debug($"Agent Path from Config: {builder.Configuration["Agent:ExecutablePath"]}");
+
     // Add services to the container.
     builder.Services.AddSerilog();
 
@@ -51,6 +55,7 @@ try
     // Server Connection (Node.js server)
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<IServerConnection, ServerConnection>();
+    builder.Services.AddSingleton<IAgentLauncher, AgentLauncher>();
     
     // Scavenged Services
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();

@@ -116,6 +116,7 @@ namespace Vorsight.Native
         public const uint TOKEN_ASSIGN_PRIMARY = 0x0001;
         public const uint TOKEN_IMPERSONATE = 0x0004;
         public const uint TOKEN_READ = 0x00020008;
+        public const uint TOKEN_ALL_ACCESS = 0xF01FF;
 
         // Impersonation levels
         public const int SecurityImpersonation = 2;

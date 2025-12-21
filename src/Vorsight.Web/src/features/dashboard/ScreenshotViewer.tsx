@@ -32,9 +32,10 @@ export function ScreenshotViewer() {
     };
 
     const requestNew = async () => {
+        if (!selectedMachine) return;
         setLoading(true);
         try {
-            await VorsightApi.requestScreenshot();
+            await VorsightApi.requestScreenshot(selectedMachine.id);
             // Wait for upload then refresh
             setTimeout(() => {
                 loadLatest();

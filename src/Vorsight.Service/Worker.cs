@@ -1,6 +1,7 @@
 using Vorsight.Core.Audit;
 using Vorsight.Core.IPC;
 using Vorsight.Core.Scheduling;
+using Vorsight.Core.Settings;
 
 using Vorsight.Service.Services;
 
@@ -24,8 +25,10 @@ public class Worker : BackgroundService
     private readonly IActivityCoordinator _activityCoordinator;
     private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly ISessionSummaryManager _sessionSummaryManager;
-    private readonly Core.Settings.ISettingsManager _settingsManager;
+    private readonly ISettingsManager _settingsManager;
     private readonly IServerConnection _serverConnection;
+    private readonly IAgentLauncher _agentLauncher;
+    private readonly ICommandExecutor _commandExecutor;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
@@ -42,7 +45,9 @@ public class Worker : BackgroundService
         Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor,
         ISessionSummaryManager sessionSummaryManager,
         Core.Settings.ISettingsManager settingsManager,
-        IServerConnection serverConnection)
+        IServerConnection serverConnection,
+        IAgentLauncher agentLauncher,
+        ICommandExecutor commandExecutor)
     {
         _logger = logger;
         _ipcServer = ipcServer;
@@ -58,6 +63,8 @@ public class Worker : BackgroundService
         _sessionSummaryManager = sessionSummaryManager;
         _settingsManager = settingsManager;
         _serverConnection = serverConnection;
+        _agentLauncher = agentLauncher;
+        _commandExecutor = commandExecutor;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -74,6 +81,7 @@ public class Worker : BackgroundService
             await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
             await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
             await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
+            await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
             await TryStartComponent("ServerConnection", () => _serverConnection.InitializeAsync());
 
             // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
@@ -83,6 +91,9 @@ public class Worker : BackgroundService
                 _ipcServer.SessionConnected += OnSessionConnected;
                 _ipcServer.SessionDisconnected += OnSessionDisconnected;
             }
+
+            // Hook up server commands
+            _serverConnection.CommandReceived += OnServerCommandReceived;
 
             // Hook up audit events
             _auditManager.CriticalEventDetected += (sender, args) =>
@@ -240,6 +251,34 @@ public class Worker : BackgroundService
         GC.SuppressFinalize(this);
     }
 
+    private void OnServerCommandReceived(object? sender, CommandReceivedEventArgs e)
+    {
+        try
+        {
+            if (e.CommandType == "screenshot")
+            {
+                _logger.LogInformation("Processing screenshot command from server");
+                _ = _agentLauncher.LaunchScreenshotAgentAsync();
+            }
+            else if (e.CommandType == "shutdown")
+            {
+                _logger.LogInformation("Processing shutdown command from server");
+                // /s = shutdown, /t 10 = wait 10s (give time to see it works)
+                _commandExecutor.RunCommandAsUser("shutdown", "/s /t 10");
+            }
+            else if (e.CommandType == "logout")
+            {
+                _logger.LogInformation("Processing logout command from server");
+                // /l = logoff
+                _commandExecutor.RunCommandAsUser("shutdown", "/l");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing server command");
+        }
+    }
+
     /// <summary>
     /// Handles incoming messages from Agent via IPC.
     /// </summary>
@@ -282,7 +321,7 @@ public class Worker : BackgroundService
     /// <summary>
     /// Handles screenshot message from Agent.
     /// </summary>
-    private void HandleScreenshotMessage(uint sessionId, PipeMessage message)
+    private async void HandleScreenshotMessage(uint sessionId, PipeMessage message)
     {
         _logger.LogInformation(
             "Screenshot received from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
@@ -331,6 +370,21 @@ public class Worker : BackgroundService
                 File.WriteAllBytes(filePath, message.Payload);
                 _logger.LogInformation("Screenshot saved: {FilePath}", filePath);
                 
+                // Upload to Node Server
+                var fileId = await _serverConnection.UploadFileAsync(message.Payload, fileName);
+                if (fileId != null)
+                {
+                    await _serverConnection.SendScreenshotNotificationAsync(new
+                    {
+                        id = fileId,
+                        captureTime = DateTime.UtcNow,
+                        triggerType = "Auto",
+                        googleDriveFileId = (string?)null,
+                        isUploaded = true
+                    });
+                     _logger.LogInformation("Screenshot uploaded to server: {FileId}", fileId);
+                }
+
                 // Enqueue for upload (Smart upload will preserve folder structure)
                 _uploadQueueProcessor.EnqueueFileAsync(filePath, CancellationToken.None);
                 

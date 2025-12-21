@@ -1,30 +1,81 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../db/database');
 
-// Legacy status endpoint for frontend compatibility
-// TODO: Refactor frontend to use machine-specific state
+// GET /api/status - Get system status for selected machine
 router.get('/', (req, res) => {
-    res.json({
-        health: {
-            screenshotsSuccessful: 0,
-            screenshotsFailed: 0,
-            uploadsSuccessful: 0,
-            uploadsFailed: 0,
-            totalScreenshotsSuccessful: 0,
-            totalScreenshotsFailed: 0,
-            totalUploadsSuccessful: 0,
-            totalUploadsFailed: 0,
-            periodDuration: '00:00:00',
-            totalRuntime: '00:00:00'
-        },
-        uptime: {
-            currentStart: new Date().toISOString(),
-            lastSeen: new Date().toISOString(),
-            isTracking: true
-        },
-        activity: null,
-        audit: null
-    });
+    try {
+        const { machineId } = req.query;
+
+        if (!machineId) {
+            // Return default status if no machine specified
+            return res.json({
+                health: {
+                    screenshotsSuccessful: 0,
+                    screenshotsFailed: 0,
+                    uploadsSuccessful: 0,
+                    uploadsFailed: 0,
+                    totalScreenshotsSuccessful: 0,
+                    totalScreenshotsFailed: 0,
+                    totalUploadsSuccessful: 0,
+                    totalUploadsFailed: 0,
+                    periodDuration: '00:00:00',
+                    totalRuntime: '00:00:00'
+                },
+                uptime: {
+                    currentStart: new Date().toISOString(),
+                    lastSeen: new Date().toISOString(),
+                    isTracking: true
+                },
+                activity: null,
+                audit: null
+            });
+        }
+
+        // Get machine state
+        const machine = db.prepare('SELECT * FROM machines WHERE id = ?').get(machineId);
+        const state = db.prepare('SELECT * FROM machine_state WHERE machine_id = ?').get(machineId);
+
+        // Get screenshot count
+        const screenshotCount = db.prepare('SELECT COUNT(*) as count FROM screenshots WHERE machine_id = ?').get(machineId);
+
+        // Get latest activity
+        const latestActivity = db.prepare(`
+      SELECT * FROM activity_history 
+      WHERE machine_id = ? 
+      ORDER BY timestamp DESC 
+      LIMIT 1
+    `).get(machineId);
+
+        res.json({
+            health: {
+                screenshotsSuccessful: screenshotCount?.count || 0,
+                screenshotsFailed: 0,
+                uploadsSuccessful: screenshotCount?.count || 0,
+                uploadsFailed: 0,
+                totalScreenshotsSuccessful: screenshotCount?.count || 0,
+                totalScreenshotsFailed: 0,
+                totalUploadsSuccessful: screenshotCount?.count || 0,
+                totalUploadsFailed: 0,
+                periodDuration: '00:00:00',
+                totalRuntime: '00:00:00'
+            },
+            uptime: {
+                currentStart: machine?.registration_date || new Date().toISOString(),
+                lastSeen: machine?.last_seen || new Date().toISOString(),
+                isTracking: machine?.is_online === 1
+            },
+            activity: latestActivity ? {
+                activeWindowTitle: latestActivity.active_window,
+                timeSinceLastInput: '0',
+                timestamp: latestActivity.timestamp
+            } : null,
+            audit: null
+        });
+    } catch (error) {
+        console.error('Get status error:', error);
+        res.status(500).json({ error: 'Failed to fetch status' });
+    }
 });
 
 module.exports = router;

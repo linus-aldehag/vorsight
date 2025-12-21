@@ -15,6 +15,9 @@ const io = new Server(server, {
     }
 });
 
+// Make io available in routes
+app.set('io', io);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -29,9 +32,11 @@ app.use('/api/activity', require('./routes/activity'));
 app.use('/api/screenshots', require('./routes/screenshots'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/status', require('./routes/status'));
+app.use('/api/system', require('./routes/system'));
 app.use('/api/schedule', require('./routes/schedule'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/media', require('./routes/media'));
 
 // WebSocket
 require('./websocket/socketHandler')(io);

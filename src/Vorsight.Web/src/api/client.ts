@@ -50,19 +50,22 @@ export interface AgentSettings {
 const BASE_URL = '/api'; // Relative URL - same server (localhost:3000)
 
 export const VorsightApi = {
-    async getStatus(): Promise<StatusResponse> {
-        const res = await fetch(`${BASE_URL}/status`);
+    async getStatus(machineId?: string): Promise<StatusResponse> {
+        const url = machineId ? `${BASE_URL}/status?machineId=${machineId}` : `${BASE_URL}/status`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Status check failed: ${res.statusText}`);
         return res.json();
     },
 
-    async requestScreenshot(type: string = 'Manual'): Promise<void> {
-        const res = await fetch(`${BASE_URL}/screenshot?type=${encodeURIComponent(type)}`, { method: 'POST' });
+    async requestScreenshot(machineId?: string): Promise<void> {
+        const url = machineId ? `${BASE_URL}/screenshots/request?machineId=${machineId}` : `${BASE_URL}/screenshots/request`;
+        const res = await fetch(url, { method: 'POST' });
         if (!res.ok) throw new Error('Screenshot request failed');
     },
 
-    async systemAction(action: 'shutdown' | 'logout'): Promise<ApiResponse> {
-        const res = await fetch(`${BASE_URL}/system/${action}`, { method: 'POST' });
+    async systemAction(action: 'shutdown' | 'logout', machineId?: string): Promise<ApiResponse> {
+        const query = machineId ? `?machineId=${machineId}` : '';
+        const res = await fetch(`${BASE_URL}/system/${action}${query}`, { method: 'POST' });
         if (!res.ok) throw new Error(`System action ${action} failed`);
         return res.json();
     },
