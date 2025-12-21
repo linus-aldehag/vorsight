@@ -1,14 +1,17 @@
-name: Build Installer
+name: Build Deployment Artifacts
 
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build:
+  build-windows:
+    name: Build Windows Installer
     runs-on: windows-latest
 
     steps:
@@ -17,16 +20,107 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: '10.0.x'
 
     - name: Install WiX Toolset
       run: dotnet tool install --global wix
 
-    - name: Build Installer (Powershell)
+    - name: Build Windows Installer
       run: .\build_installer.ps1 -Configuration Release
 
-    - name: Upload Installer
+    - name: Upload Windows Installer
       uses: actions/upload-artifact@v4
       with:
         name: VorsightSetup
         path: src/Vorsight.Setup/bin/Release/VorsightSetup.msi
+
+  build-pi:
+    name: Build Pi Deployment Package
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: |
+          src/Vorsight.Web/package-lock.json
+          src/Vorsight.Server/package-lock.json
+
+    - name: Build React Web App
+      working-directory: src/Vorsight.Web
+      run: |
+        npm ci
+        npm run build
+
+    - name: Install Server Dependencies
+      working-directory: src/Vorsight.Server
+      run: npm ci --production
+
+    - name: Create Deployment Package
+      run: |
+        # Create staging directory
+        mkdir -p deploy/pi/vorsight-server
+        
+        # Copy server files
+        cp -r src/Vorsight.Server/src deploy/pi/vorsight-server/
+        cp src/Vorsight.Server/package.json deploy/pi/vorsight-server/
+        cp src/Vorsight.Server/package-lock.json deploy/pi/vorsight-server/
+        cp src/Vorsight.Server/.env.example deploy/pi/vorsight-server/
+        
+        # Copy React build to public/
+        cp -r src/Vorsight.Web/dist deploy/pi/vorsight-server/public
+        
+        # Copy deployment scripts
+        cp deploy/pi/install.sh deploy/pi/vorsight-server/
+        cp deploy/pi/vorsight.service.template deploy/pi/vorsight-server/
+        cp deploy/pi/README.md deploy/pi/vorsight-server/
+        
+        # Make install script executable
+        chmod +x deploy/pi/vorsight-server/install.sh
+        
+        # Create tarball with version from tag or branch name
+        cd deploy/pi
+        VERSION="${GITHUB_REF_NAME}"
+        tar -czf vorsight-server-${VERSION}.tar.gz vorsight-server/
+
+    - name: Upload Pi Deployment Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: VorsightPiServer
+        path: deploy/pi/vorsight-server-*.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-windows, build-pi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download Windows Installer
+      uses: actions/download-artifact@v4
+      with:
+        name: VorsightSetup
+        path: artifacts/
+
+    - name: Download Pi Package
+      uses: actions/download-artifact@v4
+      with:
+        name: VorsightPiServer
+        path: artifacts/
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/VorsightSetup.msi
+          artifacts/vorsight-server-*.tar.gz
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+

@@ -9,6 +9,7 @@
     <PackageReference Include="WixToolset.UI.wixext" Version="5.0.0" />
     <PackageReference Include="WixToolset.Util.wixext" Version="5.0.0" />
     <PackageReference Include="WixToolset.Heat" Version="5.0.0" />
+    <PackageReference Include="WixJsonFileExtension" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Vorsight.Service\Vorsight.Service.csproj" />

@@ -126,3 +126,7 @@ src/Vorsight.Server/data/
 
 # Server public folder (React build output)
 src/Vorsight.Server/public/
+
+# Pi deployment archives
+deploy/pi/*.tar.gz
+
