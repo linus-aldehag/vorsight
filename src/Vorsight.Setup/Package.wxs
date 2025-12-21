@@ -24,9 +24,6 @@
     </UI>
   </Package>
 
-  <!-- Import custom dialog -->
-  <?include ConfigDialog.wxs ?>
-
   <Fragment>
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
