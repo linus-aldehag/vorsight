@@ -57,30 +57,32 @@ export function ActivityStats() {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <ResponsiveContainer width="100%" aspect={3}>
-                        <BarChart data={chartData}>
-                            <XAxis
-                                dataKey="label"
-                                stroke="#888888"
-                                fontSize={10}
-                                tickLine={false}
-                                axisLine={false}
-                                interval={5}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#0D1117', border: '1px solid #333' }}
-                                labelStyle={{ color: '#888888' }}
-                                cursor={{ fill: 'transparent' }}
-                            />
-                            <Bar
-                                dataKey="minutes"
-                                fill="#00D1FF"
-                                radius={[2, 2, 0, 0]}
-                                barSize={8}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
+                <CardContent className="pb-4">
+                    <div className="w-full min-h-[200px]">
+                        <ResponsiveContainer width="100%" height={200} minHeight={200}>
+                            <BarChart data={chartData}>
+                                <XAxis
+                                    dataKey="label"
+                                    stroke="#888888"
+                                    fontSize={10}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    interval={5}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#0D1117', border: '1px solid #333' }}
+                                    labelStyle={{ color: '#888888' }}
+                                    cursor={{ fill: 'transparent' }}
+                                />
+                                <Bar
+                                    dataKey="minutes"
+                                    fill="#00D1FF"
+                                    radius={[2, 2, 0, 0]}
+                                    barSize={8}
+                                />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </CardContent>
             </Card>
 

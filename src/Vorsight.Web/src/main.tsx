@@ -4,13 +4,16 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import { App } from './App.tsx'
 import { MachineProvider } from './context/MachineContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <MachineProvider>
-        <App />
-      </MachineProvider>
+      <ThemeProvider>
+        <MachineProvider>
+          <App />
+        </MachineProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )
