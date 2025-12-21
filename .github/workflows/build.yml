@@ -52,12 +52,6 @@ jobs:
         npm install
         npm run build
 
-    - name: Build Node.js Server
-      working-directory: src/Vorsight.Server
-      run: |
-        npm install
-        npm run build
-
     - name: Install Server Dependencies
       working-directory: src/Vorsight.Server
       run: npm install --production

@@ -1,12 +1,12 @@
-# Vorsight Pi Server Deployment
+# Vörsight Pi Server Deployment
 
-This directory contains everything needed to deploy the Vorsight server to a Raspberry Pi.
+This directory contains everything needed to deploy the Vörsight server to a Raspberry Pi.
 
 ## Prerequisites
 
 - Raspberry Pi (3 or later recommended)
 - Raspberry Pi OS (Debian-based)
-- Node.js 18+ installed on Pi
+- Node.js 25+ installed on Pi
 - SSH access to Pi
 - At least 1GB free space
 
@@ -14,29 +14,28 @@ This directory contains everything needed to deploy the Vorsight server to a Ras
 
 ### 1. Get Deployment Package
 
-The deployment package is automatically built by GitHub Actions on every push to `main`.
+The deployment package is automatically built by GitHub Actions when you push a tag.
 
-**Option A: Download from GitHub Actions** (Recommended)
-1. Go to the repository's **Actions** tab
-2. Find the latest successful workflow run
-3. Download the `VorsightPiServer` artifact
-4. Extract the `.tar.gz` file
+**Download from GitHub Releases** (Recommended)
+1. Go to the repository's **Releases** page
+2. Download the latest `vorsight-server-*.tar.gz` file
 
-**Option B: Trigger Manual Build**
-1. Go to **Actions** → **Build Deployment Artifacts**
-2. Click **Run workflow** → select `main` branch
-3. Wait for build to complete
-4. Download `VorsightPiServer` artifact
+**Or trigger a new build:**
+1. Create and push a tag: `git tag -a v1.0.1 -m "Release v1.0.1" && git push origin v1.0.1`
+2. Wait for GitHub Actions to complete
+3. Download from Releases page
 
-The artifact contains:
+The package contains:
 - Compiled React web app
-- Node.js server code
-- Installation scripts (`install.sh`, systemd template, README)
+- Node.js server code with production dependencies
+- Installation script (`install.sh`)
+- systemd service template
+- Environment configuration template (`.env.example`)
 
 ### 2. Transfer to Pi
 
-```powershell
-scp deploy\pi\vorsight-server-*.tar.gz pi@raspberrypi:~/
+```bash
+scp vorsight-server-*.tar.gz pi@raspberrypi:~/
 ```
 
 Replace `raspberrypi` with your Pi's hostname or IP address.
@@ -60,13 +59,14 @@ sudo ./install.sh
 The installer will:
 - Create a `vorsight` system user
 - Install files to `/opt/vorsight`
-- Install Node.js dependencies
-- Prompt you to configure `.env`
-- Create and start a systemd service
+- Install Node.js dependencies (production only)
+- Create `/opt/vorsight/.env` from template
+- Create systemd service
+- Start the service
 
 ### 4. Configure Environment
 
-The installer creates `/opt/vorsight/.env` from the template. **You must edit this file** with your configuration:
+Edit `/opt/vorsight/.env` with your settings:
 
 ```bash
 sudo nano /opt/vorsight/.env
@@ -75,13 +75,16 @@ sudo nano /opt/vorsight/.env
 Key settings to configure:
 
 ```bash
-PORT=3000                     # Server port
-HOST=0.0.0.0                  # Listen on all interfaces
+PORT=3000                                    # Server port
+HOST=0.0.0.0                                 # Listen on all interfaces
 NODE_ENV=production
-CLIENT_ORIGIN=http://your-pi-ip:3000
-JWT_SECRET=your-secure-random-secret-here  # CHANGE THIS!
+CLIENT_ORIGIN=http://your-pi-ip:3000        # CORS origin
+JWT_SECRET=your-secure-random-secret-here   # CHANGE THIS!
+PSK=your-secure-psk-here                    # Pre-shared key (match Windows client)
 DB_PATH=./data/vorsight.db
 ```
+
+**Important**: The `PSK` value must match the `PresharedKey` in the Windows client's `appsettings.json`.
 
 After editing, restart the service:
 
