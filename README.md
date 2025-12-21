@@ -10,11 +10,15 @@ A comprehensive Windows-based PC management system designed to provide parental 
 Vörsight (`vorsight` in code) is a sophisticated client-server architecture built in C# and designed to run on Windows systems. It operates at the system level to manage access schedules, capture user activity, and maintain audit logs for a designated child user account.
 
 ### Core Components
-- **Vorsight.Service**: The "Brain" (Windows Service, LocalSystem).
-- **Vorsight.Agent**: The "Eye" (User Session Agent).
-- **Vorsight.Core**: Shared logic, IPC, and auditing.
-- **Vorsight.Native**: Windows API P/Invoke wrappers.
-- **Vorsight.Web**: React frontend and API.
+- **Control Plane**:
+  - **Vorsight.Server** (Node.js): The central dashboard backend and API.
+  - **Vorsight.Web** (React): The web-based management interface.
+- **System Plane**:
+  - **Vorsight.Service** (C# .NET): The "Brain" (Windows Service, LocalSystem) that controls the PC.
+  - **Vorsight.Agent** (C# .NET): The "Eye" (User Session Agent) that interacts with the user session.
+- **Libraries**:
+  - **Vorsight.Core**: Shared logic, IPC, and data models.
+  - **Vorsight.Native**: Windows API P/Invoke wrappers.
 
 ## Key Features
 

@@ -90,6 +90,7 @@ Host Builder Setup
     ├─ IScheduleManager (Singleton)
     ├─ IAuditManager (Singleton)
     ├─ IScreenshotService (Singleton)
+    ├─ SocketIOClient (Singleton) [NEW]
     └─ Worker (BackgroundService)
     ↓
 Worker.ExecuteAsync()
@@ -98,6 +99,7 @@ Initialize Components:
     ├─ await scheduleManager.InitializeAsync()      [Load schedules from disk]
     ├─ await auditManager.InitializeAsync()          [Setup Event Log filters]
     ├─ await ipcServer.StartAsync()                  [Open Named Pipe listener]
+    ├─ await ConnectToNodeServer()                   [Connect Socket.IO to Localhost:5050]
     ├─ await scheduleManager.StartEnforcementAsync() [Start enforcement loop]
     └─ Main Service Loop (30-sec health checks)
 ```
