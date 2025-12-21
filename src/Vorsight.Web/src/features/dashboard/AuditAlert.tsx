@@ -1,94 +1,137 @@
-import { useState, useEffect } from 'react';
-import type { AuditReport } from '../../api/client';
-import { Button } from '../../components/ui/button';
-import { XCircle, AlertTriangle } from 'lucide-react';
+import { useRecentAuditEvents } from '@/hooks/useAudit';
+import { useMachine } from '@/context/MachineContext';
+import { AlertTriangle, ShieldAlert, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { format } from 'date-fns';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
-interface AuditAlertProps {
-    audit: AuditReport | null;
-}
+export function AuditAlert() {
+    const { selectedMachine } = useMachine();
+    const { auditEvents, isLoading, isError, mutate } = useRecentAuditEvents(selectedMachine?.id || '');
+    const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
-export function AuditAlert({ audit }: AuditAlertProps) {
-    const [visible, setVisible] = useState(false);
+    const handleDismiss = async (id: number) => {
+        try {
+            const response = await fetch(`/api/audit/${id}/acknowledge`, {
+                method: 'PATCH'
+            });
 
-    useEffect(() => {
-        if (!audit) return;
-
-        if (audit.passed) {
-            setVisible(false);
-            return;
-        }
-
-        const lastDismissed = localStorage.getItem('audit_dismissed_at');
-        if (lastDismissed) {
-            const dismissedTime = new Date(lastDismissed).getTime();
-            const auditTime = new Date(audit.timestamp).getTime();
-
-            if (auditTime > dismissedTime) {
-                setVisible(true);
-            } else {
-                setVisible(false);
+            if (response.ok) {
+                // Refresh the audit events list to remove the dismissed item
+                mutate();
             }
-        } else {
-            setVisible(true);
+        } catch (error) {
+            console.error('Failed to dismiss audit event:', error);
         }
-    }, [audit]);
-
-    if (!visible || !audit || audit.warnings.length === 0) return (
-        <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-xs font-mono p-4">
-            <div className="flex items-center gap-2 text-success opacity-50">
-                <div className="w-2 h-2 bg-success rounded-full" />
-                SYSTEM STATUS: NORMAL
-            </div>
-            <div className="mt-2 text-[10px] opacity-40">All systems operational</div>
-        </div>
-    );
-
-    const handleDismiss = () => {
-        localStorage.setItem('audit_dismissed_at', audit.timestamp);
-        setVisible(false);
     };
 
-    // Helper to highlight specific event IDs
-    const formatWarning = (warning: string) => {
-        // Simple regex to check for 4720 or 4728
-        // Assuming warning string contains the ID
-        const isCritical = warning.includes('4720') || warning.includes('4728');
+    const toggleExpand = (id: number) => {
+        setExpandedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    };
+
+    if (isLoading) {
         return (
-            <span className={isCritical ? "text-warning animate-pulse" : "text-destructive"}>
-                {isCritical && <AlertTriangle className="inline w-3 h-3 mr-1 mb-0.5" />}
-                {warning}
-            </span>
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-sm">Loading...</div>
+            </div>
         );
-    };
+    }
+
+    if (isError) {
+        return (
+            <div className="flex items-center justify-center h-full text-destructive">
+                <div className="text-sm">Failed to load audit events</div>
+            </div>
+        );
+    }
+
+    if (!auditEvents || auditEvents.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center p-4">
+                    <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <div className="text-sm">No security alerts</div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="flex flex-col h-full bg-black/40 text-xs font-mono p-4 overflow-y-auto">
-            <div className="flex justify-between items-center mb-2 pb-2 border-b border-destructive/20 text-destructive">
-                <span className="font-bold flex items-center gap-2">
-                    <XCircle size={14} />
-                    AUDIT ALERT
-                </span>
-                <span className="opacity-50">{new Date(audit.timestamp).toLocaleTimeString()}</span>
-            </div>
-
-            <ul className="space-y-2 flex-1 overflow-y-auto min-h-0">
-                {audit.warnings.map((w, i) => (
-                    <li key={i} className="flex gap-2">
-                        <span className="text-muted-foreground select-none opacity-50">[{String(i).padStart(3, '0')}]</span>
-                        {formatWarning(w)}
-                    </li>
-                ))}
-            </ul>
-
-            <div className="mt-4 flex justify-end">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDismiss}
-                    className="h-6 text-[10px] text-muted-foreground hover:text-foreground"
-                >
-                    ACKNOWLEDGE
-                </Button>
+        <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex-1 overflow-y-auto px-4 pb-4">
+                <div className="space-y-2">
+                    {auditEvents.map((event) => {
+                        const isExpanded = expandedIds.has(event.id);
+                        return (
+                            <div
+                                key={event.id}
+                                className="flex flex-col gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-colors"
+                            >
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="font-medium text-sm text-destructive">
+                                                {event.event_type}
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                                    {format(new Date(event.timestamp), 'HH:mm:ss')}
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-5 w-5 p-0 hover:bg-destructive/20"
+                                                    onClick={() => handleDismiss(event.id)}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                            User: {event.username} • Event ID: {event.event_id}
+                                        </div>
+                                        {event.details && (
+                                            <>
+                                                <div className={`text-xs text-muted-foreground mt-1 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                                                    {event.details}
+                                                </div>
+                                                {event.details.length > 100 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-6 text-xs mt-1 px-2 hover:bg-destructive/20"
+                                                        onClick={() => toggleExpand(event.id)}
+                                                    >
+                                                        {isExpanded ? (
+                                                            <>
+                                                                <ChevronUp className="h-3 w-3 mr-1" />
+                                                                Show less
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <ChevronDown className="h-3 w-3 mr-1" />
+                                                                Show more
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

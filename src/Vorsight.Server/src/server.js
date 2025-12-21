@@ -36,6 +36,7 @@ app.use('/api/system', require('./routes/system'));
 app.use('/api/schedule', require('./routes/schedule'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/audit', require('./routes/audit'));
 app.use('/api/media', require('./routes/media'));
 
 // WebSocket

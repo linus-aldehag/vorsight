@@ -11,6 +11,7 @@ public interface IServerConnection
     Task InitializeAsync();
     Task SendHeartbeatAsync(object state);
     Task SendActivityAsync(object activity);
+    Task SendAuditEventAsync(object auditEvent);
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     bool IsConnected { get; }
@@ -181,6 +182,26 @@ public class ServerConnection : IServerConnection
                 machineId = _machineId,
                 activity
             });
+        }
+    }
+    
+    public async Task SendAuditEventAsync(object auditEvent)
+    {
+        _logger.LogDebug("SendAuditEventAsync called. Socket connected: {Connected}", _socket?.Connected);
+        
+        if (_socket?.Connected == true)
+        {
+            _logger.LogInformation("Emitting audit event via Socket.IO");
+            await _socket.EmitAsync("machine:audit", new
+            {
+                machineId = _machineId,
+                auditEvent
+            });
+            _logger.LogInformation("Audit event emitted successfully");
+        }
+        else
+        {
+            _logger.LogWarning("Cannot send audit event - socket not connected");
         }
     }
     

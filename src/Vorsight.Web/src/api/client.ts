@@ -107,8 +107,10 @@ export const VorsightApi = {
     },
 
     async getActivitySummary(machineId?: string): Promise<ActivitySummary> {
-        const url = machineId ? `${BASE_URL}/analytics/summary?machineId=${machineId}` : `${BASE_URL}/analytics/summary`;
-        const res = await fetch(url);
+        if (!machineId) {
+            return { totalActiveHours: 0, timeline: [], topApps: [], lastActive: new Date().toISOString() };
+        }
+        const res = await fetch(`${BASE_URL}/analytics/summary/${machineId}`);
         if (!res.ok) throw new Error('Failed to fetch analytics');
         return res.json();
     },

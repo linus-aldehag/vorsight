@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics.Eventing.Reader;
+using Microsoft.Extensions.Logging;
 
 namespace Vorsight.Core.Audit;
 
@@ -137,6 +138,8 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         await Task.CompletedTask;
     }
 
+    private EventLogWatcher? _securityLogWatcher;
+
     public async Task StartMonitoringAsync()
     {
         ThrowIfDisposed();
@@ -146,15 +149,93 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
         try
         {
+            // Build the query from filters
+            var query = BuildEventQuery();
+            if (string.IsNullOrEmpty(query))
+            {
+                logger.LogWarning("No audit filters configured. Event log monitoring will operate with default security catch-all.");
+                query = "*[System/Provider[@Name='Microsoft-Windows-Security-Auditing']]";
+            }
+
+            var eventQuery = new EventLogQuery("Security", PathType.LogName, query);
+            _securityLogWatcher = new EventLogWatcher(eventQuery);
+            
+            _securityLogWatcher.EventRecordWritten += SecurityLogWatcher_EventRecordWritten;
+            
+            _securityLogWatcher.Enabled = true;
             IsMonitoring = true;
-            logger.LogInformation("Event log monitoring started");
+            
+            logger.LogInformation("Event log monitoring started with query: {Query}", query);
             await Task.CompletedTask;
+        }
+        catch (EventLogException ex)
+        {
+            // If we lack permission (must be admin/service), we log a warning but don't crash the app
+            logger.LogWarning(ex, "Could not initialize Event Log watchers. Ensure the service is running as Administrator/LocalSystem.");
+            IsMonitoring = false;
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Could not initialize Event Log watchers (may require admin rights)");
+            logger.LogError(ex, "Unexpected error starting event log monitoring");
             IsMonitoring = false;
         }
+    }
+
+    private string BuildEventQuery()
+    {
+        // Simple constructing of XPath query for filtering
+        // Example: *[System[(EventID=4720 or EventID=4728)]]
+        // Currently we only support hardcoded critical IDs for simplicity in this version
+        return "*[System[(EventID=4720 or EventID=4732 or EventID=4728 or EventID=4672)]]"; 
+    }
+
+    private void SecurityLogWatcher_EventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    {
+        try
+        {
+            using var eventRecord = e.EventRecord;
+            if (eventRecord == null) return;
+
+            var evt = new AuditEvent
+            {
+                Timestamp = eventRecord.TimeCreated ?? DateTime.UtcNow,
+                EventId = eventRecord.Id.ToString(),
+                EventType = eventRecord.TaskDisplayName ?? "Security Event",
+                SourceLogName = "Security",
+                Username = "System", // Will extract from event properties if needed
+                Details = eventRecord.FormatDescription() ?? "No description available"
+            };
+            
+            // Basic detection logic
+            if (eventRecord.Id == 4720) // User Created
+            {
+                NotifyCriticalEvent(evt, "User Account Created");
+            }
+            else if (eventRecord.Id == 4732 || eventRecord.Id == 4728) // Added to group
+            {
+                NotifyCriticalEvent(evt, "Group Membership Changed");
+            }
+            else if (eventRecord.Id == 4672) // Admin login (noisy, but critical)
+            {
+                // Optionally filter admin noise
+            }
+
+            logger.LogDebug("Captured Security Event {Id}: {Type}", eventRecord.Id, evt.EventType);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing event log record");
+        }
+    }
+
+    private void NotifyCriticalEvent(AuditEvent evt, string description)
+    {
+        OnCriticalEventDetected(new AuditEventDetectedEventArgs
+        {
+            Event = evt,
+            DetectedTime = DateTime.UtcNow,
+            MatchingFilter = new AuditEventFilter { FilterId = "event_" + evt.EventId, Description = description, EventId = int.Parse(evt.EventId) }
+        });
     }
 
     public async Task StopMonitoringAsync()
@@ -163,6 +244,20 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
         if (!IsMonitoring)
             return;
+
+        try 
+        {
+            if (_securityLogWatcher != null)
+            {
+                _securityLogWatcher.Enabled = false;
+                _securityLogWatcher.Dispose();
+                _securityLogWatcher = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error stopping event watcher");
+        }
 
         IsMonitoring = false;
         logger.LogInformation("Event log monitoring stopped");

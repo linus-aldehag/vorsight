@@ -10,23 +10,23 @@ public class AuditReport
     public DateTime Timestamp { get; set; }
 }
 
-public interface IAuditManager
+public interface IHealthAuditManager
 {
     Task<AuditReport> PerformAuditAsync();
     AuditReport? GetLastReport();
 }
 
-public class AuditManager : IAuditManager
+public class HealthAuditManager : IHealthAuditManager
 {
-    private readonly ILogger<AuditManager> _logger;
+    private readonly ILogger<HealthAuditManager> _logger;
     private readonly IGoogleDriveService _driveService;
     private readonly IConfiguration _config;
     
     private AuditReport? _lastReport;
     private DateTime _lastAuditTime = DateTime.MinValue;
 
-    public AuditManager(
-        ILogger<AuditManager> logger,
+    public HealthAuditManager(
+        ILogger<HealthAuditManager> logger,
         IGoogleDriveService driveService,
         IConfiguration config)
     {

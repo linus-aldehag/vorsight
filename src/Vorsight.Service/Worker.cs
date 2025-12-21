@@ -101,11 +101,36 @@ public class Worker : BackgroundService
             _serverConnection.CommandReceived += OnServerCommandReceived;
 
             // Hook up audit events
-            _auditManager.CriticalEventDetected += (sender, args) =>
+            _auditManager.CriticalEventDetected += async (sender, args) =>
             {
                 _logger.LogCritical(
                     "SECURITY ALERT: Critical audit event detected - Event ID {EventId} at {Time}",
                     args.MatchingFilter?.EventId, args.DetectedTime);
+                
+                // Send to server
+                _logger.LogInformation("Server connection status: {Status}", _serverConnection.IsConnected);
+                if (_serverConnection.IsConnected)
+                {
+                    _logger.LogInformation("Sending audit event to server: EventId={EventId}, Type={EventType}", 
+                        args.Event.EventId, args.Event.EventType);
+                    
+                    await _serverConnection.SendAuditEventAsync(new
+                    {
+                        eventId = args.Event.EventId,
+                        eventType = args.Event.EventType,
+                        username = args.Event.Username,
+                        timestamp = args.Event.Timestamp,
+                        details = args.Event.Details,
+                        sourceLogName = args.Event.SourceLogName,
+                        isFlagged = args.Event.IsFlagged
+                    });
+                    
+                    _logger.LogInformation("Audit event sent successfully");
+                }
+                else
+                {
+                    _logger.LogWarning("Cannot send audit event - server not connected");
+                }
             };
 
             _auditManager.TamperingDetected += (sender, args) =>

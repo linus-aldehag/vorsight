@@ -33,6 +33,7 @@ CREATE TABLE activity_history (
     active_window TEXT,
     process_name TEXT,
     duration INTEGER,
+    username TEXT,
     FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
 );
 
@@ -58,6 +59,22 @@ CREATE TABLE settings_queue (
     FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
 );
 
+-- Audit Events
+CREATE TABLE audit_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    machine_id TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    event_type TEXT,
+    username TEXT,
+    timestamp DATETIME NOT NULL,
+    details TEXT,
+    source_log_name TEXT,
+    is_flagged BOOLEAN DEFAULT 1,
+    acknowledged BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
+);
+
 -- Connection Events
 CREATE TABLE connection_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,4 +89,5 @@ CREATE TABLE connection_events (
 CREATE INDEX idx_machines_last_seen ON machines(last_seen);
 CREATE INDEX idx_activity_machine_time ON activity_history(machine_id, timestamp);
 CREATE INDEX idx_screenshots_machine_time ON screenshots(machine_id, capture_time);
+CREATE INDEX idx_audit_events_machine ON audit_events(machine_id, timestamp);
 CREATE INDEX idx_connection_events_machine ON connection_events(machine_id, timestamp);
