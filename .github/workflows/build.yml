@@ -17,10 +17,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x # Note: Using 9.0 as 10.0 might not be available in runners yet or just placeholder.
-                              # If the project targets net10.0 strictly, we need to ensure the SDK is available.
-                              # Assuming net10.0 is available or we use 9.0 for now. 
-                              # Actually, the user's project targets net10.0, so we must try to get it or fallback.
+        dotnet-version: 10.0.x
 
     - name: Install WiX Toolset
       run: dotnet tool install --global wix
