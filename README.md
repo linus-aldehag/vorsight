@@ -1,12 +1,13 @@
-﻿﻿# Vörsight - Comprehensive PC Monitoring & Management System
+![Vörsight Logo](./assets/vorsight-banner.png)
+# Vörsight - Comprehensive PC Monitoring & Management System
 
 A professional Windows-based monitoring system with centralized web dashboard for parental oversight, activity tracking, and secure screenshot archival.
 
-**⚠️ Production Ready** - Automated releases, zero build warnings, simplified configuration
+**⚠️ Production Ready** - Automated releases, simplified configuration
 
 ## Overview
 
-Vörsight is a client-server monitoring solution designed for Windows PCs with a Raspberry Pi server. It provides real-time activity monitoring, screenshot capture, access scheduling, and comprehensive audit logging through a modern web interface.
+Vörsight is a client-server monitoring solution designed for Windows PCs with a Linux server. It provides real-time activity monitoring, screenshot capture, access scheduling, and comprehensive audit logging through a modern web interface.
 
 ### Architecture
 
@@ -17,7 +18,7 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 │  │ Vorsight.Service │───┼──┐
 │  │ (Windows Service)│   │  │
 │  └────────┬─────────┘   │  │
-│           │ IPC          │  │
+│           │ IPC         │  │
 │  ┌────────▼─────────┐   │  │
 │  │  Vorsight.Agent  │   │  │  WebSocket +
 │  │ (User Session)   │   │  │  HTTP/S
@@ -25,21 +26,21 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 └─────────────────────────┘  │
                              │
 ┌────────────────────────────▼─────────┐
-│  Raspberry Pi (Server)                │
-│  ┌──────────────┐  ┌──────────────┐ │
-│  │ Node.js API  │  │  React SPA   │ │
-│  │              │──│              │ │
-│  │  Socket.IO   │  │  Dashboard   │ │
-│  └──────┬───────┘  └──────────────┘ │
+│  Linux (Server)                      │
+│  ┌──────────────┐  ┌──────────────┐  │
+│  │ Node.js API  │  │  React SPA   │  │
+│  │              │──│              │  │
+│  │  Socket.IO   │  │  Dashboard   │  │
+│  └──────┬───────┘  └──────────────┘  │
 │         │                            │
-│  ┌──────▼───────┐                   │
-│  │   SQLite DB  │                   │
-│  └──────────────┘                   │
+│  ┌──────▼───────┐                    │
+│  │   SQLite DB  │                    │
+│  └──────────────┘                    │
 └──────────────────────────────────────┘
          │
          ▼
   Google Drive
-  (Screenshot Backup)
+  (Screenshot Repository)
 ```
 
 ## Key Features
@@ -52,7 +53,6 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 
 ### 📸 **Activity Monitoring**
 - Automated screenshot capture at configurable intervals
-- Real-time activity state tracking (active/idle/AFK)
 - Automatic upload to Google Drive (`/Vorsight/MachineName/YYYY-MM-DD/`)
 - Timeline view of all activity
 
@@ -69,7 +69,7 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 ### 🌐 **Web Dashboard**
 - Modern React-based UI
 - Real-time machine status via WebSocket
-- Screenshot gallery with search and filtering
+- Screenshot gallery
 - Audit event management
 - Multi-machine support
 
@@ -93,23 +93,13 @@ The server runs on any Linux system (Ubuntu, Debian, Raspberry Pi OS, etc.).
 
 Download `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases):
 
-**Example using Raspberry Pi:**
+**Example:**
 ```bash
 # Transfer to server
 scp vorsight-server-*.tar.gz user@server:~/
 
 # SSH and install
 ssh user@server
-tar -xzf vorsight-server-*.tar.gz
-cd vorsight-server
-sudo ./install.sh
-```
-
-**Example using Ubuntu/Debian server:**
-```bash
-# Same process - the server is Linux-agnostic
-scp vorsight-server-*.tar.gz user@ubuntu-server:~/
-ssh user@ubuntu-server
 tar -xzf vorsight-server-*.tar.gz
 cd vorsight-server
 sudo ./install.sh
@@ -129,7 +119,7 @@ See [Linux Deployment Guide](deploy/pi/README.md) for detailed instructions.
 ```powershell
 # Clone
 git clone https://github.com/your-repo/vorsight.git
-cd vors ight
+cd vorsight
 
 # Setup development environment
 # (Creates appsettings.Development.json, .env files, etc.)
@@ -196,12 +186,12 @@ vorsight/
 }
 ```
 
-### Server (`.env` on Pi)
+### Server (`.env` on Linux)
 
 ```bash
 PORT=3000
 NODE_ENV=production
-CLIENT_ORIGIN=http://your-pi-ip:3000
+CLIENT_ORIGIN=http://your-server-ip:3000
 JWT_SECRET=your-secure-random-secret
 PSK=your-secure-key  # Must match Windows client
 DB_PATH=./data/vorsight.db
@@ -210,13 +200,6 @@ DB_PATH=./data/vorsight.db
 ## Deployment & Releases
 
 ### Automated Releases
-
-Create a git tag to trigger automatic build and release:
-
-```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
-```
 
 GitHub Actions will:
 1. Build Windows MSI installer
@@ -231,7 +214,7 @@ GitHub Actions will:
 cd src/Vorsight.Setup
 dotnet build -c Release
 
-# Pi Package (Linux/WSL or GitHub Actions)
+# Linux Package (Linux/WSL or GitHub Actions)
 ./deploy/pi/build.sh
 ```
 
@@ -295,8 +278,8 @@ This is currently a personal project. If you'd like to contribute:
 
 ## Status
 
-**Current Version**: v1.0.0  
-**Status**: Production Ready  
+**Current Version**: v1.0.0 
+**Status**: Production Ready
 **Last Updated**: December 2025
 
 ---
