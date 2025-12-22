@@ -25,8 +25,11 @@ export function App() {
 function MainLayout() {
     const { machineId, view } = useParams();
     const navigate = useNavigate();
-    const { selectedMachine, selectMachine } = useMachine();
+    const { machines, selectedMachine, selectMachine } = useMachine();
     const [status, setStatus] = useState<StatusResponse | null>(null);
+
+    // Check if we have any machines
+    const hasMachines = machines.length > 0;
 
     // Sync URL machineId with context
     useEffect(() => {
@@ -96,7 +99,12 @@ function MainLayout() {
                     <Button
                         variant={currentView === 'dashboard' ? 'default' : 'ghost'}
                         onClick={() => handleNavigation('dashboard')}
-                        className={cn("gap-2", currentView === 'dashboard' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'dashboard' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
                     >
                         <LayoutDashboard size={16} />
                         DASHBOARD
@@ -104,7 +112,12 @@ function MainLayout() {
                     <Button
                         variant={currentView === 'activity' ? 'default' : 'ghost'}
                         onClick={() => handleNavigation('activity')}
-                        className={cn("gap-2", currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
                     >
                         <Activity size={16} />
                         ACTIVITY
@@ -112,7 +125,12 @@ function MainLayout() {
                     <Button
                         variant={currentView === 'gallery' ? 'default' : 'ghost'}
                         onClick={() => handleNavigation('gallery')}
-                        className={cn("gap-2", currentView === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
                     >
                         <ImageIcon size={16} />
                         SCREENSHOTS
@@ -120,7 +138,12 @@ function MainLayout() {
                     <Button
                         variant={currentView === 'settings' ? 'default' : 'ghost'}
                         onClick={() => handleNavigation('settings')}
-                        className={cn("gap-2", currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20")}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
                     >
                         <Settings size={16} />
                         SETTINGS
