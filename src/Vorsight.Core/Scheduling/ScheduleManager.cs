@@ -193,13 +193,15 @@ namespace Vorsight.Core.Scheduling
 
             try
             {
-                _logger.LogWarning("Forcing logoff");
+                _logger.LogWarning("Forcing logoff of interactive user");
                 
-                var result = ShutdownHelper.TryForceLogoff();
+                // Use TryForceLogoffInteractiveUser to target the console user session
+                // (not the service's LocalSystem session)
+                var result = ShutdownHelper.TryForceLogoffInteractiveUser();
                 
                 if (result)
                 {
-                    _logger.LogInformation("Logoff initiated");
+                    _logger.LogInformation("Interactive user logoff initiated successfully");
                     AccessTimeExpired?.Invoke(this, new AccessThresholdEventArgs
                     {
                         EventTime = DateTime.UtcNow
@@ -207,7 +209,7 @@ namespace Vorsight.Core.Scheduling
                 }
                 else
                 {
-                    _logger.LogError("Failed to force logoff");
+                    _logger.LogError("Failed to force logoff interactive user (may not be logged in)");
                 }
 
                 return await Task.FromResult(result);
