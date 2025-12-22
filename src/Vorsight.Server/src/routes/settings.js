@@ -38,11 +38,23 @@ router.get('/', (req, res) => {
 // POST /api/settings
 router.post('/', (req, res) => {
     try {
-        const { machineId, ...settings } = req.body;
+        const { machineId, ...newSettings } = req.body;
 
         if (!machineId) {
             return res.status(400).json({ error: 'machineId required' });
         }
+
+        // Get existing settings to preserve schedule
+        const state = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
+        let existingSettings = state && state.settings ? JSON.parse(state.settings) : {};
+
+        // Merge new settings while preserving schedule
+        const mergedSettings = {
+            ...existingSettings,
+            ...newSettings,
+            // Preserve schedule if it exists
+            schedule: existingSettings.schedule
+        };
 
         // Save to machine_state
         db.prepare(`
@@ -51,13 +63,13 @@ router.post('/', (req, res) => {
       ON CONFLICT(machine_id) DO UPDATE SET
         settings = excluded.settings,
         updated_at = excluded.updated_at
-    `).run(machineId, JSON.stringify(settings));
+    `).run(machineId, JSON.stringify(mergedSettings));
 
         // Push settings update to client via WebSocket
         const io = req.app.get('io');
-        io.to(`machine:${machineId}`).emit('server:settings_update', settings);
+        io.to(`machine:${machineId}`).emit('server:settings_update', newSettings);
 
-        res.json(settings);
+        res.json(newSettings);
     } catch (error) {
         console.error('Save settings error:', error);
         res.status(500).json({ error: 'Failed to save settings' });

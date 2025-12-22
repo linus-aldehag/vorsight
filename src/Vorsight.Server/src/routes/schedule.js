@@ -8,15 +8,13 @@ router.get('/', (req, res) => {
         const { machineId } = req.query;
 
         if (!machineId) {
-            return res.json(null); // No schedule if no machine specified
+            return res.json(null);
         }
 
-        // Get settings from machine_state (schedule is part of settings)
         const state = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
 
         if (state && state.settings) {
             const settings = JSON.parse(state.settings);
-            // Extract schedule-related fields
             res.json(settings.schedule || null);
         } else {
             res.json(null);
