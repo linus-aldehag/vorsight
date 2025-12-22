@@ -100,6 +100,20 @@ public class Worker : BackgroundService
             // Hook up server commands
             _serverConnection.CommandReceived += OnServerCommandReceived;
 
+            // Hook up schedule updates
+            _serverConnection.ScheduleUpdateReceived += async (sender, args) =>
+            {
+                _logger.LogInformation("Schedule update event received - reloading from server");
+                try
+                {
+                    await _scheduleManager.ReloadScheduleFromServerAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to reload schedule after update event");
+                }
+            };
+
             // Hook up audit events
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +19,9 @@ namespace Vorsight.Core.Scheduling
     {
         private readonly ILogger<ScheduleManager> _logger;
         private readonly string _schedulePath;
+        private readonly HttpClient? _httpClient;
+        private readonly string? _serverUrl;
+        private readonly string? _machineId;
         private AccessSchedule? _currentSchedule;
         private CancellationTokenSource? _enforcementCts;
         private Task? _enforcementTask;
@@ -29,13 +33,25 @@ namespace Vorsight.Core.Scheduling
 
         public bool IsEnforcementRunning => _isEnforcementRunning;
 
-        public ScheduleManager(ILogger<ScheduleManager> logger, string? schedulePath = null)
+        public ScheduleManager(
+            ILogger<ScheduleManager> logger, 
+            IHttpClientFactory? httpClientFactory = null,
+            Microsoft.Extensions.Configuration.IConfiguration? configuration = null,
+            string? schedulePath = null)
         {
             _logger = logger;
             _schedulePath = schedulePath ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                 "Vorsight",
                 "access_schedule.json");
+            
+            if (httpClientFactory != null && configuration != null)
+            {
+                _httpClient = httpClientFactory.CreateClient();
+                _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
+                _machineId = Vorsight.Core.Identity.MachineIdentity.GenerateMachineId();
+                _httpClient.BaseAddress = new Uri(_serverUrl);
+            }
         }
 
         public async Task InitializeAsync()
@@ -44,6 +60,20 @@ namespace Vorsight.Core.Scheduling
 
             try
             {
+                // Try to load from server first (if available)
+                if (_httpClient != null)
+                {
+                    var scheduleData = await FetchScheduleFromServerAsync();
+                    if (scheduleData != null)
+                    {
+                        _currentSchedule = ConvertToAccessSchedule(scheduleData);
+                        _logger.LogInformation("Loaded schedule from server (IsActive: {IsActive})", 
+                            _currentSchedule?.IsActive ?? false);
+                        return;
+                    }
+                }
+                
+                // Fallback to local file
                 if (File.Exists(_schedulePath))
                 {
                     var json = await File.ReadAllTextAsync(_schedulePath);
@@ -51,13 +81,13 @@ namespace Vorsight.Core.Scheduling
                     
                     if (_currentSchedule != null)
                     {
-                        _logger.LogInformation("Loaded schedule {ScheduleId} from {Path}", 
-                            _currentSchedule.ScheduleId, _schedulePath);
+                        _logger.LogInformation("Loaded schedule {ScheduleId} from file", 
+                            _currentSchedule.ScheduleId);
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("No schedule file found at {Path}", _schedulePath);
+                    _logger.LogInformation("No schedule found (server or file)");
                     Directory.CreateDirectory(Path.GetDirectoryName(_schedulePath)!);
                 }
             }
@@ -292,6 +322,92 @@ namespace Vorsight.Core.Scheduling
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Schedule enforcement task failed");
+            }
+        }
+
+        /// <summary>
+        /// Fetches schedule from Node.js server API.
+        /// </summary>
+        private async Task<ScheduleDataDto?> FetchScheduleFromServerAsync()
+        {
+            if (_httpClient == null || string.IsNullOrEmpty(_machineId))
+                return null;
+                
+            try
+            {
+                var url = $"/api/schedule?machineId={_machineId}";
+                var response = await _httpClient.GetAsync(url);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Failed to fetch schedule from server: {Status}", response.StatusCode);
+                    return null;
+                }
+                    
+                var json = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(json) || json == "null")
+                    return null;
+                    
+                var scheduleData = JsonSerializer.Deserialize<ScheduleDataDto>(json);
+                _logger.LogDebug("Fetched schedule from server");
+                return scheduleData;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching schedule from server");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Converts server DTO format to C# AccessSchedule.
+        /// </summary>
+        private AccessSchedule? ConvertToAccessSchedule(ScheduleDataDto? data)
+        {
+            if (data == null || data.AllowedTimeWindows == null || data.AllowedTimeWindows.Count == 0)
+                return null;
+                
+            try
+            {
+                // Use first time window (simplified schedule - single daily window)
+                var window = data.AllowedTimeWindows[0];
+                
+                return new AccessSchedule
+                {
+                    ScheduleId = data.ScheduleId ?? Guid.NewGuid().ToString(),
+                    IsActive = data.IsActive,
+                    StartTime = TimeSpan.Parse(window.StartTime),
+                    EndTime = TimeSpan.Parse(window.EndTime),
+                    TimeZoneId = TimeZoneInfo.Local.Id
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error converting schedule data");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reloads schedule from server (called by WebSocket event handlers).
+        /// </summary>
+        public async Task ReloadScheduleFromServerAsync()
+        {
+            try
+            {
+                var scheduleData = await FetchScheduleFromServerAsync();
+                if (scheduleData != null)
+                {
+                    _currentSchedule = ConvertToAccessSchedule(scheduleData);
+                    _logger.LogInformation("Schedule reloaded from server (IsActive: {IsActive}, Start: {Start}, End: {End})",
+                        _currentSchedule?.IsActive ?? false,
+                        _currentSchedule?.StartTime,
+                        _currentSchedule?.EndTime);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reloading schedule from server");
             }
         }
 

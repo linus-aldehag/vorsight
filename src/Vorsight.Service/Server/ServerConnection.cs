@@ -16,6 +16,7 @@ public interface IServerConnection
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     bool IsConnected { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
+    event EventHandler? ScheduleUpdateReceived;
 }
 
 public class ServerConnection : IServerConnection
@@ -31,6 +32,7 @@ public class ServerConnection : IServerConnection
     
     public bool IsConnected => _isConnected;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
+    public event EventHandler? ScheduleUpdateReceived;
     
     public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
@@ -162,13 +164,15 @@ public class ServerConnection : IServerConnection
                 }
             });
 
-            _socket.On("server:schedule_update", response =>
+            _socket.On("server:schedule_update", async response =>
             {
                 try
                 {
                     var schedule = response.GetValue<JsonElement>();
-                    _logger.LogInformation("Received schedule update from server");
-                    // Schedule will be reloaded on next enforcement cycle
+                    _logger.LogInformation("Received schedule update from server - triggering reload");
+                    
+                    // Trigger schedule reload event
+                    ScheduleUpdateReceived?.Invoke(this, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {

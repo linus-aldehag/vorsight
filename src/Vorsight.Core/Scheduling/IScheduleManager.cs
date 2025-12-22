@@ -91,6 +91,11 @@ namespace Vorsight.Core.Scheduling
         /// Whether enforcement is currently running.
         /// </summary>
         bool IsEnforcementRunning { get; }
+
+        /// <summary>
+        /// Reloads schedule from server (for WebSocket updates).
+        /// </summary>
+        Task ReloadScheduleFromServerAsync();
     }
 
     /// <summary>
