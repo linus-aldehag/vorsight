@@ -52,7 +52,9 @@ router.post('/', (req, res) => {
         updated_at = excluded.updated_at
     `).run(machineId, JSON.stringify(settings));
 
-        // TODO: Push to client via WebSocket
+        // Push schedule update to client via WebSocket
+        const io = req.app.get('io');
+        io.to(`machine:${machineId}`).emit('server:schedule_update', schedule);
 
         res.json(schedule);
     } catch (error) {

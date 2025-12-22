@@ -61,7 +61,7 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 - Detects user creation, group changes, privilege escalations
 - Web-based alert dashboard with persistent dismissal
 
-### ⏰ **Access Control** (Future Feature)
+### ⏰ **Access Control**
 - Scheduled access windows
 - Forced logoff enforcement
 - Real-time schedule updates
