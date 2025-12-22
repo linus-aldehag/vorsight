@@ -278,8 +278,10 @@ This is currently a personal project. If you'd like to contribute:
 
 ## Status
 
-**Current Version**: v1.0.0 
+**Current Version**: v1.0.0
+
 **Status**: Production Ready
+
 **Last Updated**: December 2025
 
 ---
