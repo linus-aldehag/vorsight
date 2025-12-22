@@ -1,4 +1,4 @@
-![Vörsight Logo](./assets/vorsight-banner.png)
+![Vörsight Logo](./.github/assets/vorsight-banner.png)
 # Vörsight - Comprehensive PC Monitoring & Management System
 
 A professional Windows-based monitoring system with centralized web dashboard for parental oversight, activity tracking, and secure screenshot archival.
