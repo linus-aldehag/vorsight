@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Fragment>
+        <UI>
+            <Dialog Id="GoogleDriveDialog" Width="370" Height="270" Title="Google Drive Configuration">
+                <Control Id="Title" Type="Text" X="15" Y="6" Width="340" Height="15" Transparent="yes" NoPrefix="yes">
+                    <Text>{\WixUI_Font_Title}Google Drive Setup</Text>
+                </Control>
+
+                <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="30" Transparent="yes" NoPrefix="yes">
+                    <Text>To enable screenshot backups to Google Drive, please paste your OAuth 2.0 Client Secret JSON below.</Text>
+                </Control>
+
+                <Control Id="Instructions" Type="Text" X="25" Y="55" Width="320" Height="40" Transparent="yes" NoPrefix="yes">
+                    <Text>Get this from: Google Cloud Console → APIs &amp; Services → Credentials → Download JSON</Text>
+                </Control>
+
+                <Control Id="OAuthJsonLabel" Type="Text" X="25" Y="100" Width="320" Height="15" NoPrefix="yes">
+                    <Text>OAuth Client Secret (JSON):</Text>
+                </Control>
+
+                <Control Id="OAuthJsonEdit" Type="Edit" X="25" Y="115" Width="320" Height="80" Property="OAUTH_JSON" Multiline="yes" />
+
+                <Control Id="SkipNote" Type="Text" X="25" Y="200" Width="320" Height="20" Transparent="yes" NoPrefix="yes">
+                    <Text>You can skip this and configure Google Drive manually later.</Text>
+                </Control>
+
+                <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="&amp;Back">
+                    <Publish Event="NewDialog" Value="ConfigDialog" />
+                </Control>
+
+                <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next">
+                    <Publish Event="NewDialog" Value="VerifyReadyDlg" />
+                </Control>
+
+                <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="Cancel">
+                    <Publish Event="SpawnDialog" Value="CancelDlg" />
+                </Control>
+            </Dialog>
+        </UI>
+    </Fragment>
+</Wix>

@@ -31,7 +31,7 @@
         </Control>
         
         <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="&amp;Next" Disabled="yes">
-          <Publish Event="NewDialog" Value="VerifyReadyDlg" Condition="PRESHARED_KEY" />
+          <Publish Event="NewDialog" Value="GoogleDriveDialog" Condition="PRESHARED_KEY" />
           <Publish Event="Enable" Value="Next" Condition="PRESHARED_KEY" />
           <Publish Event="Disable" Value="Next" Condition="NOT PRESHARED_KEY" />
         </Control>

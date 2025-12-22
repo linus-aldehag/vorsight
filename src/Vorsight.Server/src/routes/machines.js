@@ -56,6 +56,7 @@ router.get('/', (req, res) => {
             return {
                 id: row.id,
                 name: row.name,
+                displayName: row.displayName,
                 hostname: row.hostname,
                 lastSeen: row.last_seen,
                 isOnline: !!isOnline,
@@ -110,6 +111,34 @@ router.put('/:id', authenticateMachine, (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('Update machine error:', error);
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+// Update machine display name (no auth required for now - could add later)
+router.patch('/:id/display-name', (req, res) => {
+    try {
+        const { displayName } = req.body;
+
+        // Validate displayName if provided
+        if (displayName !== undefined && displayName !== null) {
+            if (typeof displayName !== 'string') {
+                return res.status(400).json({ error: 'Display name must be a string' });
+            }
+            if (displayName.trim().length === 0) {
+                // Empty string - reset to null
+                db.prepare('UPDATE machines SET displayName = NULL WHERE id = ?')
+                    .run(req.params.id);
+                return res.json({ success: true, displayName: null });
+            }
+        }
+
+        db.prepare('UPDATE machines SET displayName = ? WHERE id = ?')
+            .run(displayName || null, req.params.id);
+
+        res.json({ success: true, displayName: displayName || null });
+    } catch (error) {
+        console.error('Update display name error:', error);
         res.status(500).json({ error: 'Update failed' });
     }
 });
