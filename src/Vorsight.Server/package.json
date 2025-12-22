@@ -6,17 +6,23 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build:web": "cd ../Vorsight.Web && npm run build",
+    "build:web": "cd ..\\Vorsight.Web && npm run build",
     "copy:web": "xcopy /E /I /Y ..\\Vorsight.Web\\dist\\* public\\",
     "deploy:web": "npm run build:web && npm run copy:web",
     "all": "npm run deploy:web && npm run dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.2.0",
+    "@prisma/client": "^7.2.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.5.0",
     "cors": "^2.8.5",
@@ -27,6 +33,7 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "prisma": "^7.2.0"
   }
 }

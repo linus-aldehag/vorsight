@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Machines (registered client computers)
+model Machine {
+  id                String   @id
+  name              String
+  displayName       String?  // Custom display name (nullable for backwards compatibility)
+  hostname          String?
+  ipAddress         String?  @map("ip_address")
+  registrationDate  DateTime @map("registration_date")
+  lastSeen          DateTime? @map("last_seen")
+  isOnline          Boolean  @default(false) @map("is_online")
+  apiKey            String   @unique @map("api_key")
+  metadata          String?  // JSON string
+  createdAt         DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  state             MachineState?
+  activityHistory   ActivityHistory[]
+  screenshots       Screenshot[]
+  settingsQueue     SettingsQueue[]
+  auditEvents       AuditEvent[]
+  connectionEvents  ConnectionEvent[]
+
+  @@index([lastSeen])
+  @@map("machines")
+}
+
+// Machine State (latest snapshot)
+model MachineState {
+  machineId         String   @id @map("machine_id")
+  lastActivityTime  DateTime? @map("last_activity_time")
+  activeWindow      String?  @map("active_window")
+  screenshotCount   Int      @default(0) @map("screenshot_count")
+  uploadCount       Int      @default(0) @map("upload_count")
+  healthStatus      String?  @map("health_status")
+  settings          String?  // JSON string
+  updatedAt         DateTime @default(now()) @map("updated_at")
+  
+  // Relations
+  machine           Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("machine_state")
+}
+
+// Activity History
+model ActivityHistory {
+  id           Int      @id @default(autoincrement())
+  machineId    String   @map("machine_id")
+  timestamp    DateTime
+  activeWindow String?  @map("active_window")
+  processName  String?  @map("process_name")
+  duration     Int?
+  username     String?
+  
+  // Relations
+  machine      Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, timestamp])
+  @@map("activity_history")
+}
+
+// Screenshots Metadata
+model Screenshot {
+  id               String   @id
+  machineId        String   @map("machine_id")
+  captureTime      DateTime @map("capture_time")
+  triggerType      String?  @map("trigger_type")
+  googleDriveFileId String? @map("google_drive_file_id")
+  localPath        String?  @map("local_path")
+  isUploaded       Boolean  @default(false) @map("is_uploaded")
+  
+  // Relations
+  machine          Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, captureTime])
+  @@map("screenshots")
+}
+
+// Settings Queue (for offline machines)
+model SettingsQueue {
+  id         Int       @id @default(autoincrement())
+  machineId  String    @map("machine_id")
+  settings   String    // JSON string
+  createdAt  DateTime  @default(now()) @map("created_at")
+  appliedAt  DateTime? @map("applied_at")
+  
+  // Relations
+  machine    Machine   @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@map("settings_queue")
+}
+
+// Audit Events
+model AuditEvent {
+  id            Int      @id @default(autoincrement())
+  machineId     String   @map("machine_id")
+  eventId       String   @map("event_id")
+  eventType     String?  @map("event_type")
+  username      String?
+  timestamp     DateTime
+  details       String?  // JSON string
+  sourceLogName String?  @map("source_log_name")
+  isFlagged     Boolean  @default(true) @map("is_flagged")
+  acknowledged  Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  machine       Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, timestamp])
+  @@map("audit_events")
+}
+
+// Connection Events
+model ConnectionEvent {
+  id         Int      @id @default(autoincrement())
+  machineId  String   @map("machine_id")
+  eventType  String   @map("event_type")
+  timestamp  DateTime @default(now())
+  metadata   String?  // JSON string
+  
+  // Relations
+  machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, timestamp])
+  @@map("connection_events")
+}
