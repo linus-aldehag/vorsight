@@ -2,9 +2,10 @@ import { Monitor, Circle } from 'lucide-react';
 import { useMachine } from '../../context/MachineContext';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { EditableMachineName } from './EditableMachineName';
 
 export function MachineSelector() {
-    const { machines, selectedMachine, selectMachine, isLoading } = useMachine();
+    const { machines, selectedMachine, selectMachine, isLoading, refreshMachines } = useMachine();
 
     if (isLoading) {
         return <div className="text-sm text-muted-foreground animate-pulse">Scanning network...</div>;
@@ -18,13 +19,18 @@ export function MachineSelector() {
         );
     }
 
-    // For single machine, just show the name
+    // For single machine, show with editable display name
     if (machines.length === 1) {
         const m = machines[0];
         return (
             <div className="flex items-center gap-2 border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-md">
                 <Monitor size={16} className="text-primary" />
-                <span className="text-sm font-medium tracking-wide">{m.name}</span>
+                <EditableMachineName
+                    machineId={m.id}
+                    displayName={m.displayName}
+                    machineName={m.name}
+                    onUpdate={refreshMachines}
+                />
                 <Circle
                     size={8}
                     className={m.isOnline ? "fill-success text-success" : "fill-muted text-muted"}
@@ -33,7 +39,7 @@ export function MachineSelector() {
         );
     }
 
-    // For multiple machines, use button group
+    // For multiple machines, use button group with display names
     return (
         <div className="flex bg-muted/50 p-1 rounded-lg gap-1">
             {machines.map(machine => (
@@ -45,7 +51,7 @@ export function MachineSelector() {
                     className="h-8 gap-2"
                 >
                     <Monitor size={14} />
-                    {machine.name}
+                    {machine.displayName || machine.name}
                     <Circle
                         size={6}
                         className={machine.isOnline ? "fill-success text-success" : "fill-muted text-muted"}
