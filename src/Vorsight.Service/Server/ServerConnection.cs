@@ -147,6 +147,34 @@ public class ServerConnection : IServerConnection
                     _logger.LogError(ex, "Failed to parse server command");
                 }
             });
+
+            _socket.On("server:settings_update", response =>
+            {
+                try
+                {
+                    var settings = response.GetValue<JsonElement>();
+                    _logger.LogInformation("Received settings update from server");
+                    // Settings will be applied on next poll cycle or can be handled by SettingsManager
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse settings update");
+                }
+            });
+
+            _socket.On("server:schedule_update", response =>
+            {
+                try
+                {
+                    var schedule = response.GetValue<JsonElement>();
+                    _logger.LogInformation("Received schedule update from server");
+                    // Schedule will be reloaded on next enforcement cycle
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse schedule update");
+                }
+            });
             
             _socket.OnDisconnected += (sender, e) =>
             {
