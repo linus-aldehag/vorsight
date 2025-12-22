@@ -32,20 +32,20 @@ The package contains:
 - systemd service template
 - Environment configuration template (`.env.example`)
 
-### 2. Transfer to Pi
+### 2. Transfer to Server
 
 ```bash
-scp vorsight-server-*.tar.gz pi@raspberrypi:~/
+scp vorsight-server-*.tar.gz user@your-server:~/
 ```
 
-Replace `raspberrypi` with your Pi's hostname or IP address.
+Replace `your-server` with your server's hostname or IP address.
 
-### 3. Install on Pi
+### 3. Install on Server
 
-SSH into your Pi:
+SSH into your server:
 
 ```bash
-ssh pi@raspberrypi
+ssh user@your-server
 ```
 
 Extract and install:
@@ -78,7 +78,7 @@ Key settings to configure:
 PORT=3000                                    # Server port
 HOST=0.0.0.0                                 # Listen on all interfaces
 NODE_ENV=production
-CLIENT_ORIGIN=http://your-pi-ip:3000        # CORS origin
+CLIENT_ORIGIN=http://your-server-ip:3000    # CORS origin
 JWT_SECRET=your-secure-random-secret-here   # CHANGE THIS!
 PSK=your-secure-psk-here                    # Pre-shared key (match Windows client)
 DB_PATH=./data/vorsight.db
@@ -130,10 +130,10 @@ sudo systemctl disable vorsight  # Don't start on boot
 Once the service is running, access the web interface at:
 
 ```
-http://your-pi-ip:3000
+http://your-server-ip:3000
 ```
 
-Or from the Pi itself:
+Or from the server itself:
 
 ```
 http://localhost:3000
@@ -169,7 +169,7 @@ Common issues:
 
 1. Check service is running: `systemctl status vorsight`
 2. Check firewall: `sudo ufw status` (if enabled, allow port 3000)
-3. Verify the Pi's IP: `hostname -I`
+3. Verify the server's IP: `hostname -I`
 
 ### Database errors
 
@@ -185,8 +185,8 @@ sudo systemctl start vorsight
 
 To update to a new version:
 
-1. Download new deployment package from GitHub Actions
-2. Transfer to Pi
+1. Download new deployment package from GitHub Releases
+2. Transfer to server
 3. Extract to temporary location
 4. Stop service: `sudo systemctl stop vorsight`
 5. Backup `.env` and `data/`: 
@@ -252,7 +252,7 @@ sudo crontab -e
 Add:
 
 ```cron
-0 2 * * * cp /opt/vorsight/data/vorsight.db /home/pi/backups/vorsight-$(date +\%Y\%m\%d).db
+0 2 * * * cp /opt/vorsight/data/vorsight.db /home/user/backups/vorsight-$(date +\%Y\%m\%d).db
 ```
 
 ## Support

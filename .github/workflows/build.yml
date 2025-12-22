@@ -59,27 +59,27 @@ jobs:
     - name: Create Deployment Package
       run: |
         # Create staging directory
-        mkdir -p deploy/pi/vorsight-server
+        mkdir -p deploy/linux/vorsight-server
         
         # Copy server files
-        cp -r src/Vorsight.Server/src deploy/pi/vorsight-server/
-        cp src/Vorsight.Server/package.json deploy/pi/vorsight-server/
-        cp src/Vorsight.Server/package-lock.json deploy/pi/vorsight-server/
-        cp src/Vorsight.Server/.env.example deploy/pi/vorsight-server/
+        cp -r src/Vorsight.Server/src deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/.env.example deploy/linux/vorsight-server/
         
         # Copy React build to public/
-        cp -r src/Vorsight.Web/dist deploy/pi/vorsight-server/public
+        cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public
         
         # Copy deployment scripts
-        cp deploy/pi/install.sh deploy/pi/vorsight-server/
-        cp deploy/pi/vorsight.service.template deploy/pi/vorsight-server/
-        cp deploy/pi/README.md deploy/pi/vorsight-server/
+        cp deploy/linux/install.sh deploy/linux/vorsight-server/
+        cp deploy/linux/vorsight.service.template deploy/linux/vorsight-server/
+        cp deploy/linux/README.md deploy/linux/vorsight-server/
         
         # Make install script executable
-        chmod +x deploy/pi/vorsight-server/install.sh
+        chmod +x deploy/linux/vorsight-server/install.sh
         
         # Create tarball with version from tag or branch name
-        cd deploy/pi
+        cd deploy/linux
         VERSION="${GITHUB_REF_NAME}"
         tar -czf vorsight-server-${VERSION}.tar.gz vorsight-server/
 
@@ -87,7 +87,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: VorsightLinuxServer
-        path: deploy/pi/vorsight-server-*.tar.gz
+        path: deploy/linux/vorsight-server-*.tar.gz
 
   create-release:
     name: Create GitHub Release

@@ -105,7 +105,7 @@ cd vorsight-server
 sudo ./install.sh
 ```
 
-See [Linux Deployment Guide](deploy/pi/README.md) for detailed instructions.
+See [Linux Deployment Guide](deploy/linux/README.md) for detailed instructions.
 
 ## Development Setup
 
@@ -158,7 +158,7 @@ vorsight/
 │   ├── Vorsight.Web/           # React web dashboard
 │   └── Vorsight.Setup/         # WiX installer project
 ├── deploy/
-│   └── pi/                     # Pi deployment scripts & docs
+│   └── linux/                  # Linux deployment scripts & docs
 ├── .github/workflows/          # CI/CD automation
 └── .agent/workflows/           # Development workflows
 ```
@@ -215,7 +215,7 @@ cd src/Vorsight.Setup
 dotnet build -c Release
 
 # Linux Package (Linux/WSL or GitHub Actions)
-./deploy/pi/build.sh
+./deploy/linux/build.sh
 ```
 
 ## Google Drive Integration
