@@ -71,7 +71,7 @@ jobs:
         cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public
         
         # Copy deployment scripts
-        cp deploy/linux/install.sh deploy/linux/vorsight-server/
+        cp deploy/linux/setup.sh deploy/linux/vorsight-server/
         cp deploy/linux/vorsight.service.template deploy/linux/vorsight-server/
         cp deploy/linux/README.md deploy/linux/vorsight-server/
         
