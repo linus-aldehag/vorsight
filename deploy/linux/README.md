@@ -4,8 +4,8 @@ This guide covers deploying the Vörsight server to any Linux system. Examples u
 
 ## Prerequisites
 
-- Linux server (Raspberry Pi, Ubuntu, Debian, etc.)
-- Node.js 25+ installed
+- Linux server (Ubuntu, Debian, Raspberry Pi, etc.)
+- Node.js 18+ installed
 - SSH access
 - At least 1GB free space
 - systemd (for service management)
@@ -28,7 +28,8 @@ The deployment package is automatically built by GitHub Actions when you push a 
 The package contains:
 - Compiled React web app
 - Node.js server code with production dependencies
-- Installation script (`install.sh`)
+- Setup script (`setup.sh`) for fresh installs and upgrades
+- Prisma database migrations
 - systemd service template
 - Environment configuration template (`.env.example`)
 
@@ -53,15 +54,16 @@ Extract and install:
 ```bash
 tar -xzf vorsight-server-*.tar.gz
 cd vorsight-server
-sudo ./install.sh
+sudo ./setup.sh
 ```
 
-The installer will:
+The setup script will:
 - Create a `vorsight` system user
 - Install files to `/opt/vorsight`
-- Install Node.js dependencies (production only)
-- Create `/opt/vorsight/.env` from template
-- Create systemd service
+- Install Node.js dependencies (including Prisma)
+- Run Prisma database migrations
+- Create `/opt/vorsight/.env` from template (if needed)
+- Create and enable systemd service
 - Start the service
 
 ### 4. Configure Environment
@@ -146,6 +148,8 @@ http://localhost:3000
 | `/opt/vorsight` | Installation directory |
 | `/opt/vorsight/.env` | Configuration file |
 | `/opt/vorsight/data/vorsight.db` | SQLite database |
+| `/opt/vorsight/data/vorsight.db.backup.*` | Automatic database backups (from upgrades) |
+| `/opt/vorsight/prisma/migrations/` | Database migration history |
 | `/opt/vorsight/src/server.js` | Server entry point |
 | `/opt/vorsight/public/` | React web app |
 | `/etc/systemd/system/vorsight.service` | Systemd service file |
@@ -181,26 +185,33 @@ sudo rm /opt/vorsight/data/vorsight.db
 sudo systemctl start vorsight
 ```
 
-### Update deployment
+### Update Deployment
 
-To update to a new version:
+To upgrade to a new version:
 
 1. Download new deployment package from GitHub Releases
-2. Transfer to server
-3. Extract to temporary location
-4. Stop service: `sudo systemctl stop vorsight`
-5. Backup `.env` and `data/`: 
+2. Transfer to server: `scp vorsight-server-*.tar.gz user@your-server:~/`
+3. SSH into server and extract:
    ```bash
-   sudo cp /opt/vorsight/.env ~/vorsight-env-backup
-   sudo cp -r /opt/vorsight/data ~/vorsight-data-backup
+   ssh user@your-server
+   tar -xzf vorsight-server-*.tar.gz
+   cd vorsight-server
    ```
-6. Remove old files: `sudo rm -rf /opt/vorsight/*`
-7. Copy new files: `sudo cp -r vorsight-server/* /opt/vorsight/`
-8. Restore `.env`: `sudo cp ~/vorsight-env-backup /opt/vorsight/.env`
-9. Restore `data/`: `sudo cp -r ~/vorsight-data-backup /opt/vorsight/data`
-10. Install dependencies: `cd /opt/vorsight && sudo -u vorsight npm install --production`
-11. Fix ownership: `sudo chown -R vorsight:vorsight /opt/vorsight`
-12. Start service: `sudo systemctl start vorsight`
+4. Run the setup script:
+   ```bash
+   sudo ./setup.sh
+   ```
+
+The upgrade process automatically:
+- Detects existing installation
+- Stops the service
+- **Backs up the database** to `data/vorsight.db.backup.TIMESTAMP`
+- Updates files while preserving your `.env` and data
+- Installs new dependencies
+- **Runs database migrations** (if any)
+- Restarts the service
+
+No manual backup needed - the script handles it automatically!
 
 ## Uninstallation
 
@@ -224,7 +235,7 @@ sudo userdel vorsight
 
 ### Change Installation Directory
 
-Edit `install.sh` before running and change `INSTALL_DIR` variable.
+Edit `setup.sh` before running and change `INSTALL_DIR` variable.
 
 ### Custom Service Configuration
 
