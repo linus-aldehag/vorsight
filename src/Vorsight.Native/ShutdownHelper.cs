@@ -34,7 +34,10 @@ namespace Vorsight.Native
 
         /// <summary>
         /// Safely forces current user logoff using ExitWindowsEx.
+        /// NOTE: This logs off the CALLING PROCESS's session (LocalSystem/Session 0).
+        /// For interactive user logoff, use TryForceLogoffInteractiveUser() instead.
         /// </summary>
+        [Obsolete("Use TryForceLogoffInteractiveUser for service-initiated logoffs")]
         public static bool TryForceLogoff()
         {
             try
@@ -50,6 +53,46 @@ namespace Vorsight.Native
             catch (Exception ex)
             {
                 Debug.WriteLine($"TryForceLogoff failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Safely forces logoff of the active interactive user session.
+        /// This should be used by services to log off the console user.
+        /// </summary>
+        public static bool TryForceLogoffInteractiveUser()
+        {
+            try
+            {
+                // Ensure we have shutdown privilege
+                ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
+
+                // Get active console session (the logged-in user at the physical console)
+                var sessionId = SessionInterop.WTSGetActiveConsoleSessionId();
+
+                // 0xFFFFFFFF means no active console session
+                if (sessionId == 0xFFFFFFFF)
+                {
+                    Debug.WriteLine("No active console session found - no user logged in");
+                    return false;
+                }
+
+                // Session 0 is typically the services session (shouldn't happen with console API)
+                if (sessionId == 0)
+                {
+                    Debug.WriteLine("Active console session is 0 (services) - unexpected");
+                    return false;
+                }
+
+                Debug.WriteLine($"Logging off active console session: {sessionId}");
+
+                // Log off the active session
+                return TryLogoffSession(sessionId, wait: true);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"TryForceLogoffInteractiveUser failed: {ex.Message}");
                 return false;
             }
         }
