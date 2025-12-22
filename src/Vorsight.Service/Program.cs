@@ -44,7 +44,10 @@ try
         new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
 
     builder.Services.AddSingleton<IScheduleManager>(sp =>
-        new ScheduleManager(sp.GetRequiredService<ILogger<ScheduleManager>>()));
+        new ScheduleManager(
+            sp.GetRequiredService<ILogger<ScheduleManager>>(),
+            sp.GetRequiredService<IHttpClientFactory>(),
+            sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
 
     builder.Services.AddSingleton<IAuditManager, Vorsight.Core.Audit.AuditManager>();
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();
