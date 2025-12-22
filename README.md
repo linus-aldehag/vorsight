@@ -43,6 +43,19 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
   (Screenshot Repository)
 ```
 
+### Etymology
+
+**Vörsight** = **Vör** + **foresight**
+
+[Vör](https://en.wikipedia.org/wiki/V%C3%B6r) is a Norse goddess of wisdom and vigilance. She is described as wise and inquisitive, with the ability to perceive and understand all that happens. The name Vör means "the careful one" or "the aware one."
+
+Combined with "foresight" (the ability to predict or anticipate future events), **Vörsight** embodies:
+- **Vigilance**: Constant, watchful monitoring
+- **Wisdom**: Understanding patterns and behaviors 
+- **Foresight**: Anticipating issues before they occur
+
+Perfect for a system that watches over and protects through awareness and anticipation.
+
 ## Key Features
 
 ### 🔒 **Security & Privacy**
@@ -69,9 +82,16 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 ### 🌐 **Web Dashboard**
 - Modern React-based UI
 - Real-time machine status via WebSocket
+- **Machine display names** with inline editing
 - Screenshot gallery
 - Audit event management
 - Multi-machine support
+
+### 🔧 **Streamlined Installation**
+- MSI installer with guided setup
+- Server configuration during installation
+- **Google Drive OAuth** integrated into installer flow
+- **Optional stealth mode** for parental monitoring (appears as "Windows Update Helper")
 
 ## Quick Start
 
@@ -80,10 +100,18 @@ Vörsight is a client-server monitoring solution designed for Windows PCs with a
 Download the latest `VorsightSetup.msi` from [GitHub Releases](../../releases):
 
 1. Run the installer
-2. Configure server connection:
+2. Choose installation directory
+3. Configure server connection:
    - Server URL (e.g., `http://raspberrypi.local:3000`)
    - Pre-shared key (match server configuration)
-3. Complete installation
+4. **(Optional)** Configure Google Drive:
+   - Paste OAuth 2.0 Client Secret JSON
+   - Installer will launch browser for authentication
+   - Credentials configured automatically
+5. **(Optional)** Enable stealth mode:
+   - Checkbox: "Use stealth application naming"
+   - Installs as "Windows Update Helper" for parental monitoring
+6. Complete installation
 
 The service starts automatically and begins monitoring.
 
@@ -222,14 +250,25 @@ dotnet build -c Release
 
 Vörsight automatically backs up screenshots to Google Drive.
 
-### Setup
+### Setup via Installer (Recommended)
 
 1. Create a Google Cloud Project
 2. Enable Google Drive API
 3. Create OAuth 2.0 credentials (Desktop app)
-4. Download `client_secrets.json`
-5. Place in service directory (e.g., `C:\Program Files\Vörsight\`)
-6. First run will open browser for OAuth consent
+4. Download JSON
+5. **During MSI installation**, paste the JSON content in the Google Drive dialog
+6. Browser opens automatically for OAuth consent
+7. Credentials ready when service starts
+
+### Manual Setup (Post-Install)
+
+1. Place `oauth.json` in installation directory (e.g., `C:\Program Files\Vörsight\`)
+2. Run PowerShell script:
+   ```powershell
+   cd "C:\Program Files\Vörsight"
+   powershell -ExecutionPolicy Bypass -File .\ConfigureGoogleDrive.ps1
+   ```
+3. Browser opens for OAuth consent
 
 Screenshots are organized automatically:
 ```
@@ -239,6 +278,20 @@ Screenshots are organized automatically:
           ├── screenshot_001.png
           └── screenshot_002.png
 ```
+
+## Stealth Mode (Parental Monitoring)
+
+For parental monitoring scenarios, the installer offers an optional "stealth mode" that makes the software less obvious to tech-savvy users.
+
+**When enabled during installation:**
+- Directory: `C:\Program Files\Windows Update Helper\`
+- Service: `WindowsUpdateService.exe` / `Windows Update Helper Service`
+- Agent: `wuhelper.exe` / `WindowsUpdateHelper`
+- Description: "Provides background update checking and system health monitoring"
+
+**Functionality:** Identical to normal mode, only the naming changes.
+
+**To enable:** Check "Use stealth application naming" during MSI installation.
 
 ## Troubleshooting
 
