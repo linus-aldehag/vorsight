@@ -72,11 +72,13 @@ jobs:
         
         # Copy deployment scripts
         cp deploy/linux/setup.sh deploy/linux/vorsight-server/
+        cp deploy/linux/uninstall.sh deploy/linux/vorsight-server/
         cp deploy/linux/vorsight.service.template deploy/linux/vorsight-server/
         cp deploy/linux/README.md deploy/linux/vorsight-server/
         
-        # Make install script executable
+        # Make scripts executable
         chmod +x deploy/linux/vorsight-server/setup.sh
+        chmod +x deploy/linux/vorsight-server/uninstall.sh
         
         # Create tarball with version from tag or branch name
         cd deploy/linux
