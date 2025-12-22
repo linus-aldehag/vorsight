@@ -76,7 +76,7 @@ jobs:
         cp deploy/linux/README.md deploy/linux/vorsight-server/
         
         # Make install script executable
-        chmod +x deploy/linux/vorsight-server/install.sh
+        chmod +x deploy/linux/vorsight-server/setup.sh
         
         # Create tarball with version from tag or branch name
         cd deploy/linux

@@ -255,7 +255,11 @@ public class Worker : BackgroundService
 
         try
         {
+
             _logger.LogInformation("Shutting down service components");
+
+            // Signal shutdown to Google Drive service immediately
+            _googleDriveService.BeginShutdown();
 
             // Stop audit monitoring
             await _auditManager.StopMonitoringAsync();
@@ -266,9 +270,9 @@ public class Worker : BackgroundService
             // Stop IPC server
             await _ipcServer.StopAsync();
 
-            // Cleanup uploads
-            await _uploadQueueProcessor.CompleteAsync(TimeSpan.FromSeconds(5));
-            await _shutdownCoordinator.ShutdownGracefullyAsync(TimeSpan.FromSeconds(10));
+            // Cleanup uploads with reduced timeouts
+            await _uploadQueueProcessor.CompleteAsync(TimeSpan.FromSeconds(3));
+            await _shutdownCoordinator.ShutdownGracefullyAsync(TimeSpan.FromSeconds(5));
             
             // Complete session (Upload logs) - MUST be done before disposing drive service (via container)
             // Note: Worker doesn't own the container, but we must ensure this runs before the host shuts down completely
