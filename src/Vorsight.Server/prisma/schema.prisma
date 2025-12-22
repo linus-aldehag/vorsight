@@ -18,7 +18,6 @@ model Machine {
   ipAddress         String?  @map("ip_address")
   registrationDate  DateTime @map("registration_date")
   lastSeen          DateTime? @map("last_seen")
-  isOnline          Boolean  @default(false) @map("is_online")
   apiKey            String   @unique @map("api_key")
   metadata          String?  // JSON string
   createdAt         DateTime @default(now()) @map("created_at")
@@ -31,7 +30,7 @@ model Machine {
   auditEvents       AuditEvent[]
   connectionEvents  ConnectionEvent[]
 
-  @@index([lastSeen])
+  @@index([lastSeen], name: "machines_last_seen_idx")
   @@map("machines")
 }
 

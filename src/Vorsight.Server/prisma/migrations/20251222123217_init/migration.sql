@@ -7,7 +7,6 @@ CREATE TABLE "machines" (
     "ip_address" TEXT,
     "registration_date" DATETIME NOT NULL,
     "last_seen" DATETIME,
-    "is_online" BOOLEAN NOT NULL DEFAULT false,
     "api_key" TEXT NOT NULL,
     "metadata" TEXT,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
