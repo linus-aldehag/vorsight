@@ -33,6 +33,7 @@ namespace Vorsight.Core.Scheduling
 
         public bool IsEnforcementRunning => _isEnforcementRunning;
 
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public ScheduleManager(
             ILogger<ScheduleManager> logger, 
             IHttpClientFactory? httpClientFactory = null,
@@ -349,7 +350,6 @@ namespace Vorsight.Core.Scheduling
                     return null;
                     
                 var scheduleData = JsonSerializer.Deserialize<ScheduleDataDto>(json);
-                _logger.LogDebug("Fetched schedule from server");
                 return scheduleData;
             }
             catch (Exception ex)
@@ -399,7 +399,7 @@ namespace Vorsight.Core.Scheduling
                 if (scheduleData != null)
                 {
                     _currentSchedule = ConvertToAccessSchedule(scheduleData);
-                    _logger.LogInformation("Schedule reloaded from server (IsActive: {IsActive}, Start: {Start}, End: {End})",
+                    _logger.LogInformation("Schedule reloaded from server (Active: {IsActive}, {Start}-{End})",
                         _currentSchedule?.IsActive ?? false,
                         _currentSchedule?.StartTime,
                         _currentSchedule?.EndTime);
