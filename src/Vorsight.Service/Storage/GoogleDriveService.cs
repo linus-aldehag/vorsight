@@ -16,6 +16,7 @@ public interface IGoogleDriveService
     Task<Stream?> DownloadLatestScreenshotAsync();
     Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
     Task InitializeAsync();
+    void BeginShutdown();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
     Task<List<DriveFile>> ListScreenshotsAsync(int limit);
     Task<Stream?> DownloadFileAsync(string fileId);
@@ -65,6 +66,12 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
         }
     }
 
+    public void BeginShutdown()
+    {
+        _logger.LogInformation("Google Drive Service beginning shutdown sequence");
+        _isShuttingDown = true;
+    }
+
     public async ValueTask DisposeAsync()
     {
         _isShuttingDown = true;
@@ -79,18 +86,6 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
     {
         var actualTimeout = timeout ?? TimeSpan.FromSeconds(30);
         
-        // Release semaphore if we're blocked
-        if (_uploadSemaphore.CurrentCount == 0)
-        {
-            _logger.LogInformation("Waiting for ongoing uploads to complete...");
-            var semaphoreAcquired = await _uploadSemaphore.WaitAsync(actualTimeout);
-            if (!semaphoreAcquired)
-            {
-                _logger.LogWarning("Timed out waiting for upload semaphore");
-                return;
-            }
-        }
-
         List<Task> uploadsToWait;
         lock (_uploadsLock)
         {
@@ -117,7 +112,18 @@ public class GoogleDriveService : IGoogleDriveService, IAsyncDisposable
             }
             catch (OperationCanceledException)
             {
-                _logger.LogWarning("Timeout waiting for uploads to complete after {Seconds}s", actualTimeout.TotalSeconds);
+                _logger.LogWarning("Timeout waiting for uploads to complete after {Seconds}s. Abandoning {Count} uploads.", 
+                    actualTimeout.TotalSeconds, uploadsToWait.Count(t => !t.IsCompleted));
+                
+                // Clean up abandoned tasks from the active list
+                lock (_uploadsLock)
+                {
+                    var abandonedTasks = uploadsToWait.Where(t => !t.IsCompleted).ToList();
+                    foreach (var task in abandonedTasks)
+                    {
+                        _activeUploads.Remove(task);
+                    }
+                }
             }
             catch (Exception ex)
             {

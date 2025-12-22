@@ -44,10 +44,12 @@ try
         new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
 
     builder.Services.AddSingleton<IScheduleManager>(sp =>
+#pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
         new ScheduleManager(
             sp.GetRequiredService<ILogger<ScheduleManager>>(),
             sp.GetRequiredService<IHttpClientFactory>(),
             sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
+#pragma warning restore CA1416
 
     builder.Services.AddSingleton<IAuditManager, Vorsight.Core.Audit.AuditManager>();
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();

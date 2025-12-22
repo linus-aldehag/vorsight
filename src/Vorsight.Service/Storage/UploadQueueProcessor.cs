@@ -132,10 +132,8 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 _logger.LogError(ex, "Error waiting for upload processor to complete");
             }
         }
-        
-        // Reduced timeout for waiting on Google Drive uploads
-        await _googleDriveService.WaitForPendingUploadsAsync(TimeSpan.FromSeconds(2));
     }
+    
     
     private async Task ProcessUploadsAsync(CancellationToken cancellationToken)
     {
