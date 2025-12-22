@@ -4,6 +4,7 @@ import { socketService } from '../services/socket';
 export interface Machine {
     id: string;
     name: string;
+    displayName?: string | null;
     hostname: string | null;
     isOnline: boolean;
     connectionStatus: 'online' | 'unstable' | 'offline';
@@ -14,6 +15,7 @@ interface MachineContextType {
     machines: Machine[];
     selectedMachine: Machine | null;
     selectMachine: (machineId: string) => void;
+    refreshMachines: () => void;
     isLoading: boolean;
 }
 
@@ -126,8 +128,20 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const refreshMachines = () => {
+        if (socketService.isConnected) {
+            socketService.emit('web:subscribe');
+        } else {
+            // Fallback to HTTP if socket not connected
+            fetch('/api/machines')
+                .then(res => res.json())
+                .then((data: Machine[]) => setMachines(data))
+                .catch(err => console.error('Failed to refresh machines:', err));
+        }
+    };
+
     return (
-        <MachineContext.Provider value={{ machines, selectedMachine, selectMachine, isLoading }}>
+        <MachineContext.Provider value={{ machines, selectedMachine, selectMachine, refreshMachines, isLoading }}>
             {children}
         </MachineContext.Provider>
     );

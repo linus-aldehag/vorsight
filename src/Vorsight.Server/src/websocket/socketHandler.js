@@ -25,7 +25,7 @@ module.exports = (io) => {
         socket.on('web:subscribe', () => {
             try {
                 const machines = db.prepare(`
-                    SELECT id, name, hostname, last_seen
+                    SELECT id, name, displayName, hostname, last_seen
                     FROM machines
                     ORDER BY name ASC
                 `).all().map(m => {
@@ -33,6 +33,7 @@ module.exports = (io) => {
                     return {
                         id: m.id,
                         name: m.name,
+                        displayName: m.displayName,
                         hostname: m.hostname,
                         ...status,
                         lastSeen: m.last_seen
@@ -71,7 +72,7 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT id, name, hostname, last_seen
+                        SELECT id, name, displayName, hostname, last_seen
                         FROM machines
                         ORDER BY name ASC
                     `).all().map(m => {
@@ -79,6 +80,7 @@ module.exports = (io) => {
                         return {
                             id: m.id,
                             name: m.name,
+                            displayName: m.displayName,
                             hostname: m.hostname,
                             ...status,
                             lastSeen: m.last_seen
@@ -219,7 +221,7 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT id, name, hostname, last_seen
+                        SELECT id, name, displayName, hostname, last_seen
                         FROM machines
                         ORDER BY name ASC
                     `).all().map(m => {
@@ -227,6 +229,7 @@ module.exports = (io) => {
                         return {
                             id: m.id,
                             name: m.name,
+                            displayName: m.displayName,
                             hostname: m.hostname,
                             ...status,
                             lastSeen: m.last_seen
