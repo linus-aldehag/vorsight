@@ -1,8 +1,49 @@
 const db = require('../db/database');
 
+// Helper to calculate connection status
+function getConnectionStatus(lastSeen) {
+    if (!lastSeen) return { isOnline: false, connectionStatus: 'offline' };
+
+    const timeSinceLastSeen = Date.now() - new Date(lastSeen + 'Z').getTime();
+
+    if (timeSinceLastSeen < 30000) {
+        // Within 1 ping interval - fully online
+        return { isOnline: true, connectionStatus: 'online' };
+    } else if (timeSinceLastSeen < 90000) {
+        // Missed 1-2 pings - unstable
+        return { isOnline: true, connectionStatus: 'unstable' };
+    } else {
+        // Missed 3+ pings - offline
+        return { isOnline: false, connectionStatus: 'offline' };
+    }
+}
+
 module.exports = (io) => {
     io.on('connection', (socket) => {
-        console.log('Client connected:', socket.id);
+
+        // Web client connects - send current machines list
+        socket.on('web:subscribe', () => {
+            try {
+                const machines = db.prepare(`
+                    SELECT id, name, hostname, last_seen
+                    FROM machines
+                    ORDER BY name ASC
+                `).all().map(m => {
+                    const status = getConnectionStatus(m.last_seen);
+                    return {
+                        id: m.id,
+                        name: m.name,
+                        hostname: m.hostname,
+                        ...status,
+                        lastSeen: m.last_seen
+                    };
+                });
+
+                socket.emit('machines:list', machines);
+            } catch (error) {
+                console.error('Error sending machines list:', error);
+            }
+        });
 
         // Machine connects
         socket.on('machine:connect', (data) => {
@@ -17,8 +58,8 @@ module.exports = (io) => {
                     socket.machineId = machineId;
                     socket.join(`machine:${machineId}`);
 
-                    // Update online status
-                    db.prepare('UPDATE machines SET is_online = 1, last_seen = CURRENT_TIMESTAMP WHERE id = ?')
+                    // Update last seen (is_online calculated from this)
+                    db.prepare('UPDATE machines SET last_seen = CURRENT_TIMESTAMP WHERE id = ?')
                         .run(machineId);
 
                     // Log connection event
@@ -27,6 +68,23 @@ module.exports = (io) => {
 
                     // Notify web clients
                     io.emit('machine:online', { machineId, timestamp: new Date().toISOString() });
+
+                    // Broadcast updated machines list to all web clients
+                    const machines = db.prepare(`
+                        SELECT id, name, hostname, last_seen
+                        FROM machines
+                        ORDER BY name ASC
+                    `).all().map(m => {
+                        const status = getConnectionStatus(m.last_seen);
+                        return {
+                            id: m.id,
+                            name: m.name,
+                            hostname: m.hostname,
+                            ...status,
+                            lastSeen: m.last_seen
+                        };
+                    });
+                    io.emit('machines:list', machines);
 
                     socket.emit('machine:connected', { success: true });
                 } else {
@@ -154,16 +212,31 @@ module.exports = (io) => {
         socket.on('disconnect', () => {
             if (socket.machineId) {
                 try {
-                    db.prepare('UPDATE machines SET is_online = 0 WHERE id = ?').run(socket.machineId);
                     db.prepare('INSERT INTO connection_events (machine_id, event_type) VALUES (?, ?)')
                         .run(socket.machineId, 'Disconnected');
 
                     io.emit('machine:offline', { machineId: socket.machineId, timestamp: new Date().toISOString() });
+
+                    // Broadcast updated machines list to all web clients
+                    const machines = db.prepare(`
+                        SELECT id, name, hostname, last_seen
+                        FROM machines
+                        ORDER BY name ASC
+                    `).all().map(m => {
+                        const status = getConnectionStatus(m.last_seen);
+                        return {
+                            id: m.id,
+                            name: m.name,
+                            hostname: m.hostname,
+                            ...status,
+                            lastSeen: m.last_seen
+                        };
+                    });
+                    io.emit('machines:list', machines);
                 } catch (error) {
                     console.error('Disconnect error:', error);
                 }
             }
-            console.log('Client disconnected:', socket.id);
         });
     });
 };
