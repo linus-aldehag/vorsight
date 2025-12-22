@@ -53,8 +53,9 @@ router.post('/', (req, res) => {
         updated_at = excluded.updated_at
     `).run(machineId, JSON.stringify(settings));
 
-        // TODO: Push to client via WebSocket
-        // io.to(`machine:${machineId}`).emit('server:settings_update', settings);
+        // Push settings update to client via WebSocket
+        const io = req.app.get('io');
+        io.to(`machine:${machineId}`).emit('server:settings_update', settings);
 
         res.json(settings);
     } catch (error) {
