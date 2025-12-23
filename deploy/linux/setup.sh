@@ -126,14 +126,10 @@ else
         if [ -f "$INSTALL_DIR/.env.example" ]; then
             cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Created .env from template${NC}"
-            echo ""
-            echo -e "${YELLOW}⚠️  IMPORTANT: Edit $INSTALL_DIR/.env with your configuration${NC}"
-            echo -e "${YELLOW}   Especially set:${NC}"
-            echo -e "${YELLOW}     - JWT_SECRET (use a secure random string)${NC}"
-            echo -e "${YELLOW}     - CLIENT_ORIGIN (if different from localhost)${NC}"
-            echo ""
-            read -p "Press Enter to edit .env now, or Ctrl+C to exit and configure later..."
-            nano "$INSTALL_DIR/.env" || vi "$INSTALL_DIR/.env" || echo -e "${YELLOW}   No editor available, please edit manually${NC}"
+            echo -e "${YELLOW}⚠️  IMPORTANT: Edit $INSTALL_DIR/.env to configure:${NC}"
+            echo -e "${YELLOW}     - WEB_PASSPHRASE (for web UI login)${NC}"
+            echo -e "${YELLOW}     - JWT_SECRET (for session security)${NC}"
+            echo -e "${YELLOW}     - CLIENT_ORIGIN (if accessing from another machine)${NC}"
         fi
     else
         echo -e "${YELLOW}   .env already exists, keeping existing configuration${NC}"
