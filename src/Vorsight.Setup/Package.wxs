@@ -51,7 +51,6 @@
       <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
         <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" Name="[SERVICE_EXE_NAME]" KeyPath="yes" />
         <File Id="ConfigureWebAuthScript" Source="ConfigureWebAuth.ps1" />
-        <File Id="ConfigureGoogleDriveScript" Source="ConfigureGoogleDrive.ps1" />
         <ServiceInstall Id="ServiceInstaller"
                         Type="ownProcess"
                         Name="[SERVICE_NAME]"
