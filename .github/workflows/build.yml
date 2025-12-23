@@ -67,6 +67,7 @@ jobs:
         cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/.env.example deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/prisma.config.ts deploy/linux/vorsight-server/
         
         # Copy React build to public/
         cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public
