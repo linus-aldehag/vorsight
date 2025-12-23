@@ -11,7 +11,7 @@
       <Dialog Id="ConfigDialog" Width="370" Height="270" Title="Vörsight Configuration">
         <Control Id="Title" Type="Text" X="15" Y="6" Width="280" Height="15" Text="{\WixUI_Font_Title}Server Configuration" Transparent="yes" />
         
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="30" Text="Please configure the connection to your Vörsight server. The pre-shared key is required for secure communication." />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="320" Height="30" Text="Please configure the connection to your Vörsight server. The JWT Secret is the authentication key shown during server installation." />
         
         <!-- Server Host -->
         <Control Id="ServerHostLabel" Type="Text" X="25" Y="60" Width="100" Height="15" Text="Server Hostname/IP:" />
@@ -21,8 +21,8 @@
         <Control Id="ServerPortLabel" Type="Text" X="25" Y="100" Width="100" Height="15" Text="Server Port:" />
         <Control Id="ServerPortEdit" Type="Edit" X="25" Y="115" Width="100" Height="18" Property="SERVER_PORT" />
         
-        <!-- Pre-shared Key -->
-        <Control Id="PskLabel" Type="Text" X="25" Y="140" Width="100" Height="15" Text="Pre-Shared Key (Required):" />
+        <!-- JWT Secret -->
+        <Control Id="PskLabel" Type="Text" X="25" Y="140" Width="100" Height="15" Text="JWT Secret (Required):" />
         <Control Id="PskEdit" Type="Edit" X="25" Y="155" Width="320" Height="18" Property="PRESHARED_KEY" Password="yes" />
         
         <!-- Navigation buttons -->
