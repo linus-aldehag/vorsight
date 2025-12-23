@@ -26,26 +26,30 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Initialize database
 const db = require('./db/database');
 
-// Routes
-app.use('/api/machines', require('./routes/machines'));
-app.use('/api/activity', require('./routes/activity'));
-app.use('/api/screenshots', require('./routes/screenshots'));
+// Import authentication middleware
+const { authenticateBrowser } = require('./middleware/auth');
+
+// Public routes (no authentication required)
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/status', require('./routes/status'));
-app.use('/api/system', require('./routes/system'));
-app.use('/api/schedule', require('./routes/schedule'));
-app.use('/api/settings', require('./routes/settings'));
-app.use('/api/analytics', require('./routes/analytics'));
-app.use('/api/audit', require('./routes/audit'));
-app.use('/api/media', require('./routes/media'));
-
-// WebSocket
-require('./websocket/socketHandler')(io);
-
-// Health check
+app.use('/api/media', require('./routes/media')); // Public for img tag loading
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Protected routes (require JWT authentication)
+app.use('/api/machines', authenticateBrowser, require('./routes/machines'));
+app.use('/api/activity', authenticateBrowser, require('./routes/activity'));
+app.use('/api/screenshots', authenticateBrowser, require('./routes/screenshots'));
+app.use('/api/status', authenticateBrowser, require('./routes/status'));
+app.use('/api/system', authenticateBrowser, require('./routes/system'));
+app.use('/api/schedule', authenticateBrowser, require('./routes/schedule'));
+app.use('/api/settings', authenticateBrowser, require('./routes/settings'));
+app.use('/api/analytics', authenticateBrowser, require('./routes/analytics'));
+app.use('/api/audit', authenticateBrowser, require('./routes/audit'));
+
+
+// WebSocket
+require('./websocket/socketHandler')(io);
 
 // Serve React app for all other routes (must be last)
 app.use((req, res) => {

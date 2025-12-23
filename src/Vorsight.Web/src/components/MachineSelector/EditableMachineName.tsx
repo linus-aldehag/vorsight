@@ -3,6 +3,16 @@ import { Pencil, Check, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
+// Helper to get authorization headers
+function getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 interface EditableMachineNameProps {
     machineId: string;
     displayName?: string | null;
@@ -43,6 +53,7 @@ export function EditableMachineName({
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...getAuthHeaders(),
                 },
                 body: JSON.stringify({ displayName: newDisplayName }),
             });

@@ -5,6 +5,16 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
+// Helper to get authorization headers
+function getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 export function AuditAlert() {
     const { selectedMachine } = useMachine();
     const { auditEvents, isLoading, isError, mutate } = useRecentAuditEvents(selectedMachine?.id || '');
@@ -13,7 +23,8 @@ export function AuditAlert() {
     const handleDismiss = async (id: number) => {
         try {
             const response = await fetch(`/api/audit/${id}/acknowledge`, {
-                method: 'PATCH'
+                method: 'PATCH',
+                headers: getAuthHeaders()
             });
 
             if (response.ok) {

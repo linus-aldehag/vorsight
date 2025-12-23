@@ -50,6 +50,8 @@
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
         <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" Name="[SERVICE_EXE_NAME]" KeyPath="yes" />
+        <File Id="ConfigureWebAuthScript" Source="ConfigureWebAuth.ps1" />
+        <File Id="ConfigureGoogleDriveScript" Source="ConfigureGoogleDrive.ps1" />
         <ServiceInstall Id="ServiceInstaller"
                         Type="ownProcess"
                         Name="[SERVICE_NAME]"
@@ -85,16 +87,25 @@
       <RegistryValue Root="HKCU" Key="Software\Vorsight" Name="DriveCredentialsInstalled" Type="integer" Value="1" KeyPath="yes" />
     </Component>
     
+    <!-- PowerShell web authentication setup -->
+    <CustomAction Id="ConfigureWebAuth" 
+                  Directory="INSTALLFOLDER"
+                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -File ConfigureWebAuth.ps1 -InstallDir "[INSTALLFOLDER]"'
+                  Execute="deferred"
+                  Impersonate="yes"
+                  Return="check" />
+    
     <!-- PowerShell OAuth configuration - passes OAUTH_JSON directly to script -->
     <CustomAction Id="ConfigureGoogleDrive" 
                   Directory="INSTALLFOLDER"
-                  ExeCommand='cmd.exe /c "echo [OAUTH_JSON] &gt; oauth.json &amp;&amp; powershell.exe -ExecutionPolicy Bypass -File ConfigureGoogleDrive.ps1 -InstallDir &quot;[INSTALLFOLDER]&quot;"'
+                  ExeCommand='cmd.exe /c "echo [OAUTH_JSON] > oauth.json &amp;&amp; powershell.exe -ExecutionPolicy Bypass -File ConfigureGoogleDrive.ps1 -InstallDir &quot;[INSTALLFOLDER]&quot;"'
                   Execute="deferred"
                   Impersonate="yes"
                   Return="ignore" />
     
     <InstallExecuteSequence>
-      <Custom Action="ConfigureGoogleDrive" After="InstallFiles" Condition="NOT Installed AND OAUTH_JSON" />
+      <Custom Action="ConfigureWebAuth" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="ConfigureGoogleDrive" After="ConfigureWebAuth" Condition="NOT Installed AND OAUTH_JSON" />
     </InstallExecuteSequence>
   </Fragment>
 
