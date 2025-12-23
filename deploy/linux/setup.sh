@@ -68,7 +68,8 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     echo -e "${CYAN}🔄 Applying database migrations...${NC}"
     export DATABASE_URL="file:$INSTALL_DIR/data/vorsight.db"
     npx prisma migrate deploy
-    echo -e "${GREEN}   ✓ Migrations applied${NC}"
+    npx prisma generate
+    echo -e "${GREEN}   ✓ Migrations applied and client generated${NC}"
     
     # Step 6: Restart service
     echo -e "${CYAN}▶️  Restarting service...${NC}"
@@ -105,7 +106,9 @@ else
 
     # Step 3: Copy files
     echo -e "${CYAN}📋 Copying files...${NC}"
+    shopt -s dotglob  # Include hidden files
     cp -r "$SCRIPT_DIR"/* $INSTALL_DIR/
+    shopt -u dotglob  # Restore default behavior
     echo -e "${GREEN}   ✓ Files copied${NC}"
 
     # Step 4: Install Node.js dependencies
@@ -126,10 +129,51 @@ else
         if [ -f "$INSTALL_DIR/.env.example" ]; then
             cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Created .env from template${NC}"
-            echo -e "${YELLOW}⚠️  IMPORTANT: Edit $INSTALL_DIR/.env to configure:${NC}"
-            echo -e "${YELLOW}     - WEB_PASSPHRASE (for web UI login)${NC}"
-            echo -e "${YELLOW}     - JWT_SECRET (for session security)${NC}"
-            echo -e "${YELLOW}     - CLIENT_ORIGIN (if accessing from another machine)${NC}"
+            
+            # Auto-generate JWT secret
+            echo -e "${CYAN}🔐 Generating JWT secret...${NC}"
+            JWT_SECRET=$(openssl rand -base64 32)
+            sed -i "s|JWT_SECRET=CHANGE_ME_OR_LET_INSTALLER_GENERATE|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env"
+            echo -e "${GREEN}   ✓ JWT secret generated${NC}"
+            
+            echo ""
+            echo -e "${CYAN}🔑 Web UI Authentication Setup${NC}"
+            echo -e "${YELLOW}   Enter a passphrase for logging into the web dashboard.${NC}"
+            echo -e "${YELLOW}   Choose something secure that you'll remember.${NC}"
+            echo ""
+            
+            # Prompt for passphrase (hidden input for security)
+            while true; do
+                read -s -p "Web UI Passphrase: " WEB_PASSPHRASE
+                echo
+                if [ -z "$WEB_PASSPHRASE" ]; then
+                    echo -e "${RED}   Passphrase cannot be empty. Please try again.${NC}"
+                    continue
+                fi
+                read -s -p "Confirm Passphrase: " WEB_PASSPHRASE_CONFIRM
+                echo
+                if [ "$WEB_PASSPHRASE" = "$WEB_PASSPHRASE_CONFIRM" ]; then
+                    # Escape special characters for sed
+                    WEB_PASSPHRASE_ESCAPED=$(echo "$WEB_PASSPHRASE" | sed 's/[&/\]/\\&/g')
+                    sed -i "s|WEB_PASSPHRASE=CHANGE_ME_TO_A_SECURE_PASSPHRASE|WEB_PASSPHRASE=$WEB_PASSPHRASE_ESCAPED|" "$INSTALL_DIR/.env"
+                    echo -e "${GREEN}   ✓ Passphrase configured${NC}"
+                    break
+                else
+                    echo -e "${RED}   Passphrases don't match. Please try again.${NC}"
+                fi
+            done
+            
+            echo ""
+            echo -e "${GREEN}✅ Basic configuration complete!${NC}"
+            echo ""
+            read -p "Edit advanced settings (CORS, port, etc.)? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                nano "$INSTALL_DIR/.env" || vi "$INSTALL_DIR/.env" || echo -e "${YELLOW}   No editor available${NC}"
+            fi
+        else
+            echo -e "${RED}   ❌ .env.example not found!${NC}"
+            exit 1
         fi
     else
         echo -e "${YELLOW}   .env already exists, keeping existing configuration${NC}"
@@ -142,7 +186,8 @@ else
     echo -e "${CYAN}🔄 Running database migrations...${NC}"
     export DATABASE_URL="file:$INSTALL_DIR/data/vorsight.db"
     npx prisma migrate deploy
-    echo -e "${GREEN}   ✓ Database initialized${NC}"
+    npx prisma generate
+    echo -e "${GREEN}   ✓ Database initialized and client generated${NC}"
 
     # Step 7: Set ownership
     echo -e "${CYAN}🔐 Setting file permissions...${NC}"
