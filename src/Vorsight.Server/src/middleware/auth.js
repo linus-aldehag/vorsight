@@ -1,4 +1,5 @@
 const db = require('../db/database');
+const jwt = require('jsonwebtoken');
 
 function authenticateMachine(req, res, next) {
     const apiKey = req.headers['x-api-key'];
@@ -22,4 +23,21 @@ function authenticateMachine(req, res, next) {
     }
 }
 
-module.exports = { authenticateMachine };
+function authenticateBrowser(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+}
+
+module.exports = { authenticateMachine, authenticateBrowser };

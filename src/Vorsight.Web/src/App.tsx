@@ -11,8 +11,32 @@ import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { ActivityPage } from './features/activity/ActivityPage';
 import { Activity } from 'lucide-react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { LoginPage } from './components/LoginPage';
 
 export function App() {
+    return (
+        <AuthProvider>
+            <AppContent />
+        </AuthProvider>
+    );
+}
+
+function AppContent() {
+    const { isAuthenticated, isLoading } = useAuth();
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="text-foreground">Loading...</div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return <LoginPage />;
+    }
+
     return (
         <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
