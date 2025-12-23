@@ -66,6 +66,7 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     
     # Step 5: Run Prisma migrations
     echo -e "${CYAN}🔄 Applying database migrations...${NC}"
+    export DATABASE_URL="file:$INSTALL_DIR/data/vorsight.db"
     npx prisma migrate deploy
     echo -e "${GREEN}   ✓ Migrations applied${NC}"
     
@@ -143,6 +144,7 @@ else
     mkdir -p "$INSTALL_DIR/data"
     
     echo -e "${CYAN}🔄 Running database migrations...${NC}"
+    export DATABASE_URL="file:$INSTALL_DIR/data/vorsight.db"
     npx prisma migrate deploy
     echo -e "${GREEN}   ✓ Database initialized${NC}"
 
