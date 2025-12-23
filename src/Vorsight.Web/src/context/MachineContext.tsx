@@ -1,6 +1,16 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { socketService } from '../services/socket';
 
+// Helper to get authorization headers
+function getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+}
+
 export interface Machine {
     id: string;
     name: string;
@@ -91,7 +101,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         }
 
         // Fallback: also do initial HTTP fetch in case socket isn't ready
-        fetch('/api/machines')
+        fetch('/api/machines', { headers: getAuthHeaders() })
             .then(res => res.json())
             .then((data: Machine[]) => {
                 if (machines.length === 0) {
@@ -133,7 +143,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.emit('web:subscribe');
         } else {
             // Fallback to HTTP if socket not connected
-            fetch('/api/machines')
+            fetch('/api/machines', { headers: getAuthHeaders() })
                 .then(res => res.json())
                 .then((data: Machine[]) => setMachines(data))
                 .catch(err => console.error('Failed to refresh machines:', err));
