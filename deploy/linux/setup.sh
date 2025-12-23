@@ -61,7 +61,7 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     # Step 4: Install/update dependencies
     echo -e "${CYAN}📦 Updating dependencies...${NC}"
     cd $INSTALL_DIR
-    npm install --production --quiet
+    npm install --omit=dev --quiet
     echo -e "${GREEN}   ✓ Dependencies updated${NC}"
     
     # Step 5: Run Prisma migrations
@@ -116,7 +116,7 @@ else
         exit 1
     fi
 
-    npm install --production --quiet
+    npm install --omit=dev --quiet
     echo -e "${GREEN}   ✓ Dependencies installed${NC}"
 
     # Step 5: Configure environment
