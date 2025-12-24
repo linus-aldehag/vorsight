@@ -1,9 +1,8 @@
 const express = require('express');
 const { google } = require('googleapis');
-const { PrismaClient } = require('@prisma/client');
+const { prisma } = require('../db/database');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Google OAuth2 configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;

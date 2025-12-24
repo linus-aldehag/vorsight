@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useActivity } from "@/hooks/useActivity";
 import { useMachine } from "@/context/MachineContext";
 import { ActivityTable } from "./components/ActivityTable";
 import { ActivityTimeline } from "./components/ActivityTimeline";
+import { ActivitySettings } from "./ActivitySettings";
+import { VorsightApi, type AgentSettings } from "@/api/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -11,6 +13,27 @@ export function ActivityPage() {
     const { selectedMachine } = useMachine();
     const { activities, isLoading, isError } = useActivity(selectedMachine?.id);
     const [activeTab, setActiveTab] = useState("timeline");
+    const [settings, setSettings] = useState<AgentSettings>({
+        screenshotIntervalSeconds: 60,
+        pingIntervalSeconds: 30,
+        isMonitoringEnabled: true
+    });
+
+    useEffect(() => {
+        if (selectedMachine) {
+            loadSettings();
+        }
+    }, [selectedMachine]);
+
+    const loadSettings = async () => {
+        if (!selectedMachine) return;
+        try {
+            const data = await VorsightApi.getSettings(selectedMachine.id);
+            setSettings(data);
+        } catch (err) {
+            console.error('Failed to load settings:', err);
+        }
+    };
 
     if (!selectedMachine) {
         return <div className="p-8 text-center text-muted-foreground">Select a machine to view activity.</div>;
@@ -18,11 +41,17 @@ export function ActivityPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-2">
-                <h2 className="text-3xl font-bold tracking-tight">Activity Log</h2>
-                <p className="text-muted-foreground">
-                    View application usage and window activity history.
-                </p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Activity Log</h2>
+                    <p className="text-muted-foreground">
+                        View application usage and window activity history.
+                    </p>
+                </div>
+                <ActivitySettings
+                    settings={settings}
+                    onSettingsChange={(newSettings) => setSettings(newSettings)}
+                />
             </div>
 
             <Card>

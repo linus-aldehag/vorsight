@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { VorsightApi, type StatusResponse } from './api/client';
 import { Dashboard } from './features/dashboard/Dashboard';
-import { ScheduleManager } from './features/schedule/ScheduleManager';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
 import { MachineSelector } from './components/MachineSelector/MachineSelector';
 import { useMachine } from './context/MachineContext';
-import { LayoutDashboard, Settings, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { ActivityPage } from './features/activity/ActivityPage';
 import { Activity } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
+import { ThemeSwitch } from './components/ThemeSwitcher/ThemeSwitch';
 
 export function App() {
     return (
@@ -115,6 +115,10 @@ function MainLayout() {
                 <div className="absolute left-1/2 -translate-x-1/2">
                     <MachineSelector />
                 </div>
+
+                <div className="flex items-center gap-2">
+                    <ThemeSwitch />
+                </div>
             </header>
 
             {/* Navigation Tabs */}
@@ -159,26 +163,12 @@ function MainLayout() {
                         <ImageIcon size={16} />
                         SCREENSHOTS
                     </Button>
-                    <Button
-                        variant={currentView === 'settings' ? 'default' : 'ghost'}
-                        onClick={() => handleNavigation('settings')}
-                        disabled={!hasMachines}
-                        className={cn(
-                            "gap-2",
-                            currentView === 'settings' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
-                            !hasMachines && "opacity-40 cursor-not-allowed"
-                        )}
-                    >
-                        <Settings size={16} />
-                        SETTINGS
-                    </Button>
                 </div>
             </div>
 
             {/* Main Content */}
             <main className="flex-1 p-6 container mx-auto overflow-hidden">
                 {currentView === 'dashboard' && status && <Dashboard status={status} />}
-                {currentView === 'settings' && <ScheduleManager />}
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
             </main>
