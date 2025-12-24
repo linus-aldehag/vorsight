@@ -1,9 +1,7 @@
 const { google } = require('googleapis');
-const { PrismaClient } = require('@prisma/client');
+const { prisma } = require('../db/database');
 const fs = require('fs');
 const path = require('path');
-
-const prisma = new PrismaClient();
 
 class GoogleDriveService {
     constructor() {

@@ -3,8 +3,9 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { RefreshCw, X, Maximize2 } from 'lucide-react';
-import { VorsightApi, type DriveFile } from '../../api/client';
+import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { ScreenshotSettings } from './ScreenshotSettings';
 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
@@ -12,12 +13,28 @@ export function ScreenshotGallery() {
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [settings, setSettings] = useState<AgentSettings>({
+        screenshotIntervalSeconds: 60,
+        pingIntervalSeconds: 30,
+        isMonitoringEnabled: true
+    });
 
     useEffect(() => {
         if (selectedMachine) {
             loadImages();
+            loadSettings();
         }
     }, [selectedMachine]);
+
+    const loadSettings = async () => {
+        if (!selectedMachine) return;
+        try {
+            const data = await VorsightApi.getSettings(selectedMachine.id);
+            setSettings(data);
+        } catch (err) {
+            console.error('Failed to load settings:', err);
+        }
+    };
 
     const loadImages = async () => {
         if (!selectedMachine) return;
@@ -56,10 +73,16 @@ export function ScreenshotGallery() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
-                <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
-                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                    Refresh
-                </Button>
+                <div className="flex gap-2">
+                    <ScreenshotSettings
+                        settings={settings}
+                        onSettingsChange={(newSettings) => setSettings(newSettings)}
+                    />
+                    <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
+                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                        Refresh
+                    </Button>
+                </div>
             </div>
 
             {images.length === 0 ? (
