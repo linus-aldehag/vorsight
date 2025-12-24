@@ -29,15 +29,66 @@ const db = require('./db/database');
 // Import authentication middleware
 const { authenticateBrowser } = require('./middleware/auth');
 
+//Import routers
+const machinesRouter = require('./routes/machines');
+
 // Public routes (no authentication required)
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/media', require('./routes/media')); // Public for img tag loading
+
+// Machine registration (no auth - service needs to register first)
+app.post('/api/machines/register', machinesRouter.stack.find(layer =>
+    layer.route?.path === '/register'
+)?.route?.stack[0]?.handle || ((req, res) => {
+    const express = require('express');
+    const router = express.Router();
+    const crypto = require('crypto');
+    const db = require('./db/database');
+
+    try {
+        const { machineId, name, hostname, metadata } = req.body;
+
+        if (!machineId || !name) {
+            return res.status(400).json({ error: 'machineId and name are required' });
+        }
+
+        // Check if machine already exists
+        const existing = db.prepare('SELECT * FROM machines WHERE id = ?').get(machineId);
+        if (existing) {
+            return res.json({
+                success: true,
+                apiKey: existing.api_key,
+                machineId: existing.id,
+                message: 'Machine already registered'
+            });
+        }
+
+        // Generate API key
+        const apiKey = crypto.randomBytes(32).toString('hex');
+
+        // Insert machine
+        db.prepare(`
+            INSERT INTO machines (id, name, hostname, api_key, registration_date, metadata)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+        `).run(machineId, name, hostname, apiKey, JSON.stringify(metadata || {}));
+
+        res.json({
+            success: true,
+            apiKey,
+            machineId
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+}));
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Protected routes (require JWT authentication)
-app.use('/api/machines', authenticateBrowser, require('./routes/machines'));
+app.use('/api/machines', authenticateBrowser, machinesRouter);
 app.use('/api/activity', authenticateBrowser, require('./routes/activity'));
 app.use('/api/screenshots', authenticateBrowser, require('./routes/screenshots'));
 app.use('/api/status', authenticateBrowser, require('./routes/status'));
@@ -46,7 +97,7 @@ app.use('/api/schedule', authenticateBrowser, require('./routes/schedule'));
 app.use('/api/settings', authenticateBrowser, require('./routes/settings'));
 app.use('/api/analytics', authenticateBrowser, require('./routes/analytics'));
 app.use('/api/audit', authenticateBrowser, require('./routes/audit'));
-app.use('/api/oauth', authenticateBrowser, require('./routes/oauth')); // Google OAuth flow
+app.use('/api/oauth', require('./routes/oauth')); // OAuth has its own auth flow
 
 
 // WebSocket
