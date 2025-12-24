@@ -28,29 +28,23 @@ const upload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// GET /api/media/:id - Stream image file
-router.get('/:id', (req, res) => {
+// GET /api/media/:id - Redirect to Google Drive thumbnail URL
+router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find file (try common extensions)
-        const extensions = ['.png', '.jpg', '.jpeg'];
-        let filePath = null;
+        // Look up screenshot in database to get Google Drive file ID
+        const screenshot = db.prepare('SELECT google_drive_file_id FROM screenshots WHERE id = ?').get(id);
 
-        for (const ext of extensions) {
-            const p = path.join(uploadDir, `${id}${ext}`);
-            if (fs.existsSync(p)) {
-                filePath = p;
-                break;
-            }
+        if (!screenshot || !screenshot.google_drive_file_id) {
+            return res.status(404).json({ error: 'Screenshot not found or not uploaded to Drive' });
         }
 
-        if (filePath) {
-            res.sendFile(filePath);
-        } else {
-            // Check if it's a legacy ID or mock
-            res.status(404).json({ error: 'File not found' });
-        }
+        // Redirect to Google Drive thumbnail (web client fetches directly from Drive)
+        const driveFileId = screenshot.google_drive_file_id;
+        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
+
+        res.redirect(thumbnailUrl);
     } catch (error) {
         console.error('Get media error:', error);
         res.status(500).json({ error: 'Failed to retrieve media' });
