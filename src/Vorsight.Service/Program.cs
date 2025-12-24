@@ -54,7 +54,7 @@ try
     builder.Services.AddSingleton<IAuditManager, Vorsight.Core.Audit.AuditManager>();
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();
 
-    // Cloud Upload Services
+    // Screenshot Upload Services (Direct to Drive with server credentials)
     builder.Services.AddSingleton<IGoogleDriveService, GoogleDriveService>();
     builder.Services.AddSingleton<IShutdownCoordinator, ShutdownCoordinator>();
     builder.Services.AddSingleton<IUploadQueueProcessor, UploadQueueProcessor>();
