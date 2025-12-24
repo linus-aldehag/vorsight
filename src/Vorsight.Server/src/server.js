@@ -46,6 +46,7 @@ app.use('/api/schedule', authenticateBrowser, require('./routes/schedule'));
 app.use('/api/settings', authenticateBrowser, require('./routes/settings'));
 app.use('/api/analytics', authenticateBrowser, require('./routes/analytics'));
 app.use('/api/audit', authenticateBrowser, require('./routes/audit'));
+app.use('/api/oauth', authenticateBrowser, require('./routes/oauth')); // Google OAuth flow
 
 
 // WebSocket

@@ -120,6 +120,21 @@ model AuditEvent {
   @@map("audit_events")
 }
 
+// OAuth Tokens (for Google Drive integration)
+model OAuthToken {
+  id           String   @id @default(cuid())
+  provider     String   // "google"
+  accessToken  String   @map("access_token")
+  refreshToken String   @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  scope        String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("oauth_tokens")
+}
+
+
 // Connection Events
 model ConnectionEvent {
   id         Int      @id @default(autoincrement())
