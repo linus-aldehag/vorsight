@@ -176,6 +176,51 @@ else
             
             echo ""
             echo -e "${GREEN}✅ Basic configuration complete!${NC}"
+            
+            # Google Drive OAuth Setup (REQUIRED)
+            echo ""
+            echo -e "${CYAN}📸 Google Drive Screenshot Storage Setup${NC}"
+            echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+            echo -e "${YELLOW}┃ Google Drive OAuth credentials are REQUIRED                   ┃${NC}"
+            echo -e "${YELLOW}┃ Screenshots are stored in Google Drive (no local storage)     ┃${NC}"
+            echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+            echo ""
+            echo -e "${CYAN}📋 Get OAuth credentials from Google Cloud Console:${NC}"
+            echo -e "${YELLOW}   1. Go to: https://console.cloud.google.com/${NC}"
+            echo -e "${YELLOW}   2. Create/select a project${NC}"
+            echo -e "${YELLOW}   3. Enable 'Google Drive API'${NC}"
+            echo -e "${YELLOW}   4. Credentials → Create OAuth 2.0 Client ID (Web application)${NC}"
+            echo -e "${YELLOW}   5. Authorized redirect URI: ${CYAN}http://$(hostname -I | awk '{print $1}'):3000/api/oauth/google/callback${NC}"
+            echo -e "${YELLOW}   6. Copy Client ID and Client Secret${NC}"
+            echo ""
+            
+            # Loop until valid credentials provided
+            while true; do
+                read -p "Google Client ID: " GOOGLE_CLIENT_ID
+                read -p "Google Client Secret: " GOOGLE_CLIENT_SECRET
+                
+                if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then
+                    # Validate format (basic check)
+                    if [[ "$GOOGLE_CLIENT_ID" =~ apps.googleusercontent.com$ ]]; then
+                        # Uncomment and set Google OAuth vars
+                        sed -i "s|#GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID|" "$INSTALL_DIR/.env"
+                        sed -i "s|#GOOGLE_CLIENT_SECRET=.*|GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET|" "$INSTALL_DIR/.env"
+                        sed -i "s|#GOOGLE_REDIRECT_URI=.*|GOOGLE_REDIRECT_URI=http://$(hostname -I | awk '{print $1}'):3000/api/oauth/google/callback|" "$INSTALL_DIR/.env"
+                        echo -e "${GREEN}   ✓ Google Drive OAuth configured${NC}"
+                        echo -e "${CYAN}   After installation completes, connect via web dashboard${NC}"
+                        break
+                    else
+                        echo -e "${RED}   ❌ Invalid Client ID format (should end with .apps.googleusercontent.com)${NC}"
+                        echo -e "${YELLOW}   Please check your credentials and try again${NC}"
+                        echo ""
+                    fi
+                else
+                    echo -e "${RED}   ❌ Both Client ID and Secret are required${NC}"
+                    echo -e "${YELLOW}   Screenshot functionality will not work without Google Drive${NC}"
+                    echo ""
+                fi
+            done
+            
             echo ""
             read -p "Edit advanced settings (CORS, port, etc.)? (y/N): " -n 1 -r
             echo

@@ -83,8 +83,9 @@ Perfect for a system that watches over and protects through awareness and antici
 - Modern React-based UI
 - Real-time machine status via WebSocket
 - **Machine display names** with inline editing
-- Screenshot gallery
-- Audit event management
+- Screenshot gallery with **direct Google Drive links**
+- Activity timeline and statistics
+- Audit event management with persistent dismissal
 - Multi-machine support
 
 ### 🔧 **Streamlined Installation**
@@ -100,18 +101,13 @@ Perfect for a system that watches over and protects through awareness and antici
 Download the latest `VorsightSetup.msi` from [GitHub Releases](../../releases):
 
 1. Run the installer
-2. Choose installation directory
-3. Configure server connection:
+2. Configure server connection:
    - Server URL (e.g., `http://raspberrypi.local:3000`)
    - Pre-shared key (match server configuration)
-4. **(Optional)** Configure Google Drive:
-   - Paste OAuth 2.0 Client Secret JSON
-   - Installer will launch browser for authentication
-   - Credentials configured automatically
-5. **(Optional)** Enable stealth mode:
+3. **(Optional)** Enable stealth mode:
    - Checkbox: "Use stealth application naming"
    - Installs as "Windows Update Helper" for parental monitoring
-6. Complete installation
+4. Complete installation
 
 The service starts automatically and begins monitoring.
 
