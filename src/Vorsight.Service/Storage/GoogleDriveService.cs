@@ -213,7 +213,7 @@ public class GoogleDriveService : IGoogleDriveService
 
         // Request fresh credentials from server
         var serverUrl = _config["Server:Url"];
-        var psk = _config["Service:PresharedKey"];
+        var psk = _config["Server:PresharedKey"];
 
         if (string.IsNullOrEmpty(serverUrl))
         {
