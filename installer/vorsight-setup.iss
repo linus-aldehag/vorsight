@@ -81,7 +81,7 @@ const
 
 function IsStealthModeInstalled(): Boolean;
 var
-  StealthValue: Integer;
+  StealthValue: Cardinal;
 begin
   // Check registry to see if stealth mode was enabled during installation
   Result := False;
