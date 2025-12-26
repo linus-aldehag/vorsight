@@ -1,6 +1,7 @@
 const express = require('express');
 const { google } = require('googleapis');
-const { prisma } = require('../db/database');
+const { db } = require('../db/database');
+const crypto = require('crypto');
 
 const router = express.Router();
 
@@ -73,20 +74,21 @@ router.get('/google/callback', async (req, res) => {
         const expiresAt = new Date(Date.now() + (tokens.expiry_date || 3600 * 1000));
 
         // Delete existing Google OAuth token (only one per server)
-        await prisma.oAuthToken.deleteMany({
-            where: { provider: 'google' }
-        });
+        db.prepare('DELETE FROM oauth_tokens WHERE provider = ?').run('google');
 
         // Store new token in database
-        await prisma.oAuthToken.create({
-            data: {
-                provider: 'google',
-                accessToken: tokens.access_token,
-                refreshToken: tokens.refresh_token,
-                expiresAt: expiresAt,
-                scope: tokens.scope || SCOPES.join(' ')
-            }
-        });
+        const id = crypto.randomUUID();
+        db.prepare(`
+            INSERT INTO oauth_tokens (id, provider, access_token, refresh_token, expires_at, scope, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `).run(
+            id,
+            'google',
+            tokens.access_token,
+            tokens.refresh_token,
+            expiresAt.toISOString(),
+            tokens.scope || SCOPES.join(' ')
+        );
 
         console.log('Google Drive connected successfully');
 
@@ -104,14 +106,12 @@ router.get('/google/callback', async (req, res) => {
  */
 router.get('/google/status', async (req, res) => {
     try {
-        const token = await prisma.oAuthToken.findFirst({
-            where: { provider: 'google' },
-            select: {
-                createdAt: true,
-                updatedAt: true,
-                expiresAt: true
-            }
-        });
+        const token = db.prepare(`
+            SELECT created_at, updated_at, expires_at 
+            FROM oauth_tokens 
+            WHERE provider = ? 
+            LIMIT 1
+        `).get('google');
 
         if (!token) {
             return res.json({
@@ -120,13 +120,14 @@ router.get('/google/status', async (req, res) => {
         }
 
         const now = new Date();
-        const isExpired = token.expiresAt < now;
+        const expiresAt = new Date(token.expires_at);
+        const isExpired = expiresAt < now;
 
         res.json({
             connected: true,
-            connectedAt: token.createdAt,
-            lastUpdated: token.updatedAt,
-            expiresAt: token.expiresAt,
+            connectedAt: token.created_at,
+            lastUpdated: token.updated_at,
+            expiresAt: token.expires_at,
             isExpired
         });
     } catch (err) {
@@ -141,9 +142,7 @@ router.get('/google/status', async (req, res) => {
  */
 router.post('/google/disconnect', async (req, res) => {
     try {
-        await prisma.oAuthToken.deleteMany({
-            where: { provider: 'google' }
-        });
+        db.prepare('DELETE FROM oauth_tokens WHERE provider = ?').run('google');
 
         console.log('Google Drive disconnected');
         res.json({ success: true, message: 'Disconnected from Google Drive' });
@@ -167,9 +166,7 @@ router.get('/google/credentials', async (req, res) => {
         }
 
         // Fetch OAuth token from database
-        const tokenData = await prisma.oAuthToken.findFirst({
-            where: { provider: 'google' }
-        });
+        const tokenData = db.prepare('SELECT * FROM oauth_tokens WHERE provider = ? LIMIT 1').get('google');
 
         if (!tokenData) {
             return res.status(404).json({
@@ -180,28 +177,33 @@ router.get('/google/credentials', async (req, res) => {
 
         const oauth2Client = createOAuth2Client();
         oauth2Client.setCredentials({
-            access_token: tokenData.accessToken,
-            refresh_token: tokenData.refreshToken,
-            expiry_date: tokenData.expiresAt.getTime()
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expiry_date: new Date(tokenData.expires_at).getTime()
         });
 
         // Check if token is expired and refresh if needed
         const now = new Date();
-        if (tokenData.expiresAt < now) {
+        const expiresAt = new Date(tokenData.expires_at);
+
+        if (expiresAt < now) {
             console.log('Access token expired, refreshing for client...');
 
             try {
                 const { credentials } = await oauth2Client.refreshAccessToken();
 
                 // Update database with new tokens
-                await prisma.oAuthToken.update({
-                    where: { id: tokenData.id },
-                    data: {
-                        accessToken: credentials.access_token,
-                        expiresAt: new Date(credentials.expiry_date),
-                        updatedAt: new Date()
-                    }
-                });
+                db.prepare(`
+                    UPDATE oauth_tokens 
+                    SET access_token = ?, 
+                        expires_at = ?, 
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `).run(
+                    credentials.access_token,
+                    new Date(credentials.expiry_date).toISOString(),
+                    tokenData.id
+                );
 
                 // Return refreshed credentials
                 return res.json({
@@ -220,8 +222,8 @@ router.get('/google/credentials', async (req, res) => {
 
         // Return current valid credentials
         res.json({
-            accessToken: tokenData.accessToken,
-            expiresAt: tokenData.expiresAt.toISOString(),
+            accessToken: tokenData.access_token,
+            expiresAt: tokenData.expires_at,
             scope: tokenData.scope
         });
     } catch (err) {
