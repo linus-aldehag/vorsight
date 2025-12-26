@@ -30,9 +30,10 @@ AppUpdatesURL={#MyAppURL}
   DefaultDirName={autopf}\Vörsight
 #endif
 
-; Privileges
+; Privileges - Must be admin for Windows Service installation
+; (Windows services cannot be installed per-user, only system-wide)
 PrivilegesRequired=admin
-PrivilegesRequiredOverridesAllowed=dialog
+PrivilegesRequiredOverridesAllowed=no
 
 ; Output
 OutputDir=..\Output
@@ -73,6 +74,20 @@ var
   ConfiguredServerUrl: String;
   ConfiguredPSK: String;
   EnableStealthMode: Boolean;
+
+const
+  RegKey = 'Software\Vorsight';
+  RegStealthValue = 'StealthMode';
+
+function IsStealthModeInstalled(): Boolean;
+var
+  StealthValue: Integer;
+begin
+  // Check registry to see if stealth mode was enabled during installation
+  Result := False;
+  if RegQueryDWordValue(HKEY_LOCAL_MACHINE, RegKey, RegStealthValue, StealthValue) then
+    Result := (StealthValue = 1);
+end;
 
 procedure InitializeWizard;
 begin
@@ -161,6 +176,42 @@ begin
   
   // Save modified configuration
   SaveStringToFile(AppSettingsFile, AnsiString(JsonContent), False);
+  
+  // Store stealth mode setting in registry for uninstaller
+  if EnableStealthMode then
+    RegWriteDWordValue(HKEY_LOCAL_MACHINE, RegKey, RegStealthValue, 1)
+  else
+    RegWriteDWordValue(HKEY_LOCAL_MACHINE, RegKey, RegStealthValue, 0);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  ServiceName: String;
+  ResultCode: Integer;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    // Determine which service name to use based on installation mode
+    if IsStealthModeInstalled then
+      ServiceName := 'WindowsUpdateService'
+    else
+      ServiceName := 'VorsightService';
+    
+    // Stop the service
+    Exec('sc', 'stop ' + ServiceName, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    
+    // Wait for service to fully stop
+    Sleep(2000);
+    
+    // Uninstall the service
+    if IsStealthModeInstalled then
+      Exec(ExpandConstant('{app}\{#MyAppServiceExeName}'), 'uninstall --service-name WindowsUpdateService', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+    else
+      Exec(ExpandConstant('{app}\{#MyAppServiceExeName}'), 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    
+    // Clean up registry
+    RegDeleteKeyIncludingSubkeys(HKEY_LOCAL_MACHINE, RegKey);
+  end;
 end;
 
 [Run]
@@ -171,18 +222,6 @@ end;
 #else
   Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait
   Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
-#endif
-
-[UninstallRun]
-; Stop and uninstall the service
-#if StealthMode == 1
-  Filename: "sc"; Parameters: "stop WindowsUpdateService"; Flags: runhidden waituntilterminated
-  Filename: "timeout"; Parameters: "/t 2 /nobreak"; Flags: runhidden waituntilterminated
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "uninstall --service-name WindowsUpdateService"; Flags: runhidden waituntilterminated
-#else
-  Filename: "sc"; Parameters: "stop VorsightService"; Flags: runhidden waituntilterminated
-  Filename: "timeout"; Parameters: "/t 2 /nobreak"; Flags: runhidden waituntilterminated
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "uninstall"; Flags: runhidden waituntilterminated
 #endif
 
 [UninstallDelete]
