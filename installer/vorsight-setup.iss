@@ -33,7 +33,7 @@ AppUpdatesURL={#MyAppURL}
 ; Privileges - Must be admin for Windows Service installation
 ; (Windows services cannot be installed per-user, only system-wide)
 PrivilegesRequired=admin
-PrivilegesRequiredOverridesAllowed=no
+PrivilegesRequiredOverridesAllowed=commandline
 
 ; Output
 OutputDir=..\Output
