@@ -19,6 +19,8 @@ model Machine {
   registrationDate  DateTime @map("registration_date")
   lastSeen          DateTime? @map("last_seen")
   apiKey            String   @unique @map("api_key")
+  serviceVersion    String?  @map("service_version")
+  agentVersion      String?  @map("agent_version")
   metadata          String?  // JSON string
   createdAt         DateTime @default(now()) @map("created_at")
   

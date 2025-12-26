@@ -1,5 +1,6 @@
 using System.Text.Json;
 using SocketIOClient;
+using Vorsight.Core;
 using Vorsight.Core.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
@@ -77,7 +78,8 @@ public class ServerConnection : IServerConnection
                 metadata = new
                 {
                     os = Environment.OSVersion.ToString(),
-                    version = "1.0.0",
+                    serviceVersion = VersionInfo.ServiceVersion,
+                    agentVersion = VersionInfo.AgentVersion,
                     dotnetVersion = Environment.Version.ToString()
                 }
             };

@@ -27,11 +27,15 @@ router.post('/register', (req, res) => {
         // Generate API key
         const apiKey = crypto.randomBytes(32).toString('hex');
 
+        // Extract versions from metadata
+        const serviceVersion = metadata?.serviceVersion || null;
+        const agentVersion = metadata?.agentVersion || null;
+
         // Insert machine
         db.prepare(`
-      INSERT INTO machines (id, name, hostname, api_key, registration_date, metadata)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-    `).run(machineId, name, hostname, apiKey, JSON.stringify(metadata || {}));
+      INSERT INTO machines (id, name, hostname, api_key, registration_date, service_version, agent_version, metadata)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?)
+    `).run(machineId, name, hostname, apiKey, serviceVersion, agentVersion, JSON.stringify(metadata || {}));
 
         res.json({
             success: true,
@@ -60,6 +64,8 @@ router.get('/', (req, res) => {
                 hostname: row.hostname,
                 lastSeen: row.last_seen,
                 isOnline: !!isOnline,
+                serviceVersion: row.service_version,
+                agentVersion: row.agent_version,
                 metadata: row.metadata ? JSON.parse(row.metadata) : {}
             };
         });
