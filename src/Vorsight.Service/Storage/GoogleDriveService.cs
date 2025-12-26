@@ -2,6 +2,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
 using System.Net.Http.Json;
+using Vorsight.Service.Server;
 using DriveFile = Google.Apis.Drive.v3.Data.File;
 using File = System.IO.File;
 
@@ -25,6 +26,7 @@ public class GoogleDriveService : IGoogleDriveService
     private readonly IConfiguration _config;
     private readonly ILogger<GoogleDriveService> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IServerConnection _serverConnection;
     private readonly SemaphoreSlim _uploadSemaphore = new(1, 1);
     private readonly List<Task> _activeUploads = [];
     private readonly Lock _uploadsLock = new();
@@ -37,11 +39,13 @@ public class GoogleDriveService : IGoogleDriveService
     public GoogleDriveService(
         IConfiguration config,
         ILogger<GoogleDriveService> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IServerConnection serverConnection)
     {
         _config = config;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _serverConnection = serverConnection;
     }
 
     public Task InitializeAsync()
@@ -217,21 +221,21 @@ public class GoogleDriveService : IGoogleDriveService
 
         // Request fresh credentials from server
         var serverUrl = _config["Server:Url"];
-        var psk = _config["Server:PresharedKey"];
+        var apiKey = _serverConnection.ApiKey;
 
         if (string.IsNullOrEmpty(serverUrl))
         {
             throw new InvalidOperationException("Server URL not configured in appsettings.json");
         }
 
-        if (string.IsNullOrEmpty(psk))
+        if (string.IsNullOrEmpty(apiKey))
         {
-            throw new InvalidOperationException("PresharedKey not configured in appsettings.json");
+            throw new InvalidOperationException("Machine not registered with server - missing API key");
         }
 
         using var httpClient = _httpClientFactory.CreateClient();
         var request = new HttpRequestMessage(HttpMethod.Get, $"{serverUrl.TrimEnd('/')}/api/oauth/google/credentials");
-        request.Headers.Add("x-preshared-key", psk);
+        request.Headers.Add("x-api-key", apiKey);
 
         var response = await httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
