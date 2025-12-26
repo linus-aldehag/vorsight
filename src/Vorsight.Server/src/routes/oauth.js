@@ -229,7 +229,7 @@ router.get('/google/credentials', async (req, res) => {
         // Return current valid credentials
         res.json({
             accessToken: tokenData.access_token,
-            expiresAt: tokenData.expires_at,
+            expiresAt: new Date(tokenData.expires_at).toISOString(),
             scope: tokenData.scope
         });
     } catch (err) {
