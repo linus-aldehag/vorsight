@@ -3,6 +3,7 @@ using Vorsight.Core.IPC;
 using Vorsight.Service.Server;
 using Vorsight.Service.Storage;
 using Vorsight.Service.Monitoring;
+using System.IO;
 
 namespace Vorsight.Service.Agents;
 
@@ -11,17 +12,20 @@ public class ScreenshotHandler
     private readonly IServerConnection _serverConnection;
     private readonly IUploadQueueProcessor _uploadQueueProcessor;
     private readonly IHealthMonitor _healthMonitor;
+    private readonly GoogleDriveService _driveService;
     private readonly ILogger<ScreenshotHandler> _logger;
 
     public ScreenshotHandler(
         IServerConnection serverConnection,
         IUploadQueueProcessor uploadQueueProcessor,
         IHealthMonitor healthMonitor,
+        GoogleDriveService driveService,
         ILogger<ScreenshotHandler> logger)
     {
         _serverConnection = serverConnection;
         _uploadQueueProcessor = uploadQueueProcessor;
         _healthMonitor = healthMonitor;
+        _driveService = driveService;
         _logger = logger;
     }
 
@@ -74,23 +78,49 @@ public class ScreenshotHandler
                 await File.WriteAllBytesAsync(filePath, message.Payload);
                 _logger.LogInformation("Screenshot saved: {FilePath}", filePath);
                 
-                // Upload to Node Server
-                var fileId = await _serverConnection.UploadFileAsync(message.Payload, fileName);
-                if (fileId != null)
+                // Upload to Google Drive
+                string? driveFileId = null;
+                try
                 {
-                    await _serverConnection.SendScreenshotNotificationAsync(new
+                    driveFileId = await _driveService.UploadFileAsync(filePath, CancellationToken.None);
+                    if (string.IsNullOrEmpty(driveFileId))
                     {
-                        id = fileId,
-                        captureTime = DateTime.UtcNow,
-                        triggerType = "Auto",
-                        googleDriveFileId = (string?)null,
-                        isUploaded = true
-                    });
-                     _logger.LogInformation("Screenshot uploaded to server: {FileId}", fileId);
+                        _logger.LogWarning("Google Drive upload returned empty file ID");
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Screenshot uploaded to Google Drive: {DriveFileId}", driveFileId);
+                    }
+                }
+                catch (Exception driveEx)
+                {
+                    _logger.LogError(driveEx, "Failed to upload screenshot to Google Drive, continuing anyway");
                 }
 
-                // Enqueue for upload (Smart upload will preserve folder structure)
-                await _uploadQueueProcessor.EnqueueFileAsync(filePath, CancellationToken.None);
+                // Delete local temp file after Drive upload
+                try
+                {
+                    File.Delete(filePath);
+                    _logger.LogDebug("Deleted local screenshot temp file: {FilePath}", filePath);
+                }
+                catch (Exception deleteEx)
+                {
+                    _logger.LogWarning(deleteEx, "Failed to delete temp screenshot file: {FilePath}", filePath);
+                }
+                
+                // Use Drive file ID as the screenshot ID for consistency
+                var screenshotId = driveFileId ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
+                
+                // Notify server with Drive file ID
+                await _serverConnection.SendScreenshotNotificationAsync(new
+                {
+                    id = screenshotId,
+                    captureTime = DateTime.UtcNow,
+                    triggerType = "Auto",
+                    googleDriveFileId = driveFileId,
+                    isUploaded = !string.IsNullOrEmpty(driveFileId)
+                });
+                _logger.LogInformation("Screenshot notification sent to server: ID={ScreenshotId}, DriveID={DriveFileId}", screenshotId, driveFileId ?? "none");
                 
                 // Record success
                 _healthMonitor.RecordScreenshotSuccess();
