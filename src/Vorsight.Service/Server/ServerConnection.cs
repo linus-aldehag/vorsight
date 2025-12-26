@@ -15,6 +15,7 @@ public interface IServerConnection
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     bool IsConnected { get; }
+    string? ApiKey { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     event EventHandler? ScheduleUpdateReceived;
 }
@@ -31,6 +32,7 @@ public class ServerConnection : IServerConnection
     private readonly string _serverUrl;
     
     public bool IsConnected => _isConnected;
+    public string? ApiKey => _apiKey;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     public event EventHandler? ScheduleUpdateReceived;
     

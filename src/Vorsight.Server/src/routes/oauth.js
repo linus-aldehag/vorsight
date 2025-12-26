@@ -159,10 +159,16 @@ router.post('/google/disconnect', async (req, res) => {
  */
 router.get('/google/credentials', async (req, res) => {
     try {
-        // Verify PSK from machine client
-        const psk = req.headers['x-preshared-key'];
-        if (!psk || psk !== process.env.PSK) {
-            return res.status(401).json({ error: 'Unauthorized: Invalid PSK' });
+        // Verify machine API key
+        const apiKey = req.headers['x-api-key'];
+        if (!apiKey) {
+            return res.status(401).json({ error: 'Unauthorized: Missing API key' });
+        }
+
+        // Verify machine exists and API key is valid
+        const machine = db.prepare('SELECT id FROM machines WHERE api_key = ?').get(apiKey);
+        if (!machine) {
+            return res.status(401).json({ error: 'Unauthorized: Invalid API key' });
         }
 
         // Fetch OAuth token from database
