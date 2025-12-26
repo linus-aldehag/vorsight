@@ -12,14 +12,14 @@ public class ScreenshotHandler
     private readonly IServerConnection _serverConnection;
     private readonly IUploadQueueProcessor _uploadQueueProcessor;
     private readonly IHealthMonitor _healthMonitor;
-    private readonly GoogleDriveService _driveService;
+    private readonly IGoogleDriveService _driveService;
     private readonly ILogger<ScreenshotHandler> _logger;
 
     public ScreenshotHandler(
         IServerConnection serverConnection,
         IUploadQueueProcessor uploadQueueProcessor,
         IHealthMonitor healthMonitor,
-        GoogleDriveService driveService,
+        IGoogleDriveService driveService,
         ILogger<ScreenshotHandler> logger)
     {
         _serverConnection = serverConnection;
