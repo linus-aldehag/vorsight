@@ -9,7 +9,7 @@ namespace Vorsight.Service.Storage;
 
 public interface IGoogleDriveService
 {
-    Task UploadFileAsync(string filePath, CancellationToken cancellationToken);
+    Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken);
     Task InitializeAsync();
     void BeginShutdown();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
@@ -89,12 +89,12 @@ public class GoogleDriveService : IGoogleDriveService
         }
     }
 
-    public async Task UploadFileAsync(string filePath, CancellationToken cancellationToken)
+    public async Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken)
     {
         if (_isShuttingDown)
         {
             _logger.LogInformation("Skipping upload during shutdown: {FilePath}", filePath);
-            return;
+            return string.Empty;
         }
 
         using var uploadCts = _isShuttingDown
@@ -109,7 +109,7 @@ public class GoogleDriveService : IGoogleDriveService
                 if (!await _uploadSemaphore.WaitAsync(TimeSpan.FromSeconds(2), uploadCts.Token))
                 {
                     _logger.LogInformation("Skipping upload during shutdown: {FilePath}", filePath);
-                    return;
+                    return string.Empty;
                 }
             }
             else
@@ -117,23 +117,26 @@ public class GoogleDriveService : IGoogleDriveService
                 await _uploadSemaphore.WaitAsync(uploadCts.Token);
             }
 
-            uploadTask = InternalUploadFileAsync(filePath, uploadCts.Token);
+            var uploadFileTask = InternalUploadFileAsync(filePath, uploadCts.Token);
+            uploadTask = uploadFileTask;
             lock (_uploadsLock)
             {
                 _activeUploads.Add(uploadTask);
             }
 
-            await uploadTask;
+            return await uploadFileTask;
         }
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Upload cancelled for file: {FilePath}", filePath);
             if (!_isShuttingDown) throw;
+            return string.Empty;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error uploading file to Google Drive: {FilePath}", filePath);
             if (!_isShuttingDown) throw;
+            return string.Empty;
         }
         finally
         {
@@ -149,7 +152,7 @@ public class GoogleDriveService : IGoogleDriveService
         }
     }
 
-    private async Task InternalUploadFileAsync(string filePath, CancellationToken cancellationToken)
+    private async Task<string> InternalUploadFileAsync(string filePath, CancellationToken cancellationToken)
     {
         // Get credentials from server
         var accessToken = await GetAccessTokenAsync(cancellationToken);
@@ -190,6 +193,7 @@ public class GoogleDriveService : IGoogleDriveService
             var file = request.ResponseBody;
             _logger.LogInformation("File uploaded successfully. ID: {FileId}, Link: {Link}",
                 file.Id, file.WebViewLink);
+            return file.Id;
         }
         else if (response.Exception != null)
         {
