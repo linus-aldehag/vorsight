@@ -57,7 +57,8 @@ Source: "..\publish\Service\*"; DestDir: "{app}"; Flags: ignoreversion recursesu
 Source: "..\publish\Agent\*"; DestDir: "{app}\Agent"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Configuration template (will be modified during install)
-Source: "..\src\Vorsight.Service\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion; AfterInstall: ConfigureAppSettings
+; onlyifdoesntexist prevents overwriting during upgrades
+Source: "..\src\Vorsight.Service\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist; AfterInstall: ConfigureAppSettings
 
 [Dirs]
 ; Create directories for runtime data
@@ -74,6 +75,7 @@ var
   ConfiguredServerUrl: String;
   ConfiguredPSK: String;
   EnableStealthMode: Boolean;
+  IsUpgrade: Boolean;
 
 const
   RegKey = 'Software\Vorsight';
@@ -89,62 +91,110 @@ begin
     Result := (StealthValue = 1);
 end;
 
+function IsAppInstalled(): Boolean;
+var
+  AppPath: String;
+begin
+  // Check if the application is already installed by looking for the service executable
+  AppPath := ExpandConstant('{app}\{#MyAppServiceExeName}');
+  Result := FileExists(AppPath);
+end;
+
+function GetServiceName(): String;
+begin
+  // Return appropriate service name based on stealth mode
+  if IsStealthModeInstalled then
+    Result := 'WindowsUpdateService'
+  else
+    Result := 'VorsightService';
+end;
+
+function InitializeSetup(): Boolean;
+var
+  ResultCode: Integer;
+  ServiceName: String;
+begin
+  Result := True;
+  IsUpgrade := IsAppInstalled;
+  
+  // If upgrading, stop the service before installation
+  if IsUpgrade then
+  begin
+    ServiceName := GetServiceName;
+    Log('Detected upgrade installation. Stopping service: ' + ServiceName);
+    
+    // Stop the service
+    Exec('sc', 'stop ' + ServiceName, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    
+    // Wait for service to fully stop
+    Sleep(3000);
+  end;
+end;
+
 procedure InitializeWizard;
 begin
-  // Page 1: Server Configuration
-  ServerUrlPage := CreateInputQueryPage(wpSelectDir,
-    'Server Configuration', 
-    'Configure connection to Vörsight server',
-    'Enter the URL of your Vörsight server (e.g., http://raspberrypi.local:3000)');
-  ServerUrlPage.Add('Server URL:', False);
-  ServerUrlPage.Values[0] := 'http://localhost:3000';
+  // Only show configuration pages during fresh installation, not upgrades
+  if not IsUpgrade then
+  begin
+    // Page 1: Server Configuration
+    ServerUrlPage := CreateInputQueryPage(wpSelectDir,
+      'Server Configuration', 
+      'Configure connection to Vörsight server',
+      'Enter the URL of your Vörsight server (e.g., http://raspberrypi.local:3000)');
+    ServerUrlPage.Add('Server URL:', False);
+    ServerUrlPage.Values[0] := 'http://localhost:3000';
 
-  // Page 2: Pre-Shared Key
-  PresharedKeyPage := CreateInputQueryPage(ServerUrlPage.ID,
-    'Authentication', 
-    'Configure authentication key',
-    'Enter the pre-shared key (PSK) that matches your server configuration.');
-  PresharedKeyPage.Add('Pre-shared Key:', False);
-  PresharedKeyPage.Values[0] := '';
-  
-  // Page 3: Stealth Mode (optional)
-  StealthModePage := CreateInputOptionPage(PresharedKeyPage.ID,
-    'Installation Mode',
-    'Optional: Enable stealth mode for parental monitoring',
-    'Stealth mode makes the application less obvious to tech-savvy users by using generic naming.',
-    False, False);
-  StealthModePage.Add('Use stealth application naming (appears as "Windows Update Helper")');
+    // Page 2: Pre-Shared Key
+    PresharedKeyPage := CreateInputQueryPage(ServerUrlPage.ID,
+      'Authentication', 
+      'Configure authentication key',
+      'Enter the pre-shared key (PSK) that matches your server configuration.');
+    PresharedKeyPage.Add('Pre-shared Key:', False);
+    PresharedKeyPage.Values[0] := '';
+    
+    // Page 3: Stealth Mode (optional)
+    StealthModePage := CreateInputOptionPage(PresharedKeyPage.ID,
+      'Installation Mode',
+      'Optional: Enable stealth mode for parental monitoring',
+      'Stealth mode makes the application less obvious to tech-savvy users by using generic naming.',
+      False, False);
+    StealthModePage.Add('Use stealth application naming (appears as "Windows Update Helper")');
+  end;
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
   
-  if CurPageID = ServerUrlPage.ID then
+  // Only validate configuration pages during fresh installation
+  if not IsUpgrade then
   begin
-    if Trim(ServerUrlPage.Values[0]) = '' then
+    if CurPageID = ServerUrlPage.ID then
     begin
-      MsgBox('Please enter a server URL.', mbError, MB_OK);
-      Result := False;
-    end
-    else
-      ConfiguredServerUrl := Trim(ServerUrlPage.Values[0]);
-  end;
-  
-  if CurPageID = PresharedKeyPage.ID then
-  begin
-    if Trim(PresharedKeyPage.Values[0]) = '' then
+      if Trim(ServerUrlPage.Values[0]) = '' then
+      begin
+        MsgBox('Please enter a server URL.', mbError, MB_OK);
+        Result := False;
+      end
+      else
+        ConfiguredServerUrl := Trim(ServerUrlPage.Values[0]);
+    end;
+    
+    if CurPageID = PresharedKeyPage.ID then
     begin
-      MsgBox('Please enter a pre-shared key.', mbError, MB_OK);
-      Result := False;
-    end
-    else
-      ConfiguredPSK := Trim(PresharedKeyPage.Values[0]);
-  end;
-  
-  if CurPageID = StealthModePage.ID then
-  begin
-    EnableStealthMode := StealthModePage.Values[0];
+      if Trim(PresharedKeyPage.Values[0]) = '' then
+      begin
+        MsgBox('Please enter a pre-shared key.', mbError, MB_OK);
+        Result := False;
+      end
+      else
+        ConfiguredPSK := Trim(PresharedKeyPage.Values[0]);
+    end;
+    
+    if CurPageID = StealthModePage.ID then
+    begin
+      EnableStealthMode := StealthModePage.Values[0];
+    end;
   end;
 end;
 
@@ -154,6 +204,14 @@ var
   FileContent: AnsiString;
   JsonContent: String;
 begin
+  // Only configure appsettings.json during fresh installation
+  // The onlyifdoesntexist flag in [Files] section prevents this from running during upgrades
+  if IsUpgrade then
+  begin
+    Log('Upgrade detected: preserving existing appsettings.json');
+    Exit;
+  end;
+  
   AppSettingsFile := ExpandConstant('{app}\appsettings.json');
   
   // Read the template appsettings.json
@@ -216,11 +274,12 @@ end;
 
 [Run]
 ; Install and start the Windows Service
+; Note: During upgrades, the service is already installed, so we just need to start it
 #if StealthMode == 1
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install --service-name WindowsUpdateService --display-name ""Windows Update Helper Service"" --description ""Provides background update checking and system health monitoring"""; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait
+  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install --service-name WindowsUpdateService --display-name ""Windows Update Helper Service"" --description ""Provides background update checking and system health monitoring"""; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait; Check: not IsUpgrade
   Filename: "sc"; Parameters: "start WindowsUpdateService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #else
-  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait
+  Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait; Check: not IsUpgrade
   Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
 #endif
 

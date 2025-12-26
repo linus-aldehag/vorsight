@@ -124,8 +124,22 @@ server.listen(PORT, HOST, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
     console.log('SIGTERM received, closing server...');
+
+    // Force exit after 5 seconds if graceful shutdown hangs
+    const forceExitTimeout = setTimeout(() => {
+        console.log('Shutdown timeout (5s), forcing exit');
+        process.exit(1);
+    }, 5000);
+
     server.close(() => {
-        db.close();
-        process.exit(0);
+        try {
+            db.close();
+            clearTimeout(forceExitTimeout);
+            console.log('Server closed gracefully');
+            process.exit(0);
+        } catch (err) {
+            console.error('Error during shutdown:', err);
+            process.exit(1);
+        }
     });
 });
