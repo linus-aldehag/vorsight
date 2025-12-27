@@ -25,6 +25,7 @@ dotnet publish src\Vorsight.Service\Vorsight.Service.csproj `
     -r win-x64 `
     --self-contained true `
     -p:PublishSingleFile=true `
+    -p:AppendRuntimeIdentifierToOutputPath=false `
     -o publish\Service
 
 Write-Host "Publishing Agent (self-contained)..."
@@ -33,6 +34,7 @@ dotnet publish src\Vorsight.Agent\Vorsight.Agent.csproj `
     -r win-x64 `
     --self-contained true `
     -p:PublishSingleFile=true `
+    -p:AppendRuntimeIdentifierToOutputPath=false `
     -o publish\Agent
 
 Write-Host "Compiling Inno Setup installer..."
