@@ -3,6 +3,7 @@ import { useActivity } from "@/hooks/useActivity";
 import { useMachine } from "@/context/MachineContext";
 import { ActivityTable } from "./components/ActivityTable";
 import { ActivityTimeline } from "./components/ActivityTimeline";
+import { ActivityFilters } from "./ActivityFilters";
 import { VorsightApi, type AgentSettings } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ export function ActivityPage() {
     const [tempInterval, setTempInterval] = useState(30); // Temporary state for modal
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
 
     useEffect(() => {
         if (selectedMachine) {
@@ -79,6 +81,21 @@ export function ActivityPage() {
         setError(null); // Clear any error
         setIsConfigOpen(false);
     };
+
+    // Apply date range filter
+    const filteredActivities = activities.filter(activity => {
+        if (dateRangeFilter === 'all') return true;
+
+        const activityDate = new Date(activity.timestamp);
+        const now = new Date();
+        const diffHours = (now.getTime() - activityDate.getTime()) / (1000 * 60 * 60);
+
+        if (dateRangeFilter === '24h' && diffHours > 24) return false;
+        if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
+        if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
+
+        return true;
+    });
 
     if (!selectedMachine) {
         return <div className="p-8 text-center text-muted-foreground">Select a machine to view activity.</div>;
@@ -191,6 +208,12 @@ export function ActivityPage() {
                 </div>
             )}
 
+            {/* Filters */}
+            <ActivityFilters
+                dateRangeFilter={dateRangeFilter}
+                onDateRangeFilterChange={setDateRangeFilter}
+            />
+
             <Card>
                 <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
                     <CardHeader>
@@ -216,11 +239,11 @@ export function ActivityPage() {
                         {!isLoading && !isError && (
                             <>
                                 <TabsContent value="timeline" className="mt-0">
-                                    <ActivityTimeline activities={activities} />
+                                    <ActivityTimeline activities={filteredActivities} />
                                 </TabsContent>
 
                                 <TabsContent value="table" className="mt-0">
-                                    <ActivityTable activities={activities} />
+                                    <ActivityTable activities={filteredActivities} />
                                 </TabsContent>
                             </>
                         )}

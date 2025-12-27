@@ -7,6 +7,7 @@ import { Switch } from '../../components/ui/switch';
 import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { ScreenshotFilters } from './ScreenshotFilters';
 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
@@ -26,6 +27,7 @@ export function ScreenshotGallery() {
     const [tempInterval, setTempInterval] = useState(5);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
 
     useEffect(() => {
         if (selectedMachine) {
@@ -112,6 +114,21 @@ export function ScreenshotGallery() {
             second: '2-digit'
         });
     };
+
+    // Apply date range filter
+    const filteredImages = images.filter(img => {
+        if (dateRangeFilter === 'all') return true;
+
+        const imageDate = new Date(img.createdTime);
+        const now = new Date();
+        const diffHours = (now.getTime() - imageDate.getTime()) / (1000 * 60 * 60);
+
+        if (dateRangeFilter === '24h' && diffHours > 24) return false;
+        if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
+        if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
+
+        return true;
+    });
 
     if (loading && images.length === 0) return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
 
@@ -226,9 +243,17 @@ export function ScreenshotGallery() {
                 </div>
             )}
 
+            {/* Filters */}
+            <ScreenshotFilters
+                dateRangeFilter={dateRangeFilter}
+                onDateRangeFilterChange={setDateRangeFilter}
+            />
+
             {/* Gallery Grid */}
             <div className="flex justify-between items-center">
-                <h4 className="text-lg font-semibold">Recent Screenshots</h4>
+                <h4 className="text-lg font-semibold">
+                    Screenshots {filteredImages.length !== images.length && `(${filteredImages.length} of ${images.length})`}
+                </h4>
                 <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
                     <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                     Refresh
@@ -241,7 +266,7 @@ export function ScreenshotGallery() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {images.map((img) => (
+                    {filteredImages.map((img) => (
                         <Card
                             key={img.id}
                             className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
