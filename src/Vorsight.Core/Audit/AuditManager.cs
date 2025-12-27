@@ -189,10 +189,24 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private string BuildEventQuery()
     {
-        // Simple constructing of XPath query for filtering
-        // Example: *[System[(EventID=4720 or EventID=4728)]]
-        // Currently we only support hardcoded critical IDs for simplicity in this version
-        return "*[System[(EventID=4720 or EventID=4732 or EventID=4728 or EventID=4672)]]"; 
+        // Expanded query for comprehensive security monitoring
+        // Covers: User management, Service tampering, Scheduled tasks, Audit tampering
+        return @"*[System[(
+            EventID=4720 or
+            EventID=4732 or
+            EventID=4728 or
+            EventID=4672 or
+            EventID=7045 or
+            EventID=7040 or
+            EventID=4697 or
+            EventID=4698 or
+            EventID=4699 or
+            EventID=4700 or
+            EventID=4701 or
+            EventID=4702 or
+            EventID=1102 or
+            EventID=4719
+        )]]";
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
@@ -221,17 +235,73 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             }
             
             // Basic detection logic
-            if (eventRecord.Id == 4720) // User Created
+            switch (eventRecord.Id)
             {
-                NotifyCriticalEvent(evt, "User Account Created");
-            }
-            else if (eventRecord.Id == 4732 || eventRecord.Id == 4728) // Added to group
-            {
-                NotifyCriticalEvent(evt, "Group Membership Changed");
-            }
-            else if (eventRecord.Id == 4672) // Admin login (noisy, but critical)
-            {
-                // Optionally filter admin noise
+                case 4720: // User Created
+                    NotifyCriticalEvent(evt, "User Account Created");
+                    break;
+                    
+                case 4732:
+                case 4728: // Added to group
+                    NotifyCriticalEvent(evt, "Group Membership Changed");
+                    break;
+                    
+                case 4672: // Admin login (noisy, but critical)
+                    // Optionally filter admin noise
+                    break;
+                    
+                case 7045: // Service installed (System log)
+                    evt.SourceLogName = "System";
+                    evt.EventType = "Service Installed";
+                    NotifyCriticalEvent(evt, "New service installed - verify legitimacy");
+                    break;
+                    
+                case 7040: // Service start type changed
+                    evt.SourceLogName = "System";
+                    evt.EventType = "Service Configuration Changed";
+                    NotifyCriticalEvent(evt, "Service start type modified");
+                    break;
+                    
+                case 4697: // Service installed (Security log)
+                    evt.EventType = "Service Installed (Security)";
+                    NotifyCriticalEvent(evt, "New service installed via security event");
+                    break;
+                    
+                case 4698: // Scheduled task created
+                    evt.EventType = "Scheduled Task Created";
+                    NotifyCriticalEvent(evt, "New scheduled task created");
+                    break;
+                    
+                case 4699: // Scheduled task deleted
+                    evt.EventType = "Scheduled Task Deleted";
+                    NotifyCriticalEvent(evt, "Scheduled task deleted");
+                    break;
+                    
+                case 4700: // Scheduled task enabled
+                    evt.EventType = "Scheduled Task Enabled";
+                    NotifyCriticalEvent(evt, "Scheduled task enabled");
+                    break;
+                    
+                case 4701: // Scheduled task disabled
+                    evt.EventType = "Scheduled Task Disabled";
+                    NotifyCriticalEvent(evt, "Scheduled task disabled");
+                    break;
+                    
+                case 4702: // Scheduled task updated
+                    evt.EventType = "Scheduled Task Updated";
+                    NotifyCriticalEvent(evt, "Scheduled task modified");
+                    break;
+                    
+                case 1102: // Audit log cleared - CRITICAL!
+                    evt.EventType = "Audit Log Cleared";
+                    logger.LogCritical("CRITICAL: Audit log tampering detected! EventID={EventId}", evt.EventId);
+                    NotifyCriticalEvent(evt, "CRITICAL: Audit log cleared - tampering detected!");
+                    break;
+                    
+                case 4719: // Audit policy changed
+                    evt.EventType = "Audit Policy Changed";
+                    NotifyCriticalEvent(evt, "System audit policy modified");
+                    break;
             }
 
             logger.LogDebug("Captured Security Event {Id}: {Type}", eventRecord.Id, evt.EventType);
