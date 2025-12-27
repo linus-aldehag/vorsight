@@ -10,6 +10,13 @@
     <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
 
+  <!-- Release configuration: optimized, no debug symbols -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Serilog" Version="4.2.0" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="9.0.0" />

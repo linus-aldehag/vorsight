@@ -37,8 +37,13 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Connect to WebSocket
-        socketService.connect();
+        // Connect to WebSocket for real-time updates
+        // In development, connect to backend server from env var
+        // In production, backend and frontend are same server (window.location.origin)
+        const socketUrl = import.meta.env.DEV
+            ? (import.meta.env.VITE_API_URL || 'http://localhost:3000')
+            : window.location.origin;
+        socketService.connect(socketUrl);
 
         // Handler for machines list (initial + updates)
         const handleMachinesList = (machinesList: Machine[]) => {
@@ -95,10 +100,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         socketService.on('machine:online', handleMachineOnline);
         socketService.on('machine:offline', handleMachineOffline);
 
-        // Request machines list if already connected
-        if (socketService.isConnected) {
-            socketService.emit('web:subscribe');
-        }
+        // Don't emit here - wait for connection event
+        // The handleConnect function will emit when socket connects
 
         // Fallback: also do initial HTTP fetch in case socket isn't ready
         fetch('/api/machines', { headers: getAuthHeaders() })
