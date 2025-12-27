@@ -5,10 +5,11 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
 import { MachineSelector } from './components/MachineSelector/MachineSelector';
 import { useMachine } from './context/MachineContext';
-import { LayoutDashboard, Image as ImageIcon, Settings } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Settings, Shield } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { ActivityPage } from './features/activity/ActivityPage';
+import { AuditPage } from './features/audit/AuditPage';
 import { Activity } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
@@ -202,6 +203,19 @@ function MainLayout() {
                         <ImageIcon size={16} />
                         SCREENSHOTS
                     </Button>
+                    <Button
+                        variant={currentView === 'audit' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('audit')}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'audit' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
+                    >
+                        <Shield size={16} />
+                        AUDIT
+                    </Button>
                 </div>
             </div>
 
@@ -210,6 +224,7 @@ function MainLayout() {
                 {currentView === 'dashboard' && status && <Dashboard status={status} />}
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
+                {currentView === 'audit' && <AuditPage />}
             </main>
         </div>
     );
