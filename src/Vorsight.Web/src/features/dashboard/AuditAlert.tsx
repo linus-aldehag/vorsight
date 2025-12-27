@@ -66,10 +66,10 @@ export function AuditAlert() {
 
     if (!auditEvents || auditEvents.length === 0) {
         return (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center p-4">
-                    <ShieldAlert className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <div className="text-sm">No security alerts</div>
+            <div className="px-4 py-3">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <ShieldAlert className="h-5 w-5 opacity-50" />
+                    <span className="text-sm">No security alerts</span>
                 </div>
             </div>
         );

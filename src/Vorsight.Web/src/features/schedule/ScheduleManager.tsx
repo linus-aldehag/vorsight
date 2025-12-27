@@ -6,7 +6,6 @@ import { Switch } from '../../components/ui/switch';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
 import { Save, AlertCircle, Clock, Eye, Activity } from 'lucide-react';
-import { cn } from '../../lib/utils';
 
 export function ScheduleManager() {
     const { selectedMachine } = useMachine();

@@ -22,6 +22,8 @@ export function ScreenshotGallery() {
     });
     const [enabled, setEnabled] = useState(true);
     const [interval, setInterval] = useState(5);
+    const [tempEnabled, setTempEnabled] = useState(true);
+    const [tempInterval, setTempInterval] = useState(5);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +39,12 @@ export function ScreenshotGallery() {
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
-            setEnabled(data.screenshotIntervalSeconds > 0);
-            setInterval(Math.round(data.screenshotIntervalSeconds / 60));
+            const isEnabled = data.screenshotIntervalSeconds > 0;
+            const screenshotInterval = Math.round(data.screenshotIntervalSeconds / 60);
+            setEnabled(isEnabled);
+            setInterval(screenshotInterval);
+            setTempEnabled(isEnabled);
+            setTempInterval(screenshotInterval);
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
@@ -67,18 +73,27 @@ export function ScreenshotGallery() {
         try {
             const updatedSettings = {
                 ...settings,
-                screenshotIntervalSeconds: enabled ? interval * 60 : 0,
-                isMonitoringEnabled: enabled || settings.pingIntervalSeconds > 0
+                screenshotIntervalSeconds: tempEnabled ? tempInterval * 60 : 0,
+                isMonitoringEnabled: tempEnabled || settings.pingIntervalSeconds > 0
             };
 
             await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
             setSettings(updatedSettings);
+            setEnabled(tempEnabled);
+            setInterval(tempInterval);
             setIsConfigOpen(false);
         } catch (err) {
             setError('Failed to save settings');
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleCancel = () => {
+        setTempEnabled(enabled);
+        setTempInterval(interval);
+        setError(null);
+        setIsConfigOpen(false);
     };
 
     const handleImageClick = (img: DriveFile) => {
@@ -102,99 +117,113 @@ export function ScreenshotGallery() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
-
-                {/* Compact inline configuration */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                        <Eye size={16} className="text-muted-foreground" />
-                        <Switch
-                            checked={enabled}
-                            onCheckedChange={setEnabled}
-                            className="scale-90"
-                        />
-                        <span className={enabled ? "text-foreground" : "text-muted-foreground"}>
-                            {enabled ? `Every ${interval} min` : 'Disabled'}
-                        </span>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsConfigOpen(true)}
-                        className="gap-1.5 h-8"
-                    >
-                        <Settings2 size={14} />
-                        Configure
-                    </Button>
+            {/* Simple header: title + icon on left, configure button on right */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Eye size={24} className="text-primary" />
+                    <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
                 </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        setTempEnabled(enabled);
+                        setTempInterval(interval);
+                        setIsConfigOpen(true);
+                    }}
+                    className="gap-1.5"
+                >
+                    <Settings2 size={16} />
+                    Configure
+                </Button>
             </div>
 
             {/* Configuration Modal */}
             {isConfigOpen && (
-                <>
-                    <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setIsConfigOpen(false)} />
-                    <div className="fixed right-6 top-32 z-50 w-[360px] border border-border bg-card shadow-2xl rounded-lg">
-                        <div className="p-4 border-b border-border flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Eye size={16} className="text-primary" />
-                                <h3 className="font-semibold text-sm">Capture Interval</h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50">
+                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right">
+                        <div className="flex flex-col h-full">
+                            {/* Modal header */}
+                            <div className="flex items-center justify-between p-4 border-b border-border">
+                                <h3 className="text-lg font-semibold">Screenshot Capture</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <X size={16} />
+                                </Button>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setIsConfigOpen(false)}
-                            >
-                                <X size={14} />
-                            </Button>
-                        </div>
 
-                        <div className="p-4 space-y-4">
-                            {error && (
-                                <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                    <AlertCircle size={12} />
-                                    {error}
+                            {/* Modal content */}
+                            <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+                                {error && (
+                                    <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
+                                        <AlertCircle size={12} />
+                                        {error}
+                                    </div>
+                                )}
+
+                                {/* Enable/Disable Toggle */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                                        <Switch
+                                            checked={tempEnabled}
+                                            onCheckedChange={setTempEnabled}
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium">
+                                                {tempEnabled ? 'Enabled' : 'Disabled'}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {tempEnabled ? 'Screenshot capture is active' : 'Screenshot capture is paused'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Interval (minutes)</label>
-                                <Input
-                                    type="number"
-                                    value={interval}
-                                    onChange={(e) => setInterval(parseInt(e.target.value) || 5)}
-                                    min={1}
-                                    max={60}
-                                    className="font-mono"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Range: 1-60 minutes (recommended: 5-10)
-                                </p>
+                                {/* Interval Setting */}
+                                {tempEnabled && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Capture Interval</label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                value={tempInterval}
+                                                onChange={(e) => setTempInterval(Number(e.target.value))}
+                                                min={1}
+                                                max={60}
+                                                className="w-20"
+                                            />
+                                            <span className="text-sm text-muted-foreground">minutes</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            How often to capture screenshots (1-60 minutes)
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex gap-2 pt-2">
+                            {/* Modal footer */}
+                            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
                                 <Button
                                     variant="outline"
-                                    className="flex-1"
-                                    onClick={() => {
-                                        loadSettings();
-                                        setIsConfigOpen(false);
-                                    }}
+                                    onClick={handleCancel}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     onClick={handleApply}
                                     disabled={saving}
-                                    className="flex-1"
                                 >
                                     {saving ? 'Applying...' : 'Apply'}
                                 </Button>
                             </div>
                         </div>
                     </div>
-                </>
+                </div>
             )}
 
             {/* Gallery Grid */}
