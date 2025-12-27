@@ -23,6 +23,8 @@ export function ActivityPage() {
     });
     const [enabled, setEnabled] = useState(true);
     const [interval, setInterval] = useState(30);
+    const [tempEnabled, setTempEnabled] = useState(true); // Temporary state for modal
+    const [tempInterval, setTempInterval] = useState(30); // Temporary state for modal
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +39,12 @@ export function ActivityPage() {
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
-            setEnabled(data.pingIntervalSeconds > 0);
-            setInterval(data.pingIntervalSeconds || 30);
+            const isEnabled = data.pingIntervalSeconds > 0;
+            const pingInterval = data.pingIntervalSeconds || 30;
+            setEnabled(isEnabled);
+            setInterval(pingInterval);
+            setTempEnabled(isEnabled);
+            setTempInterval(pingInterval);
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
@@ -67,110 +73,122 @@ export function ActivityPage() {
         }
     };
 
+    const handleCancel = () => {
+        setTempEnabled(enabled); // Reset temp state to current applied state
+        setTempInterval(interval); // Reset temp state to current applied state
+        setError(null); // Clear any error
+        setIsConfigOpen(false);
+    };
+
     if (!selectedMachine) {
         return <div className="p-8 text-center text-muted-foreground">Select a machine to view activity.</div>;
     }
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
+            {/* Simple header: title + icon on left, configure button on right */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <Activity size={24} className="text-primary" />
                     <h2 className="text-3xl font-bold tracking-tight">Activity Log</h2>
-                    <p className="text-muted-foreground">
-                        View application usage and window activity history.
-                    </p>
                 </div>
-
-                {/* Compact inline configuration */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-sm">
-                        <Activity size={16} className="text-muted-foreground" />
-                        <Switch
-                            checked={enabled}
-                            onCheckedChange={setEnabled}
-                            className="scale-90"
-                        />
-                        <span className={enabled ? "text-foreground" : "text-muted-foreground"}>
-                            {enabled ? `Every ${interval}s` : 'Disabled'}
-                        </span>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsConfigOpen(true)}
-                        className="gap-1.5 h-8"
-                    >
-                        <Settings2 size={14} />
-                        Configure
-                    </Button>
-                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsConfigOpen(true)}
+                    className="gap-1.5"
+                >
+                    <Settings2 size={16} />
+                    Configure
+                </Button>
             </div>
 
             {/* Configuration Modal */}
             {isConfigOpen && (
-                <>
-                    <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setIsConfigOpen(false)} />
-                    <div className="fixed right-6 top-32 z-50 w-[360px] border border-border bg-card shadow-2xl rounded-lg">
-                        <div className="p-4 border-b border-border flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Activity size={16} className="text-primary" />
-                                <h3 className="font-semibold text-sm">Ping Interval</h3>
+                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50">
+                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right">
+                        <div className="flex flex-col h-full">
+                            {/* Modal header */}
+                            <div className="flex items-center justify-between p-4 border-b border-border">
+                                <h3 className="text-lg font-semibold">Activity Tracking</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <X size={16} />
+                                </Button>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={() => setIsConfigOpen(false)}
-                            >
-                                <X size={14} />
-                            </Button>
-                        </div>
 
-                        <div className="p-4 space-y-4">
-                            {error && (
-                                <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                    <AlertCircle size={12} />
-                                    {error}
+                            {/* Modal content */}
+                            <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+                                {error && (
+                                    <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
+                                        <AlertCircle size={12} />
+                                        {error}
+                                    </div>
+                                )}
+
+                                {/* Enable/Disable Toggle */}
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                                        <Switch
+                                            checked={tempEnabled}
+                                            onCheckedChange={setTempEnabled}
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium">
+                                                {tempEnabled ? 'Enabled' : 'Disabled'}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {tempEnabled ? 'Activity tracking is active' : 'Activity tracking is paused'}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Interval (seconds)</label>
-                                <Input
-                                    type="number"
-                                    value={interval}
-                                    onChange={(e) => setInterval(parseInt(e.target.value) || 30)}
-                                    min={5}
-                                    max={300}
-                                    className="font-mono"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Range: 5-300 seconds (recommended: 30-60)
-                                </p>
+                                {/* Interval Setting */}
+                                {tempEnabled && (
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Ping Interval</label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                type="number"
+                                                value={tempInterval}
+                                                onChange={(e) => setTempInterval(Number(e.target.value))}
+                                                min={10}
+                                                max={300}
+                                                className="w-20"
+                                            />
+                                            <span className="text-sm text-muted-foreground">seconds</span>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            How often to check active window (10-300 seconds)
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex gap-2 pt-2">
+                            {/* Modal footer */}
+                            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
                                 <Button
                                     variant="outline"
-                                    className="flex-1"
-                                    onClick={() => {
-                                        loadSettings();
-                                        setIsConfigOpen(false);
-                                    }}
+                                    onClick={handleCancel}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     onClick={handleApply}
                                     disabled={saving}
-                                    className="flex-1"
                                 >
                                     {saving ? 'Applying...' : 'Apply'}
                                 </Button>
                             </div>
                         </div>
                     </div>
-                </>
+                </div>
             )}
 
             <Card>

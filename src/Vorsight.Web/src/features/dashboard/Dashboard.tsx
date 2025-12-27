@@ -29,8 +29,8 @@ export function Dashboard({ status }: DashboardProps) {
 
                 {/* Side Panel (Right) */}
                 <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                    {/* Visual Feed Thumbnail */}
-                    <div className="flex-none h-48 lg:h-56">
+                    {/* Visual Feed Thumbnail - fills remaining space */}
+                    <div className="flex-1">
                         <ScreenshotViewer />
                     </div>
 
