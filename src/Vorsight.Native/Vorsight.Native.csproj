@@ -7,4 +7,11 @@
     <SupportedOSPlatform>windows</SupportedOSPlatform>
   </PropertyGroup>
 
+  <!-- Release configuration: optimized, no debug symbols -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
 </Project>
