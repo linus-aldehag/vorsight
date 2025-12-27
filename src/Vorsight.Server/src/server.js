@@ -97,11 +97,16 @@ app.use('/api/schedule', authenticateBrowser, require('./routes/schedule'));
 app.use('/api/settings', authenticateBrowser, require('./routes/settings'));
 app.use('/api/analytics', authenticateBrowser, require('./routes/analytics'));
 app.use('/api/audit', authenticateBrowser, require('./routes/audit'));
+app.use('/api/cleanup', authenticateBrowser, require('./routes/cleanup'));
 app.use('/api/oauth', require('./routes/oauth')); // OAuth has its own auth flow
 
 
 // WebSocket
 require('./websocket/socketHandler')(io);
+
+// Start cleanup scheduler
+const { scheduleCleanup } = require('./jobs/cleanup');
+scheduleCleanup();
 
 // Serve React app for all other routes (must be last)
 app.use((req, res) => {
