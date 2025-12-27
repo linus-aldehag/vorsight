@@ -11,6 +11,7 @@ export interface AuditEvent {
     details: string;
     source_log_name: string;
     is_flagged: boolean;
+    acknowledged: boolean;
     created_at: string;
 }
 

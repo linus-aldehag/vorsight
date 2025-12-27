@@ -14,9 +14,8 @@ class SocketService {
 
         this.socket = io(url, {
             transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5,
+            reconnection: false, // Disabled - HTTP fallback handles everything
+            timeout: 5000,
         });
 
         this.socket.on('connect', () => {
@@ -37,11 +36,13 @@ class SocketService {
         });
 
         this.socket.on('disconnect', (reason: string) => {
-            console.log('Socket disconnected:', reason);
+            if (reason !== 'io client disconnect') {
+                console.log('Socket disconnected:', reason);
+            }
         });
 
-        this.socket.on('connect_error', (error: Error) => {
-            console.error('Socket connection error:', error);
+        this.socket.on('connect_error', () => {
+            // Silent - HTTP fallback will handle this
         });
     }
 
