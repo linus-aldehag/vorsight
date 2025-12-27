@@ -5,14 +5,14 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
 import { MachineSelector } from './components/MachineSelector/MachineSelector';
 import { useMachine } from './context/MachineContext';
-import { LayoutDashboard, Image as ImageIcon } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Settings } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { ActivityPage } from './features/activity/ActivityPage';
 import { Activity } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
-import { ThemeSwitch } from './components/ThemeSwitcher/ThemeSwitch';
+import { SettingsPage } from './features/settings/SettingsPage';
 
 export function App() {
     return (
@@ -40,9 +40,44 @@ function AppContent() {
     return (
         <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/settings" element={<SettingsLayout />} />
             <Route path="/:view" element={<MainLayout />} />
             <Route path="/:machineId/:view" element={<MainLayout />} />
         </Routes>
+    );
+}
+
+function SettingsLayout() {
+    const navigate = useNavigate();
+
+    return (
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-mono selection:bg-primary/20">
+            {/* Header */}
+            <header className="border-b border-white/10 h-16 flex items-center px-6 justify-between shrink-0 bg-surface/50 backdrop-blur-sm z-50">
+                <div className="flex items-center gap-4">
+                    <h1 className="text-xl tracking-wider font-bold text-foreground">
+                        VÖRSIGHT
+                    </h1>
+                </div>
+
+                <div className="absolute left-1/2 -translate-x-1/2">
+                    <MachineSelector />
+                </div>
+
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/dashboard')}
+                >
+                    <Settings size={18} />
+                </Button>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex-1 p-6 container mx-auto overflow-auto">
+                <SettingsPage />
+            </main>
+        </div>
     );
 }
 
@@ -116,9 +151,13 @@ function MainLayout() {
                     <MachineSelector />
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <ThemeSwitch />
-                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate('/settings')}
+                >
+                    <Settings size={18} />
+                </Button>
             </header>
 
             {/* Navigation Tabs */}

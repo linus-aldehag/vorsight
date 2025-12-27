@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Progress } from '../../components/ui/progress';
 import { VorsightApi, type ActivitySummary } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
-import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from 'recharts';
 
 export function ActivityStats() {
     const { selectedMachine } = useMachine();
@@ -29,6 +29,9 @@ export function ActivityStats() {
     };
 
     if (!summary) return null;
+
+    // Get current hour
+    const currentHour = new Date().getHours();
 
     // Transform timeline for Recharts - sorting explicitly 0-23
     const chartData = Array.from({ length: 24 }).map((_, i) => {
@@ -79,6 +82,20 @@ export function ActivityStats() {
                                     fill="#00D1FF"
                                     radius={[2, 2, 0, 0]}
                                     barSize={8}
+                                />
+                                {/* Now indicator line */}
+                                <ReferenceLine
+                                    x={`${currentHour}:00`}
+                                    stroke="#00D1FF"
+                                    strokeWidth={2}
+                                    strokeDasharray="3 3"
+                                    label={{
+                                        value: 'NOW',
+                                        position: 'top',
+                                        fill: '#00D1FF',
+                                        fontSize: 10,
+                                        fontWeight: 'bold'
+                                    }}
                                 />
                             </BarChart>
                         </ResponsiveContainer>

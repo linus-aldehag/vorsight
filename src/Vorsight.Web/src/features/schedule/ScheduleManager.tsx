@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 import { VorsightApi, type AccessSchedule, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
-import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
-import { Save, AlertCircle, Clock, Eye, Activity, Palette, Check } from 'lucide-react';
+import { Save, AlertCircle, Clock, Eye, Activity } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function ScheduleManager() {
     const { selectedMachine } = useMachine();
-    const { currentTheme, setTheme, availableThemes } = useTheme();
     const [schedule, setSchedule] = useState<AccessSchedule | null>(null);
     const [agentSettings, setAgentSettings] = useState<AgentSettings>({
-        screenshotIntervalSeconds: 60,
+        screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
         isMonitoringEnabled: true
     });
@@ -180,16 +178,16 @@ export function ScheduleManager() {
                             {screenshotEnabled && (
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium">Interval (seconds)</label>
+                                        <label className="text-sm font-medium">Interval (minutes)</label>
                                         <Input
                                             type="number"
-                                            value={agentSettings.screenshotIntervalSeconds}
-                                            onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: parseInt(e.target.value) || 60 })}
-                                            min={10}
-                                            max={600}
+                                            value={Math.round(agentSettings.screenshotIntervalSeconds / 60)}
+                                            onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: (parseInt(e.target.value) || 5) * 60 })}
+                                            min={1}
+                                            max={60}
                                             className="font-mono bg-background/50"
                                         />
-                                        <p className="text-xs text-muted-foreground">Range: 10 - 600 seconds</p>
+                                        <p className="text-xs text-muted-foreground">Range: 1 - 60 minutes</p>
                                     </div>
                                 </div>
                             )}
@@ -282,67 +280,6 @@ export function ScheduleManager() {
                     </Card>
                 </div>
             )}
-
-            {/* Visual separator */}
-            <div className="border-t border-white/10 my-8"></div>
-
-            {/* Theme Selector - Independent Section */}
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-                <div className="p-6 space-y-4">
-                    <div className="space-y-1">
-                        <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
-                            <Palette size={16} className="text-primary" />
-                            Theme
-                        </h3>
-                        <p className="text-sm text-muted-foreground">Choose your color scheme (applies immediately)</p>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {availableThemes
-                            .sort((a, b) => a.displayName.localeCompare(b.displayName))
-                            .map((theme) => {
-                                const isActive = theme.name === currentTheme;
-
-                                return (
-                                    <button
-                                        key={theme.name}
-                                        onClick={() => setTheme(theme.name)}
-                                        className={cn(
-                                            "relative p-4 rounded border-2 transition-all duration-200 hover:scale-105",
-                                            isActive
-                                                ? "border-primary bg-primary/10"
-                                                : "border-white/10 hover:border-white/20 bg-background/50"
-                                        )}
-                                    >
-                                        <div className="space-y-2">
-                                            <div className="flex gap-1.5 mb-2">
-                                                <div
-                                                    className="w-full h-8 rounded border border-white/20"
-                                                    style={{ backgroundColor: theme.colors.primary }}
-                                                />
-                                                <div
-                                                    className="w-full h-8 rounded border border-white/20"
-                                                    style={{ backgroundColor: theme.colors.background }}
-                                                />
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className={cn(
-                                                    "text-sm font-medium",
-                                                    isActive && "text-primary"
-                                                )}>
-                                                    {theme.displayName}
-                                                </span>
-                                                {isActive && (
-                                                    <Check size={16} className="text-primary" />
-                                                )}
-                                            </div>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                    </div>
-                </div>
-            </Card>
         </div>
     );
 }

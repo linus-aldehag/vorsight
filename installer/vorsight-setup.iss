@@ -75,7 +75,6 @@ var
   ConfiguredServerUrl: String;
   ConfiguredPSK: String;
   EnableStealthMode: Boolean;
-  IsUpgrade: Boolean;
 
 const
   RegKey = 'Software\Vorsight';
@@ -100,6 +99,12 @@ begin
   Result := FileExists(AppPath);
 end;
 
+function IsUpgrade(): Boolean;
+begin
+  // Check if this is an upgrade installation
+  Result := IsAppInstalled;
+end;
+
 function GetServiceName(): String;
 begin
   // Return appropriate service name based on stealth mode
@@ -115,7 +120,6 @@ var
   ServiceName: String;
 begin
   Result := True;
-  IsUpgrade := IsAppInstalled;
   
   // If upgrading, stop the service before installation
   if IsUpgrade then
