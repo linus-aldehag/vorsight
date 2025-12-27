@@ -4,7 +4,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Switch } from '../../components/ui/switch';
-import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle } from 'lucide-react';
+import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle, ImageOff } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
@@ -28,6 +28,7 @@ export function ScreenshotGallery() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
+    const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (selectedMachine) {
@@ -56,6 +57,7 @@ export function ScreenshotGallery() {
         if (!selectedMachine) return;
 
         setLoading(true);
+        setFailedImages(new Set()); // Clear failed images cache on refresh
         try {
             const data = await VorsightApi.getScreenshots(selectedMachine.id, 24);
             setImages(data);
@@ -96,6 +98,10 @@ export function ScreenshotGallery() {
         setTempInterval(interval);
         setError(null);
         setIsConfigOpen(false);
+    };
+
+    const handleImageError = (imgId: string) => {
+        setFailedImages(prev => new Set(prev).add(imgId));
     };
 
     const handleImageClick = (img: DriveFile) => {
@@ -273,11 +279,19 @@ export function ScreenshotGallery() {
                             onClick={() => handleImageClick(img)}
                         >
                             <div className="aspect-video relative bg-black">
-                                <img
-                                    src={`/api/media/${img.id}`}
-                                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                    alt={img.name}
-                                />
+                                {failedImages.has(img.id) ? (
+                                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/20">
+                                        <ImageOff className="text-muted-foreground" size={32} />
+                                        <span className="text-xs text-muted-foreground">File not found</span>
+                                    </div>
+                                ) : (
+                                    <img
+                                        src={`/api/media/${img.id}`}
+                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                                        alt={img.name}
+                                        onError={() => handleImageError(img.id)}
+                                    />
+                                )}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <Maximize2 className="text-white" />
                                 </div>
@@ -309,11 +323,22 @@ export function ScreenshotGallery() {
                         </button>
                         <div className="relative border border-primary/30 bg-black">
                             <div className="absolute inset-0 z-10 scanline pointer-events-none opacity-30" />
-                            <img
-                                src={`/api/media/${selectedImage.id}`}
-                                className="max-w-full max-h-[85vh] object-contain"
-                                alt="Full screenshot"
-                            />
+                            {failedImages.has(selectedImage.id) ? (
+                                <div className="flex flex-col items-center justify-center gap-4 p-20 min-w-[400px] min-h-[300px]">
+                                    <ImageOff className="text-muted-foreground" size={64} />
+                                    <div className="text-center">
+                                        <p className="text-lg text-muted-foreground">File Not Found</p>
+                                        <p className="text-sm text-muted-foreground/70 mt-2">This screenshot is no longer available in Google Drive</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <img
+                                    src={`/api/media/${selectedImage.id}`}
+                                    className="max-w-full max-h-[85vh] object-contain"
+                                    alt="Full screenshot"
+                                    onError={() => handleImageError(selectedImage.id)}
+                                />
+                            )}
                         </div>
                         <div className="mt-2 flex justify-between text-mono text-sm text-primary/80">
                             <span>{selectedImage.name}</span>
