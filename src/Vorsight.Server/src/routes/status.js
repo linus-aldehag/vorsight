@@ -52,6 +52,18 @@ router.get('/', (req, res) => {
             ? (new Date() - new Date(machine.last_seen + 'Z')) < 5 * 60 * 1000
             : false;
 
+        // Get ping status from machine_state (for offline machines)
+        const machineState = db.prepare('SELECT health_status FROM machine_state WHERE machine_id = ?').get(machineId);
+        const pingStatus = machineState?.health_status;
+
+        // Determine connection state
+        let connectionState = 'offline';
+        if (isOnline) {
+            connectionState = 'online';
+        } else if (pingStatus === 'reachable') {
+            connectionState = 'reachable'; // Machine online but service down
+        }
+
         res.json({
             health: {
                 screenshotsSuccessful: screenshotCount?.count || 0,
@@ -75,7 +87,9 @@ router.get('/', (req, res) => {
                 timeSinceLastInput: '0',
                 timestamp: latestActivity.timestamp
             } : null,
-            audit: null
+            audit: null,
+            connectionState,
+            pingStatus
         });
     } catch (error) {
         console.error('Get status error:', error);

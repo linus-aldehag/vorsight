@@ -18,7 +18,9 @@ export interface Machine {
     hostname: string | null;
     ipAddress?: string | null;
     isOnline: boolean;
-    connectionStatus: 'online' | 'unstable' | 'offline';
+    connectionStatus: 'online' | 'unstable' | 'offline' | 'reachable';
+    pingStatus?: string | null;
+    statusText?: string;
     lastSeen: string | null;
 }
 

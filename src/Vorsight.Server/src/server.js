@@ -109,6 +109,10 @@ require('./websocket/socketHandler')(io);
 const { scheduleCleanup } = require('./jobs/cleanup');
 scheduleCleanup();
 
+// Start ping monitor for offline machines
+const { schedulePingMonitor } = require('./jobs/pingMonitor');
+schedulePingMonitor();
+
 // Serve React app for all other routes (must be last)
 app.use((req, res) => {
     const indexPath = path.join(__dirname, '../public/index.html');

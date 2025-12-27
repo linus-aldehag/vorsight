@@ -1,4 +1,5 @@
 const db = require('../db/database');
+const { getConnectionStatus, getStatusText } = require('../utils/statusHelper');
 
 // Helper to calculate connection status
 function getConnectionStatus(lastSeen) {
@@ -25,20 +26,37 @@ module.exports = (io) => {
         socket.on('web:subscribe', () => {
             try {
                 const machines = db.prepare(`
-                    SELECT id, name, displayName, hostname, ip_address, last_seen
-                    FROM machines
-                    ORDER BY name ASC
+                    SELECT m.id, m.name, m.displayName, m.hostname, m.ip_address, m.last_seen,
+                           ms.health_status as ping_status, ms.settings
+                    FROM machines m
+                    LEFT JOIN machine_state ms ON m.id = ms.machine_id
+                    ORDER BY m.name ASC
                 `).all().map(m => {
                     const status = getConnectionStatus(m.last_seen);
-                    return {
+
+                    // Enhanced status with ping
+                    let connectionStatus = status.connectionStatus;
+                    if (connectionStatus === 'offline' && m.ping_status === 'reachable') {
+                        connectionStatus = 'reachable';
+                    }
+
+                    const machine = {
                         id: m.id,
                         name: m.name,
                         displayName: m.displayName,
                         hostname: m.hostname,
                         ipAddress: m.ip_address,
-                        ...status,
+                        isOnline: status.isOnline,
+                        connectionStatus,
+                        pingStatus: m.ping_status,
+                        settings: m.settings,
                         lastSeen: m.last_seen
                     };
+
+                    // Add rich status text
+                    machine.statusText = getStatusText(machine);
+
+                    return machine;
                 });
 
                 socket.emit('machines:list', machines);
@@ -79,20 +97,35 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT id, name, displayName, hostname, ip_address, last_seen
-                        FROM machines
-                        ORDER BY name ASC
+                        SELECT m.id, m.name, m.displayName, m.hostname, m.ip_address, m.last_seen,
+                               ms.health_status as ping_status, ms.settings
+                        FROM machines m
+                        LEFT JOIN machine_state ms ON m.id = ms.machine_id
+                        ORDER BY m.name ASC
                     `).all().map(m => {
                         const status = getConnectionStatus(m.last_seen);
-                        return {
+
+                        let connectionStatus = status.connectionStatus;
+                        if (connectionStatus === 'offline' && m.ping_status === 'reachable') {
+                            connectionStatus = 'reachable';
+                        }
+
+                        const machine = {
                             id: m.id,
                             name: m.name,
                             displayName: m.displayName,
                             hostname: m.hostname,
                             ipAddress: m.ip_address,
-                            ...status,
+                            isOnline: status.isOnline,
+                            connectionStatus,
+                            pingStatus: m.ping_status,
+                            settings: m.settings,
                             lastSeen: m.last_seen
                         };
+
+                        machine.statusText = getStatusText(machine);
+
+                        return machine;
                     });
                     io.emit('machines:list', machines);
 
