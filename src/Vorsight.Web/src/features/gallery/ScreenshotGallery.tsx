@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { RefreshCw, X, Maximize2 } from 'lucide-react';
+import { Input } from '../../components/ui/input';
+import { Switch } from '../../components/ui/switch';
+import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
-import { ScreenshotSettings } from './ScreenshotSettings';
 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
@@ -13,11 +14,16 @@ export function ScreenshotGallery() {
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
     const [settings, setSettings] = useState<AgentSettings>({
-        screenshotIntervalSeconds: 60,
+        screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
         isMonitoringEnabled: true
     });
+    const [enabled, setEnabled] = useState(true);
+    const [interval, setInterval] = useState(5);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (selectedMachine) {
@@ -31,6 +37,8 @@ export function ScreenshotGallery() {
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
+            setEnabled(data.screenshotIntervalSeconds > 0);
+            setInterval(Math.round(data.screenshotIntervalSeconds / 60));
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
@@ -47,6 +55,29 @@ export function ScreenshotGallery() {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApply = async () => {
+        if (!selectedMachine) return;
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const updatedSettings = {
+                ...settings,
+                screenshotIntervalSeconds: enabled ? interval * 60 : 0,
+                isMonitoringEnabled: enabled || settings.pingIntervalSeconds > 0
+            };
+
+            await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
+            setSettings(updatedSettings);
+            setIsConfigOpen(false);
+        } catch (err) {
+            setError('Failed to save settings');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -73,16 +104,106 @@ export function ScreenshotGallery() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
-                <div className="flex gap-2">
-                    <ScreenshotSettings
-                        settings={settings}
-                        onSettingsChange={(newSettings) => setSettings(newSettings)}
-                    />
-                    <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
-                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-                        Refresh
+
+                {/* Compact inline configuration */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-sm">
+                        <Eye size={16} className="text-muted-foreground" />
+                        <Switch
+                            checked={enabled}
+                            onCheckedChange={setEnabled}
+                            className="scale-90"
+                        />
+                        <span className={enabled ? "text-foreground" : "text-muted-foreground"}>
+                            {enabled ? `Every ${interval} min` : 'Disabled'}
+                        </span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsConfigOpen(true)}
+                        className="gap-1.5 h-8"
+                    >
+                        <Settings2 size={14} />
+                        Configure
                     </Button>
                 </div>
+            </div>
+
+            {/* Configuration Modal */}
+            {isConfigOpen && (
+                <>
+                    <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setIsConfigOpen(false)} />
+                    <div className="fixed right-6 top-32 z-50 w-[360px] border border-border bg-card shadow-2xl rounded-lg">
+                        <div className="p-4 border-b border-border flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Eye size={16} className="text-primary" />
+                                <h3 className="font-semibold text-sm">Capture Interval</h3>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setIsConfigOpen(false)}
+                            >
+                                <X size={14} />
+                            </Button>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            {error && (
+                                <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
+                                    <AlertCircle size={12} />
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Interval (minutes)</label>
+                                <Input
+                                    type="number"
+                                    value={interval}
+                                    onChange={(e) => setInterval(parseInt(e.target.value) || 5)}
+                                    min={1}
+                                    max={60}
+                                    className="font-mono"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Range: 1-60 minutes (recommended: 5-10)
+                                </p>
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => {
+                                        loadSettings();
+                                        setIsConfigOpen(false);
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleApply}
+                                    disabled={saving}
+                                    className="flex-1"
+                                >
+                                    {saving ? 'Applying...' : 'Apply'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Gallery Grid */}
+            <div className="flex justify-between items-center">
+                <h4 className="text-lg font-semibold">Recent Screenshots</h4>
+                <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
+                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                    Refresh
+                </Button>
             </div>
 
             {images.length === 0 ? (
