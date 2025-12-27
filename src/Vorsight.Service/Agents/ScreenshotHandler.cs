@@ -83,21 +83,37 @@ public class ScreenshotHandler
                 try
                 {
                     driveFileId = await _driveService.UploadFileAsync(filePath, CancellationToken.None);
-                    if (string.IsNullOrEmpty(driveFileId))
+                    
+                    if (!string.IsNullOrEmpty(driveFileId))
                     {
-                        _logger.LogWarning("Google Drive upload returned empty file ID");
+                        _logger.LogInformation("Screenshot uploaded to Google Drive: {DriveFileId}", driveFileId);
+                        
+                        // Only notify server (and save to DB) on successful upload
+                        await _serverConnection.SendScreenshotNotificationAsync(new
+                        {
+                            id = driveFileId, // Use Drive ID as screenshot ID
+                            captureTime = DateTime.UtcNow,
+                            triggerType = "Auto",
+                            googleDriveFileId = driveFileId,
+                            isUploaded = true
+                        });
+                        
+                        _logger.LogInformation("Screenshot notification sent to server: DriveID={DriveFileId}", driveFileId);
+                        _healthMonitor.RecordScreenshotSuccess();
                     }
                     else
                     {
-                        _logger.LogInformation("Screenshot uploaded to Google Drive: {DriveFileId}", driveFileId);
+                        _logger.LogWarning("Google Drive upload returned empty file ID - not saving to database");
+                        _healthMonitor.RecordScreenshotFailure();
                     }
                 }
                 catch (Exception driveEx)
                 {
-                    _logger.LogError(driveEx, "Failed to upload screenshot to Google Drive, continuing anyway");
+                    _logger.LogError(driveEx, "Failed to upload screenshot to Google Drive - not saving to database");
+                    _healthMonitor.RecordScreenshotFailure();
                 }
 
-                // Delete local temp file after Drive upload
+                // Delete local temp file after processing (always clean up)
                 try
                 {
                     File.Delete(filePath);
@@ -107,23 +123,6 @@ public class ScreenshotHandler
                 {
                     _logger.LogWarning(deleteEx, "Failed to delete temp screenshot file: {FilePath}", filePath);
                 }
-                
-                // Use Drive file ID as the screenshot ID for consistency
-                var screenshotId = driveFileId ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-                
-                // Notify server with Drive file ID
-                await _serverConnection.SendScreenshotNotificationAsync(new
-                {
-                    id = screenshotId,
-                    captureTime = DateTime.UtcNow,
-                    triggerType = "Auto",
-                    googleDriveFileId = driveFileId,
-                    isUploaded = !string.IsNullOrEmpty(driveFileId)
-                });
-                _logger.LogInformation("Screenshot notification sent to server: ID={ScreenshotId}, DriveID={DriveFileId}", screenshotId, driveFileId ?? "none");
-                
-                // Record success
-                _healthMonitor.RecordScreenshotSuccess();
             }
             else
             {

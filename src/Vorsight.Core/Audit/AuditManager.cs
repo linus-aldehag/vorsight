@@ -11,6 +11,11 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 {
     private readonly List<AuditEventFilter> _filters = new();
     private bool _disposed;
+    
+    // Deduplication
+    private readonly Dictionary<string, DateTime> _recentEventHashes = new();
+    private readonly TimeSpan _dedupeWindow = TimeSpan.FromSeconds(5);
+    private readonly object _dedupeLock = new();
 
     // Events for audit notifications
     // Events for audit notifications
@@ -208,6 +213,13 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 Details = eventRecord.FormatDescription() ?? "No description available"
             };
             
+            // Check for duplicates before processing
+            if (IsDuplicate(evt))
+            {
+                logger.LogDebug("Skipping duplicate event {Id} for {Username}", evt.EventId, evt.Username);
+                return;
+            }
+            
             // Basic detection logic
             if (eventRecord.Id == 4720) // User Created
             {
@@ -238,6 +250,43 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             DetectedTime = DateTime.UtcNow,
             MatchingFilter = new AuditEventFilter { FilterId = "event_" + evt.EventId, Description = description, EventId = int.Parse(evt.EventId) }
         });
+    }
+    
+    private string GetEventHash(AuditEvent evt)
+    {
+        // Create hash based on event ID, username, and timestamp (rounded to second)
+        var timestampKey = evt.Timestamp.ToString("yyyyMMddHHmmss");
+        return $"{evt.EventId}_{evt.Username}_{timestampKey}";
+    }
+    
+    private bool IsDuplicate(AuditEvent evt)
+    {
+        lock (_dedupeLock)
+        {
+            var hash = GetEventHash(evt);
+            var now = DateTime.UtcNow;
+            
+            // Clean up old hashes (older than dedup window)
+            var expiredHashes = _recentEventHashes
+                .Where(kvp => now - kvp.Value > _dedupeWindow)
+                .Select(kvp => kvp.Key)
+                .ToList();
+            
+            foreach (var expiredHash in expiredHashes)
+            {
+                _recentEventHashes.Remove(expiredHash);
+            }
+            
+            // Check if we've seen this event recently
+            if (_recentEventHashes.ContainsKey(hash))
+            {
+                return true; // Duplicate
+            }
+            
+            // Add to recent events
+            _recentEventHashes[hash] = now;
+            return false;
+        }
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
