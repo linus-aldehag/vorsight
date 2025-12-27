@@ -47,6 +47,11 @@ router.get('/', (req, res) => {
       LIMIT 1
     `).get(machineId);
 
+        // Calculate online status from last_seen (online if seen within last 5 minutes)
+        const isOnline = machine?.last_seen
+            ? (new Date() - new Date(machine.last_seen + 'Z')) < 5 * 60 * 1000
+            : false;
+
         res.json({
             health: {
                 screenshotsSuccessful: screenshotCount?.count || 0,
@@ -63,7 +68,7 @@ router.get('/', (req, res) => {
             uptime: {
                 currentStart: machine?.registration_date || new Date().toISOString(),
                 lastSeen: machine?.last_seen || new Date().toISOString(),
-                isTracking: machine?.is_online === 1
+                isTracking: isOnline
             },
             activity: latestActivity ? {
                 activeWindowTitle: latestActivity.active_window,
