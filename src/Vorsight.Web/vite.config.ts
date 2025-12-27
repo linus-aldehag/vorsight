@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://pi.lan:3000',
+        target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: true
       }
     }

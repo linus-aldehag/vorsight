@@ -41,8 +41,9 @@ router.get('/:machineId/recent', (req, res) => {
 // Acknowledge (dismiss) an audit event
 router.patch('/:id/acknowledge', (req, res) => {
     try {
-        db.prepare('UPDATE audit_events SET acknowledged = 1 WHERE id = ?')
-            .run(parseInt(req.params.id));
+        const { acknowledged } = req.body;
+        db.prepare('UPDATE audit_events SET acknowledged = ? WHERE id = ?')
+            .run(acknowledged ? 1 : 0, parseInt(req.params.id));
 
         res.json({ success: true });
     } catch (error) {
