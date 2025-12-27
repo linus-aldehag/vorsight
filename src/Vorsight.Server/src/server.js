@@ -98,6 +98,7 @@ app.use('/api/settings', authenticateBrowser, require('./routes/settings'));
 app.use('/api/analytics', authenticateBrowser, require('./routes/analytics'));
 app.use('/api/audit', authenticateBrowser, require('./routes/audit'));
 app.use('/api/cleanup', authenticateBrowser, require('./routes/cleanup'));
+app.use('/api/ping', authenticateBrowser, require('./routes/ping'));
 app.use('/api/oauth', require('./routes/oauth')); // OAuth has its own auth flow
 
 
