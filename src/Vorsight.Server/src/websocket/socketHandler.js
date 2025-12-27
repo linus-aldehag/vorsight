@@ -25,7 +25,7 @@ module.exports = (io) => {
         socket.on('web:subscribe', () => {
             try {
                 const machines = db.prepare(`
-                    SELECT id, name, displayName, hostname, last_seen
+                    SELECT id, name, displayName, hostname, ip_address, last_seen
                     FROM machines
                     ORDER BY name ASC
                 `).all().map(m => {
@@ -35,6 +35,7 @@ module.exports = (io) => {
                         name: m.name,
                         displayName: m.displayName,
                         hostname: m.hostname,
+                        ipAddress: m.ip_address,
                         ...status,
                         lastSeen: m.last_seen
                     };
@@ -51,6 +52,12 @@ module.exports = (io) => {
             try {
                 const { machineId, apiKey } = data;
 
+                // Extract IP address from socket connection
+                const ipAddress = socket.handshake.address ||
+                    socket.conn.remoteAddress ||
+                    socket.request?.connection?.remoteAddress ||
+                    'unknown';
+
                 // Verify API key
                 const machine = db.prepare('SELECT * FROM machines WHERE id = ? AND api_key = ?')
                     .get(machineId, apiKey);
@@ -59,9 +66,9 @@ module.exports = (io) => {
                     socket.machineId = machineId;
                     socket.join(`machine:${machineId}`);
 
-                    // Update last seen (is_online calculated from this)
-                    db.prepare('UPDATE machines SET last_seen = CURRENT_TIMESTAMP WHERE id = ?')
-                        .run(machineId);
+                    // Update last seen AND IP address
+                    db.prepare('UPDATE machines SET last_seen = CURRENT_TIMESTAMP, ip_address = ? WHERE id = ?')
+                        .run(ipAddress, machineId);
 
                     // Log connection event
                     db.prepare('INSERT INTO connection_events (machine_id, event_type) VALUES (?, ?)')
@@ -72,7 +79,7 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT id, name, displayName, hostname, last_seen
+                        SELECT id, name, displayName, hostname, ip_address, last_seen
                         FROM machines
                         ORDER BY name ASC
                     `).all().map(m => {
@@ -82,6 +89,7 @@ module.exports = (io) => {
                             name: m.name,
                             displayName: m.displayName,
                             hostname: m.hostname,
+                            ipAddress: m.ip_address,
                             ...status,
                             lastSeen: m.last_seen
                         };

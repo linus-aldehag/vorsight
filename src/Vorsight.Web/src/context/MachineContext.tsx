@@ -16,6 +16,7 @@ export interface Machine {
     name: string;
     displayName?: string | null;
     hostname: string | null;
+    ipAddress?: string | null;
     isOnline: boolean;
     connectionStatus: 'online' | 'unstable' | 'offline';
     lastSeen: string | null;
