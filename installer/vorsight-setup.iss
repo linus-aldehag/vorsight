@@ -68,7 +68,7 @@ Name: "{commonappdata}\Vörsight\screenshots"
 
 [Code]
 var
-  ServerUrlPage: TInputQueryWizardPage;
+  ServerConfigPage: TInputQueryWizardPage;
   PresharedKeyPage: TInputQueryWizardPage;
   StealthModePage: TInputOptionWizardPage;
   
@@ -141,15 +141,17 @@ begin
   if not IsUpgrade then
   begin
     // Page 1: Server Configuration
-    ServerUrlPage := CreateInputQueryPage(wpSelectDir,
+    ServerConfigPage := CreateInputQueryPage(wpSelectDir,
       'Server Configuration', 
       'Configure connection to Vörsight server',
-      'Enter the URL of your Vörsight server (e.g., http://raspberrypi.local:3000)');
-    ServerUrlPage.Add('Server URL:', False);
-    ServerUrlPage.Values[0] := 'http://localhost:3000';
+      'Enter the address and port of your Vörsight server (e.g., raspberrypi.local or 192.168.1.100)');
+    ServerConfigPage.Add('Server Address:', False);
+    ServerConfigPage.Add('Server Port:', False);
+    ServerConfigPage.Values[0] := '';  // Server address - empty by default
+    ServerConfigPage.Values[1] := '3000';  // Port - defaults to 3000
 
     // Page 2: Pre-Shared Key
-    PresharedKeyPage := CreateInputQueryPage(ServerUrlPage.ID,
+    PresharedKeyPage := CreateInputQueryPage(ServerConfigPage.ID,
       'Authentication', 
       'Configure authentication key',
       'Enter the pre-shared key (PSK) that matches your server configuration.');
@@ -167,21 +169,41 @@ begin
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
+var
+  ServerAddress: String;
+  ServerPort: String;
+  PortNum: Integer;
 begin
   Result := True;
   
   // Only validate configuration pages during fresh installation
   if not IsUpgrade then
   begin
-    if CurPageID = ServerUrlPage.ID then
+    if CurPageID = ServerConfigPage.ID then
     begin
-      if Trim(ServerUrlPage.Values[0]) = '' then
+      ServerAddress := Trim(ServerConfigPage.Values[0]);
+      ServerPort := Trim(ServerConfigPage.Values[1]);
+      
+      if ServerAddress = '' then
       begin
-        MsgBox('Please enter a server URL.', mbError, MB_OK);
+        MsgBox('Please enter a server address (e.g., raspberrypi.local or 192.168.1.100).', mbError, MB_OK);
+        Result := False;
+      end
+      else if ServerPort = '' then
+      begin
+        MsgBox('Please enter a server port.', mbError, MB_OK);
+        Result := False;
+      end
+      else if not StrToIntDef(ServerPort, 0, PortNum) or (PortNum <= 0) or (PortNum > 65535) then
+      begin
+        MsgBox('Please enter a valid port number (1-65535).', mbError, MB_OK);
         Result := False;
       end
       else
-        ConfiguredServerUrl := Trim(ServerUrlPage.Values[0]);
+      begin
+        // Construct the full URL from server address and port
+        ConfiguredServerUrl := 'http://' + ServerAddress + ':' + ServerPort;
+      end;
     end;
     
     if CurPageID = PresharedKeyPage.ID then

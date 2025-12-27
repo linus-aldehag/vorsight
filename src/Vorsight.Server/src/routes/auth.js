@@ -13,8 +13,8 @@ router.post('/login', (req, res) => {
     if (passphrase === process.env.WEB_PASSPHRASE) {
         const token = jwt.sign(
             { role: 'admin' },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRY || '30d' }
+            process.env.SERVICE_KEY,
+            { expiresIn: process.env.SERVICE_KEY_EXPIRY || '30d' }
         );
 
         res.json({ token });
@@ -33,7 +33,7 @@ router.get('/status', (req, res) => {
     }
 
     try {
-        jwt.verify(token, process.env.JWT_SECRET);
+        jwt.verify(token, process.env.SERVICE_KEY);
         res.json({ authenticated: true });
     } catch (error) {
         res.status(401).json({ authenticated: false });

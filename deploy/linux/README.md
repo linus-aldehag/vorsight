@@ -81,7 +81,7 @@ PORT=3000                                    # Server port
 HOST=0.0.0.0                                 # Listen on all interfaces
 NODE_ENV=production
 CLIENT_ORIGIN=http://your-server-ip:3000    # CORS origin
-JWT_SECRET=your-secure-random-secret-here   # CHANGE THIS!
+SERVICE_KEY=your-secure-random-secret-here   # Service key - CHANGE THIS!
 PSK=your-secure-psk-here                    # Pre-shared key (match Windows client)
 DB_PATH=./data/vorsight.db
 ```

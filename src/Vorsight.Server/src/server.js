@@ -87,7 +87,7 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Protected routes (require JWT authentication)
+// Protected routes (require browser authentication - tokens signed with service key)
 app.use('/api/machines', authenticateBrowser, machinesRouter);
 app.use('/api/activity', authenticateBrowser, require('./routes/activity'));
 app.use('/api/screenshots', authenticateBrowser, require('./routes/screenshots'));
