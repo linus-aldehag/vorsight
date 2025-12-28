@@ -31,7 +31,7 @@ export function ActivityPage() {
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
 
     useEffect(() => {
-        if (selectedMachine) {
+        if (selectedMachine && !isConfigOpen) { // Don't reload while editing
             loadSettings();
         }
     }, [selectedMachine]);
@@ -42,11 +42,14 @@ export function ActivityPage() {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
             const isEnabled = data.pingIntervalSeconds > 0;
-            const pingInterval = data.pingIntervalSeconds || 30;
+            // Use preserved value if disabled, otherwise current value
+            const intervalToUse = isEnabled
+                ? data.pingIntervalSeconds
+                : (data.pingIntervalSecondsWhenEnabled || 30);
             setEnabled(isEnabled);
-            setInterval(pingInterval);
+            setInterval(intervalToUse);
             setTempEnabled(isEnabled);
-            setTempInterval(pingInterval);
+            setTempInterval(intervalToUse);
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
@@ -62,6 +65,7 @@ export function ActivityPage() {
             const updatedSettings = {
                 ...settings,
                 pingIntervalSeconds: tempEnabled ? tempInterval : 0,
+                pingIntervalSecondsWhenEnabled: tempInterval, // Always preserve the interval value
                 isMonitoringEnabled: tempEnabled || settings.screenshotIntervalSeconds > 0
             };
 
@@ -105,11 +109,16 @@ export function ActivityPage() {
 
     return (
         <div className="space-y-6">
-            {/* Simple header: title + icon on left, configure button on right */}
+            {/* Simple header: title + icon on left, status badge + configure button on right */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <Activity size={24} className="text-primary" />
                     <h2 className="text-3xl font-bold tracking-tight">Activity Log</h2>
+                    {!enabled && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
+                            Tracking Disabled
+                        </span>
+                    )}
                 </div>
                 <Button
                     variant="outline"

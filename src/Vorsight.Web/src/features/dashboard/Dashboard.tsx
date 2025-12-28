@@ -1,4 +1,4 @@
-import { type StatusResponse } from '../../api/client';
+import { type StatusResponse, type AgentSettings, VorsightApi } from '../../api/client';
 import { HealthStats } from './HealthStats';
 import { ActivityStats } from './ActivityStats';
 import { ActivityMonitor } from './ActivityMonitor';
@@ -6,12 +6,25 @@ import { AuditAlert } from './AuditAlert';
 import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { useState, useEffect } from 'react';
+import { useMachine } from '../../context/MachineContext';
 
 interface DashboardProps {
     status: StatusResponse;
 }
 
 export function Dashboard({ status }: DashboardProps) {
+    const { selectedMachine } = useMachine();
+    const [settings, setSettings] = useState<AgentSettings | null>(null);
+
+    useEffect(() => {
+        if (selectedMachine) {
+            VorsightApi.getSettings(selectedMachine.id)
+                .then(setSettings)
+                .catch(console.error);
+        }
+    }, [selectedMachine]);
+
     return (
         <div className="flex flex-col gap-6 h-full">
             {/* Top Section: Main grid */}
@@ -21,17 +34,17 @@ export function Dashboard({ status }: DashboardProps) {
                     {/* Row 1: Health & Current Activity */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {status.health && <HealthStats health={status.health} uptime={status.uptime} />}
-                        <ActivityMonitor activity={status.activity} />
+                        <ActivityMonitor activity={status.activity} isDisabled={settings?.pingIntervalSeconds === 0} />
                     </div>
                     {/* Row 2: Timeline & Top Apps (Side-by-side via ActivityStats grid) */}
-                    <ActivityStats />
+                    <ActivityStats isDisabled={settings?.pingIntervalSeconds === 0} />
                 </div>
 
                 {/* Side Panel (Right) */}
                 <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
                     {/* Visual Feed Thumbnail - fills remaining space */}
                     <div className="flex-1">
-                        <ScreenshotViewer />
+                        <ScreenshotViewer isDisabled={settings?.screenshotIntervalSeconds === 0} />
                     </div>
 
                     {/* System Controls */}

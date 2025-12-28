@@ -3,11 +3,12 @@ import type { ActivitySnapshot } from '../../api/client';
 
 interface ActivityMonitorProps {
     activity: ActivitySnapshot | null;
+    isDisabled?: boolean;
 }
 
-export function ActivityMonitor({ activity }: ActivityMonitorProps) {
+export function ActivityMonitor({ activity, isDisabled = false }: ActivityMonitorProps) {
     if (!activity) return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
             <CardContent className="p-6">
                 <div className="text-sm text-muted-foreground">No activity data</div>
             </CardContent>
@@ -15,7 +16,7 @@ export function ActivityMonitor({ activity }: ActivityMonitorProps) {
     );
 
     return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
             <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold tracking-wide text-foreground uppercase">Current Activity</CardTitle>
             </CardHeader>

@@ -14,7 +14,18 @@ module.exports = (io) => {
                     LEFT JOIN machine_state ms ON m.id = ms.machine_id
                     ORDER BY m.name ASC
                 `).all().map(m => {
-                    const status = getConnectionStatus(m.last_seen);
+                    // Parse settings to get pingIntervalSeconds for dynamic timeout
+                    let pingIntervalSeconds = 30; // default
+                    try {
+                        if (m.settings) {
+                            const settings = JSON.parse(m.settings);
+                            pingIntervalSeconds = settings.pingIntervalSeconds || 30;
+                        }
+                    } catch (e) {
+                        // Use default
+                    }
+
+                    const status = getConnectionStatus(m.last_seen, pingIntervalSeconds);
 
                     // Enhanced status with ping
                     let connectionStatus = status.connectionStatus;
@@ -85,7 +96,18 @@ module.exports = (io) => {
                         LEFT JOIN machine_state ms ON m.id = ms.machine_id
                         ORDER BY m.name ASC
                     `).all().map(m => {
-                        const status = getConnectionStatus(m.last_seen);
+                        // Parse settings to get pingIntervalSeconds for dynamic timeout
+                        let pingIntervalSeconds = 30; // default
+                        try {
+                            if (m.settings) {
+                                const settings = JSON.parse(m.settings);
+                                pingIntervalSeconds = settings.pingIntervalSeconds || 30;
+                            }
+                        } catch (e) {
+                            // Use default
+                        }
+
+                        const status = getConnectionStatus(m.last_seen, pingIntervalSeconds);
 
                         let connectionStatus = status.connectionStatus;
                         if (connectionStatus === 'offline' && m.ping_status === 'reachable') {
@@ -256,11 +278,29 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT id, name, displayName, hostname, last_seen
-                        FROM machines
-                        ORDER BY name ASC
+                        SELECT m.id, m.name, m.displayName, m.hostname, m.last_seen,
+                               ms.health_status as ping_status, ms.settings
+                        FROM machines m
+                        LEFT JOIN machine_state ms ON m.id = ms.machine_id
+                        ORDER BY m.name ASC
                     `).all().map(m => {
-                        const status = getConnectionStatus(m.last_seen);
+                        // Parse settings to get pingIntervalSeconds for dynamic timeout
+                        let pingIntervalSeconds = 30; // default
+                        try {
+                            if (m.settings) {
+                                const settings = JSON.parse(m.settings);
+                                pingIntervalSeconds = settings.pingIntervalSeconds || 30;
+                            }
+                        } catch (e) {
+                            // Use default
+                        }
+
+                        const status = getConnectionStatus(m.last_seen, pingIntervalSeconds);
+
+                        let connectionStatus = status.connectionStatus;
+                        if (connectionStatus === 'offline' && m.ping_status === 'reachable') {
+                            connectionStatus = 'reachable';
+                        }
                         return {
                             id: m.id,
                             name: m.name,

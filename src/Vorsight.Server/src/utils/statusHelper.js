@@ -106,8 +106,9 @@ function getStatusText(machine) {
 
 /**
  * Get connection status details from last_seen timestamp
+ * Optionally provide pingIntervalSeconds for dynamic timeout calculation
  */
-function getConnectionStatus(lastSeen) {
+function getConnectionStatus(lastSeen, pingIntervalSeconds = 30) {
     if (!lastSeen) {
         return {
             isOnline: false,
@@ -119,16 +120,18 @@ function getConnectionStatus(lastSeen) {
     const now = new Date();
     const elapsed = now - lastSeenDate;
 
-    // Online if seen within last 5 minutes
-    if (elapsed < 5 * 60 * 1000) {
+    // Online if seen within 1 heartbeat interval (default 30s)
+    const onlineThreshold = pingIntervalSeconds * 1000;
+    if (elapsed < onlineThreshold) {
         return {
             isOnline: true,
             connectionStatus: 'online'
         };
     }
 
-    // Unstable if seen within last 30 minutes
-    if (elapsed < 30 * 60 * 1000) {
+    // Unstable if seen within 3 heartbeat intervals (reconnecting)
+    const unstableThreshold = pingIntervalSeconds * 3 * 1000;
+    if (elapsed < unstableThreshold) {
         return {
             isOnline: false,
             connectionStatus: 'unstable'

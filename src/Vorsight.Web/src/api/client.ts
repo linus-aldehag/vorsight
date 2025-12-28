@@ -45,6 +45,8 @@ export interface AgentSettings {
     screenshotIntervalSeconds: number;
     pingIntervalSeconds: number;
     isMonitoringEnabled: boolean;
+    screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
+    pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
 }
 
 const BASE_URL = '/api'; // Relative URL - same server (localhost:3000)

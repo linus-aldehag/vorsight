@@ -33,7 +33,9 @@ export function ScreenshotGallery() {
     useEffect(() => {
         if (selectedMachine) {
             loadImages();
-            loadSettings();
+            if (!isConfigOpen) { // Don't reload settings while editing
+                loadSettings();
+            }
         }
     }, [selectedMachine]);
 
@@ -43,7 +45,11 @@ export function ScreenshotGallery() {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
             const isEnabled = data.screenshotIntervalSeconds > 0;
-            const screenshotInterval = Math.round(data.screenshotIntervalSeconds / 60);
+            // Use preserved value if disabled, otherwise current value
+            const intervalToUse = isEnabled
+                ? data.screenshotIntervalSeconds
+                : (data.screenshotIntervalSecondsWhenEnabled || 300);
+            const screenshotInterval = Math.round(intervalToUse / 60);
             setEnabled(isEnabled);
             setInterval(screenshotInterval);
             setTempEnabled(isEnabled);
@@ -78,6 +84,7 @@ export function ScreenshotGallery() {
             const updatedSettings = {
                 ...settings,
                 screenshotIntervalSeconds: tempEnabled ? tempInterval * 60 : 0,
+                screenshotIntervalSecondsWhenEnabled: tempInterval * 60, // Always preserve the interval value
                 isMonitoringEnabled: tempEnabled || settings.pingIntervalSeconds > 0
             };
 
@@ -140,11 +147,16 @@ export function ScreenshotGallery() {
 
     return (
         <div className="space-y-6">
-            {/* Simple header: title + icon on left, configure button on right */}
+            {/* Simple header: title + icon on left, status badge + configure button on right */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <Eye size={24} className="text-primary" />
                     <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
+                    {!enabled && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
+                            Capture Disabled
+                        </span>
+                    )}
                 </div>
                 <Button
                     variant="outline"

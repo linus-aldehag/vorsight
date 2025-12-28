@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { Camera, X, Maximize2 } from 'lucide-react';
 
-export function ScreenshotViewer() {
+export function ScreenshotViewer({ isDisabled = false }: { isDisabled?: boolean }) {
     const { selectedMachine } = useMachine();
     const [latestImage, setLatestImage] = useState<DriveFile | null>(null);
     const [loading, setLoading] = useState(false);
@@ -61,7 +61,7 @@ export function ScreenshotViewer() {
     };
 
     return (
-        <Card className="h-full flex flex-col border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+        <Card className={`h-full flex flex-col border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden ${isDisabled ? 'opacity-40' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg tracking-wide text-primary flex items-center gap-2">
                     <Camera size={18} />

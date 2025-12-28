@@ -5,7 +5,7 @@ import { VorsightApi, type ActivitySummary } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from 'recharts';
 
-export function ActivityStats() {
+export function ActivityStats({ isDisabled = false }: { isDisabled?: boolean }) {
     const { selectedMachine } = useMachine();
     const [summary, setSummary] = useState<ActivitySummary | null>(null);
 
@@ -47,7 +47,7 @@ export function ActivityStats() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Activity Timeline */}
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -104,7 +104,7 @@ export function ActivityStats() {
             </Card>
 
             {/* Top Applications */}
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
                 <CardHeader>
                     <CardTitle className="text-lg tracking-wide text-primary">TOP PROCESSES</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">Focus Distribution</p>
