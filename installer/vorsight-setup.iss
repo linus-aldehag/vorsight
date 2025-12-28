@@ -194,15 +194,19 @@ begin
         MsgBox('Please enter a server port.', mbError, MB_OK);
         Result := False;
       end
-      else if not StrToIntDef(ServerPort, 0, PortNum) or (PortNum <= 0) or (PortNum > 65535) then
-      begin
-        MsgBox('Please enter a valid port number (1-65535).', mbError, MB_OK);
-        Result := False;
-      end
       else
       begin
-        // Construct the full URL from server address and port
-        ConfiguredServerUrl := 'http://' + ServerAddress + ':' + ServerPort;
+        PortNum := StrToIntDef(ServerPort, 0);
+        if (PortNum <= 0) or (PortNum > 65535) then
+        begin
+          MsgBox('Please enter a valid port number (1-65535).', mbError, MB_OK);
+          Result := False;
+        end
+        else
+        begin
+          // Construct the full URL from server address and port
+          ConfiguredServerUrl := 'http://' + ServerAddress + ':' + ServerPort;
+        end;
       end;
     end;
     
