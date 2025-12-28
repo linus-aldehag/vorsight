@@ -25,6 +25,15 @@ export interface Theme {
         warning: string;
         success: string;
     };
+    style: {
+        borderRadius: string;
+        fontFamily: string;
+        fontWeight: string;
+        animationDuration: string;
+        animationTiming: string;
+        shadowStyle: string;
+        buttonStyle: 'sharp' | 'rounded' | 'pill';
+    };
 }
 
 export const themes: Record<string, Theme> = {
@@ -55,61 +64,88 @@ export const themes: Record<string, Theme> = {
             warning: '#FFB800',
             success: '#00FF41',
         },
+        style: {
+            borderRadius: '0px',
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+            fontWeight: '500',
+            animationDuration: '100ms',
+            animationTiming: 'linear',
+            shadowStyle: 'none',
+            buttonStyle: 'sharp',
+        },
     },
     light: {
         name: 'light',
         displayName: 'Light',
         colors: {
-            background: '#ffffff',
-            surface: '#f8fafc',
-            foreground: '#0f172a',
+            background: '#f0f2f5', // Softer, more gray
+            surface: '#e5e9ed', // Muted gray-blue
+            foreground: '#2d3748', // Warmer dark gray
             primary: '#0ea5e9',
             primaryForeground: '#ffffff',
-            secondary: '#f1f5f9',
-            secondaryForeground: '#0f172a',
-            muted: '#f1f5f9',
+            secondary: '#dfe3e8', // Softer gray
+            secondaryForeground: '#4a5568',
+            muted: '#d9dfe5',
             mutedForeground: '#64748b',
-            accent: '#f1f5f9',
-            accentForeground: '#0f172a',
+            accent: '#dfe3e8',
+            accentForeground: '#2d3748',
             destructive: '#dc2626',
             destructiveForeground: '#ffffff',
-            card: '#ffffff',
-            cardForeground: '#0f172a',
-            popover: '#ffffff',
-            popoverForeground: '#0f172a',
-            border: '#e2e8f0',
-            input: '#f8fafc',
+            card: '#f8f9fa', // Soft off-white for cards
+            cardForeground: '#2d3748',
+            popover: '#f8f9fa',
+            popoverForeground: '#2d3748',
+            border: '#cbd5e0',
+            input: '#e5e9ed',
             ring: '#0ea5e9',
             warning: '#f59e0b',
             success: '#10b981',
+        },
+        style: {
+            borderRadius: '12px',
+            fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontWeight: '400',
+            animationDuration: '200ms',
+            animationTiming: 'ease-out',
+            shadowStyle: 'lg', // Borrowed from Material Light
+            buttonStyle: 'rounded',
         },
     },
     midnight: {
         name: 'midnight',
         displayName: 'Midnight',
         colors: {
-            background: '#0a0e27',
-            surface: '#151934',
-            foreground: '#e0e7ff',
-            primary: '#818cf8',
-            primaryForeground: '#0a0e27',
-            secondary: '#1e293b',
-            secondaryForeground: '#e0e7ff',
-            muted: '#1e293b',
-            mutedForeground: '#94a3b8',
-            accent: '#1e293b',
-            accentForeground: '#e0e7ff',
-            destructive: '#f87171',
-            destructiveForeground: '#ffffff',
-            card: '#0a0e27',
-            cardForeground: '#e0e7ff',
-            popover: '#0a0e27',
-            popoverForeground: '#e0e7ff',
-            border: '#4c1d95',
-            input: '#151934',
-            ring: '#818cf8',
-            warning: '#fbbf24',
-            success: '#34d399',
+            background: '#121212',
+            surface: '#1e1e1e',
+            foreground: '#e0e0e0',
+            primary: '#bb86fc',
+            primaryForeground: '#000000',
+            secondary: '#03dac6',
+            secondaryForeground: '#000000',
+            muted: '#2c2c2c',
+            mutedForeground: '#9e9e9e',
+            accent: '#03dac6',
+            accentForeground: '#000000',
+            destructive: '#cf6679',
+            destructiveForeground: '#000000',
+            card: '#1e1e1e',
+            cardForeground: '#e0e0e0',
+            popover: '#2c2c2c',
+            popoverForeground: '#e0e0e0',
+            border: '#383838',
+            input: '#2c2c2c',
+            ring: '#bb86fc',
+            warning: '#ffb74d',
+            success: '#81c784',
+        },
+        style: {
+            borderRadius: '4px',
+            fontFamily: "'Roboto', 'Helvetica Neue', Arial, sans-serif",
+            fontWeight: '400',
+            animationDuration: '250ms',
+            animationTiming: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            shadowStyle: 'lg',
+            buttonStyle: 'rounded',
         },
     },
     nord: {
@@ -138,6 +174,15 @@ export const themes: Record<string, Theme> = {
             ring: '#88c0d0',
             warning: '#ebcb8b',
             success: '#a3be8c',
+        },
+        style: {
+            borderRadius: '8px',
+            fontFamily: "'IBM Plex Sans', 'Roboto', 'Helvetica Neue', sans-serif",
+            fontWeight: '400',
+            animationDuration: '200ms',
+            animationTiming: 'ease-in-out',
+            shadowStyle: 'sm',
+            buttonStyle: 'rounded',
         },
     },
 };

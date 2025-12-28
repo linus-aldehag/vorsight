@@ -27,10 +27,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // Apply theme colors to CSS variables
+    // Apply theme colors and styles to CSS variables
     useEffect(() => {
         const root = document.documentElement;
         const colors = theme.colors;
+        const style = theme.style;
 
         // Apply all color variables
         root.style.setProperty('--color-background', colors.background);
@@ -55,6 +56,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         root.style.setProperty('--color-ring', colors.ring);
         root.style.setProperty('--color-warning', colors.warning);
         root.style.setProperty('--color-success', colors.success);
+
+        // Apply style variables
+        root.style.setProperty('--theme-border-radius', style.borderRadius);
+        root.style.setProperty('--theme-font-family', style.fontFamily);
+        root.style.setProperty('--theme-font-weight', style.fontWeight);
+        root.style.setProperty('--theme-animation-duration', style.animationDuration);
+        root.style.setProperty('--theme-animation-timing', style.animationTiming);
+        root.style.setProperty('--theme-shadow-style', style.shadowStyle);
+
+        // Apply font family and weight to body
+        document.body.style.fontFamily = style.fontFamily;
+        document.body.style.fontWeight = style.fontWeight;
+
+        // Apply background
+        document.body.style.background = colors.background;
     }, [theme]);
 
     return (

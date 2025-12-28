@@ -170,7 +170,7 @@ function MainLayout() {
                         disabled={!hasMachines}
                         className={cn(
                             "gap-2",
-                            currentView === 'dashboard' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            currentView === 'dashboard' && "bg-primary/30 text-primary hover:bg-primary/40 border-primary/30",
                             !hasMachines && "opacity-40 cursor-not-allowed"
                         )}
                     >
@@ -183,7 +183,7 @@ function MainLayout() {
                         disabled={!hasMachines}
                         className={cn(
                             "gap-2",
-                            currentView === 'activity' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            currentView === 'activity' && "bg-primary/30 text-primary hover:bg-primary/40 border-primary/30",
                             !hasMachines && "opacity-40 cursor-not-allowed"
                         )}
                     >
@@ -196,7 +196,7 @@ function MainLayout() {
                         disabled={!hasMachines}
                         className={cn(
                             "gap-2",
-                            currentView === 'gallery' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            currentView === 'gallery' && "bg-primary/30 text-primary hover:bg-primary/40 border-primary/30",
                             !hasMachines && "opacity-40 cursor-not-allowed"
                         )}
                     >
@@ -209,7 +209,7 @@ function MainLayout() {
                         disabled={!hasMachines}
                         className={cn(
                             "gap-2",
-                            currentView === 'audit' && "bg-primary/10 text-primary hover:bg-primary/20 border-primary/20",
+                            currentView === 'audit' && "bg-primary/30 text-primary hover:bg-primary/40 border-primary/30",
                             !hasMachines && "opacity-40 cursor-not-allowed"
                         )}
                     >

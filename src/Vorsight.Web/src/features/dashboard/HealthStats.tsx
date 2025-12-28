@@ -1,17 +1,16 @@
 import { Card, CardContent } from '../../components/ui/card';
-import type { HealthReport, UptimeStatus } from '../../api/client';
+import type { UptimeStatus } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { formatDistanceToNow } from 'date-fns';
-import { Activity, Camera } from 'lucide-react';
+import { Activity, Wifi } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { VorsightApi, type AgentSettings } from '../../api/client';
 
 interface HealthStatsProps {
-    health: HealthReport;
     uptime: UptimeStatus;
 }
 
-export function HealthStats({ health, uptime }: HealthStatsProps) {
+export function HealthStats({ uptime }: HealthStatsProps) {
     const { selectedMachine } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
 
@@ -63,9 +62,6 @@ export function HealthStats({ health, uptime }: HealthStatsProps) {
     };
 
     const statusConfig = getStatusConfig();
-    const screenshotSuccessRate = health.totalScreenshotsSuccessful + health.totalScreenshotsFailed > 0
-        ? Math.round((health.totalScreenshotsSuccessful / (health.totalScreenshotsSuccessful + health.totalScreenshotsFailed)) * 100)
-        : 100;
 
     return (
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -122,14 +118,15 @@ export function HealthStats({ health, uptime }: HealthStatsProps) {
                         </div>
                     </div>
 
-                    {/* Screenshots - greyed out when screenshot capture disabled */}
-                    <div className={`flex items-center gap-2 ${settings && settings.screenshotIntervalSeconds === 0 ? 'opacity-40' : ''}`}>
-                        <Camera size={14} className="text-primary" />
+                    {/* Network Ping */}
+                    <div className="flex items-center gap-2">
+                        <Wifi size={14} className="text-primary" />
                         <div>
-                            <div className="text-xs text-muted-foreground">Screenshots</div>
-                            <div className="text-sm font-mono flex items-center gap-1">
-                                {health.totalScreenshotsSuccessful}
-                                <span className="text-xs text-success">({screenshotSuccessRate}%)</span>
+                            <div className="text-xs text-muted-foreground">Network</div>
+                            <div className="text-sm font-mono">
+                                {settings?.pingLatency !== undefined && settings.pingLatency !== null
+                                    ? `${Math.round(settings.pingLatency)}ms`
+                                    : 'N/A'}
                             </div>
                         </div>
                     </div>

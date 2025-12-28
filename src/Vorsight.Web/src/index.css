@@ -2,7 +2,7 @@
 
 @theme {
   /* Theme colors are now set dynamically via JavaScript in ThemeContext */
-  /* Default fallback values */
+  /* Default fallback values (Cyberpunk theme) */
   --color-background: #050505;
   --color-surface: #0D1117;
   --color-foreground: #ffffff;
@@ -26,11 +26,19 @@
   --color-warning: #FFB800;
   --color-success: #00FF41;
 
-  --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Roboto Mono', monospace;
+  /* Theme style defaults (Cyberpunk theme) */
+  --theme-border-radius: 0px;
+  --theme-font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Roboto Mono', monospace;
+  --theme-font-weight: 500;
+  --theme-animation-duration: 100ms;
+  --theme-animation-timing: linear;
 
-  --radius-lg: 0px;
-  --radius-md: 0px;
-  --radius-sm: 0px;
+  --font-mono: var(--theme-font-family);
+
+  /* Use theme border radius */
+  --radius-lg: var(--theme-border-radius);
+  --radius-md: var(--theme-border-radius);
+  --radius-sm: calc(var(--theme-border-radius) * 0.75);
 }
 
 /* Custom Utilities */
@@ -49,17 +57,23 @@
 /* Base Styles */
 @layer base {
   :root {
-    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Use theme animation timing */
+    transition: background-color var(--theme-animation-duration) var(--theme-animation-timing), 
+                color var(--theme-animation-duration) var(--theme-animation-timing);
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: var(--font-mono);
+    font-family: var(--theme-font-family);
+    font-weight: var(--theme-font-weight);
     -webkit-font-smoothing: antialiased;
   }
 
   * {
-    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    /* Use theme animation timing for all transitions */
+    transition: background-color var(--theme-animation-duration) var(--theme-animation-timing), 
+                border-color var(--theme-animation-duration) var(--theme-animation-timing), 
+                color var(--theme-animation-duration) var(--theme-animation-timing);
   }
 }
