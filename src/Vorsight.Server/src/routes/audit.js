@@ -41,14 +41,16 @@ router.get('/:machineId/recent', (req, res) => {
 // Acknowledge (dismiss) an audit event
 router.patch('/:id/acknowledge', (req, res) => {
     try {
-        const { acknowledged } = req.body;
-        db.prepare('UPDATE audit_events SET acknowledged = ? WHERE id = ?')
+        // Default to acknowledging if body isn't parsed (body parsing issue)
+        const acknowledged = req.body?.acknowledged !== undefined ? req.body.acknowledged : true;
+
+        const result = db.prepare('UPDATE audit_events SET acknowledged = ? WHERE id = ?')
             .run(acknowledged ? 1 : 0, parseInt(req.params.id));
 
-        res.json({ success: true });
+        res.json({ success: true, acknowledged });
     } catch (error) {
         console.error('Acknowledge audit event error:', error);
-        res.status(500).json({ error: 'Failed to acknowledge audit event' });
+        res.status(500).json({ error: 'Failed to acknowledge audit event', details: error.message });
     }
 });
 

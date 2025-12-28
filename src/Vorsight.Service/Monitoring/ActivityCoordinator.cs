@@ -68,8 +68,9 @@ public class ActivityCoordinator(
 
             logger.LogDebug("Activity changed: '{Old}' ({Dur}s) -> '{New}'", _currentWindow, duration, data.ActiveWindow);
 
-            // Trigger Screenshot on Window Change
-            if (!string.IsNullOrEmpty(data.ActiveWindow))
+            // Trigger Screenshot on Window Change (only if screenshot monitoring enabled)
+            var settings = _settingsManager.GetSettingsAsync().Result;
+            if (!string.IsNullOrEmpty(data.ActiveWindow) && settings.ScreenshotIntervalSeconds > 0)
             {
                 _ = RequestScreenshotAsync("WindowChange", new ActivitySnapshot 
                 { 
@@ -163,8 +164,8 @@ public class ActivityCoordinator(
                     }
                 }
 
-                // Check for Timed Screenshot
-                if (now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
+                // Check for Timed Screenshot (only if enabled)
+                if (settings.ScreenshotIntervalSeconds > 0 && now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
                 {
                     monitorLogger.LogDebug("Timed interval elapsed");
                     _lastTimedScreenshot = now;

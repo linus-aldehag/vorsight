@@ -81,8 +81,8 @@ export function ScreenshotGallery() {
                 isMonitoringEnabled: tempEnabled || settings.pingIntervalSeconds > 0
             };
 
-            await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
-            setSettings(updatedSettings);
+            const response = await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
+            setSettings(response);
             setEnabled(tempEnabled);
             setInterval(tempInterval);
             setIsConfigOpen(false);
@@ -163,8 +163,8 @@ export function ScreenshotGallery() {
 
             {/* Configuration Modal */}
             {isConfigOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50">
-                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right">
+                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
+                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col h-full">
                             {/* Modal header */}
                             <div className="flex items-center justify-between p-4 border-b border-border">

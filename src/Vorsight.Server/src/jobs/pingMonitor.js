@@ -2,8 +2,6 @@ const db = require('../db/database');
 const ping = require('ping');
 
 async function checkOfflineMachines() {
-    console.log('[Ping Monitor] Checking offline machines...');
-
     try {
         // Get machines that haven't connected in the last 2 minutes
         const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -14,11 +12,8 @@ async function checkOfflineMachines() {
         `).all(twoMinutesAgo);
 
         if (offlineMachines.length === 0) {
-            console.log('[Ping Monitor] All machines connected');
-            return;
+            return; // Silent when all machines connected
         }
-
-        console.log(`[Ping Monitor] Checking ${offlineMachines.length} offline machines`);
 
         for (const machine of offlineMachines) {
             const target = machine.ip_address || machine.hostname;
@@ -33,15 +28,21 @@ async function checkOfflineMachines() {
                     extra: ['-n', '1']
                 });
 
+                // Get previous state to preserve existing settings
+                const prevState = db.prepare('SELECT health_status, settings FROM machine_state WHERE machine_id = ?').get(machine.id);
+                const prevStatus = prevState?.health_status;
+
                 // Store ping result in machine_state with timestamp
                 const pingStatus = result.alive ? 'reachable' : 'unreachable';
                 const pingTime = result.alive ? result.time : null;
                 const now = new Date().toISOString();
 
-                // Calculate settings JSON
-                const settings = {
+                // Get existing settings and merge with ping data (preserve user settings!)
+                const existingSettings = prevState?.settings ? JSON.parse(prevState.settings) : {};
+                const mergedSettings = {
+                    ...existingSettings, // Preserve screenshot/activity settings
                     lastPingTime: now,
-                    lastPingSuccess: result.alive ? now : null,
+                    lastPingSuccess: result.alive ? now : existingSettings.lastPingSuccess,
                     pingLatency: pingTime
                 };
 
@@ -53,13 +54,7 @@ async function checkOfflineMachines() {
                         health_status = ?,
                         settings = ?,
                         updated_at = CURRENT_TIMESTAMP
-                `).run(machine.id, pingStatus, JSON.stringify(settings), pingStatus, JSON.stringify(settings));
-
-                if (result.alive) {
-                    console.log(`[Ping Monitor] ${machine.name}: Reachable (${pingTime}ms) but service offline`);
-                } else {
-                    console.log(`[Ping Monitor] ${machine.name}: Unreachable`);
-                }
+                `).run(machine.id, pingStatus, JSON.stringify(mergedSettings), pingStatus, JSON.stringify(mergedSettings));
 
             } catch (error) {
                 console.error(`[Ping Monitor] Error checking ${machine.name}:`, error.message);

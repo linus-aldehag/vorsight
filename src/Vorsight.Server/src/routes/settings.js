@@ -19,16 +19,21 @@ router.get('/', (req, res) => {
         // Get settings from machine_state
         const state = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
 
-        if (state && state.settings) {
-            res.json(JSON.parse(state.settings));
-        } else {
-            // Return defaults if no settings stored
-            res.json({
-                screenshotIntervalSeconds: 300,
-                pingIntervalSeconds: 30,
-                isMonitoringEnabled: true
-            });
-        }
+        // Default settings
+        const defaults = {
+            screenshotIntervalSeconds: 300,
+            pingIntervalSeconds: 30,
+            isMonitoringEnabled: true
+        };
+
+        // Merge stored settings with defaults
+        const storedSettings = (state && state.settings) ? JSON.parse(state.settings) : {};
+        const mergedSettings = {
+            ...defaults,
+            ...storedSettings
+        };
+
+        res.json(mergedSettings);
     } catch (error) {
         console.error('Get settings error:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
@@ -67,12 +72,12 @@ router.post('/', (req, res) => {
 
         // Push settings update to client via WebSocket
         const io = req.app.get('io');
-        io.to(`machine:${machineId}`).emit('server:settings_update', newSettings);
+        io.to(`machine:${machineId}`).emit('server:settings_update', mergedSettings);
 
-        res.json(newSettings);
+        res.json(mergedSettings); // Return merged settings, not just new ones
     } catch (error) {
         console.error('Save settings error:', error);
-        res.status(500).json({ error: 'Failed to save settings' });
+        res.status(500).json({ error: 'Failed to save settings', details: error.message });
     }
 });
 

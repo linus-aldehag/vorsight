@@ -1,24 +1,6 @@
 const db = require('../db/database');
 const { getConnectionStatus, getStatusText } = require('../utils/statusHelper');
 
-// Helper to calculate connection status
-function getConnectionStatus(lastSeen) {
-    if (!lastSeen) return { isOnline: false, connectionStatus: 'offline' };
-
-    const timeSinceLastSeen = Date.now() - new Date(lastSeen + 'Z').getTime();
-
-    if (timeSinceLastSeen < 30000) {
-        // Within 1 ping interval - fully online
-        return { isOnline: true, connectionStatus: 'online' };
-    } else if (timeSinceLastSeen < 90000) {
-        // Missed 1-2 pings - unstable
-        return { isOnline: true, connectionStatus: 'unstable' };
-    } else {
-        // Missed 3+ pings - offline
-        return { isOnline: false, connectionStatus: 'offline' };
-    }
-}
-
 module.exports = (io) => {
     io.on('connection', (socket) => {
 
@@ -144,18 +126,30 @@ module.exports = (io) => {
             try {
                 const { machineId, state } = data;
 
-                // Update machine state
+                // Get existing settings to preserve them
+                const existing = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
+                const existingSettings = existing?.settings || null;
+
+                // Update machine state while preserving settings
                 db.prepare(`
-          INSERT OR REPLACE INTO machine_state 
-          (machine_id, last_activity_time, active_window, screenshot_count, upload_count, health_status, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          INSERT INTO machine_state 
+          (machine_id, last_activity_time, active_window, screenshot_count, upload_count, health_status, settings, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(machine_id) DO UPDATE SET
+            last_activity_time = excluded.last_activity_time,
+            active_window = excluded.active_window,
+            screenshot_count = excluded.screenshot_count,
+            upload_count = excluded.upload_count,
+            health_status = excluded.health_status,
+            updated_at = excluded.updated_at
         `).run(
                     machineId,
                     state.lastActivityTime,
                     state.activeWindow,
                     state.screenshotCount,
                     state.uploadCount,
-                    JSON.stringify(state.health)
+                    JSON.stringify(state.health),
+                    existingSettings  // Preserve existing settings!
                 );
 
                 // Update last seen
