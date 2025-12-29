@@ -3,7 +3,7 @@
 
 A monitoring system for Windows PCs with centralized web dashboard for parental oversight, activity tracking, and secure screenshot archival.
 
-⚖️ Licensing & Intent
+## ⚖️ Licensing & Intent
 Vörsight is Source Available under the Polyform Noncommercial 1.0.0 license.
 Personal & Local Use: Always free. We believe users should own their own surveillance and data-gathering tools.
 Open Contributions: Pull Requests are highly encouraged! By contributing, you agree to license your work under the project's existing terms.
