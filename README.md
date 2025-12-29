@@ -5,9 +5,16 @@ A monitoring system for Windows PCs with centralized web dashboard for parental 
 
 ## ⚖️ Licensing & Intent
 Vörsight is Source Available under the Polyform Noncommercial 1.0.0 license.
-Personal & Local Use: Always free. We believe users should own their own surveillance and data-gathering tools.
-Open Contributions: Pull Requests are highly encouraged! By contributing, you agree to license your work under the project's existing terms.
-Commercial Restriction: Use in for-profit corporate environments or for direct commercial gain is strictly restricted. If you are interested in a commercial license, please contact the author.
+
+Personal & Local Use:
+Always free. We believe users should own their own surveillance and data-gathering tools.
+
+Open Contributions:
+Pull Requests are highly encouraged! By contributing, you agree to license your work under the project's existing terms.
+
+Commercial Restriction:
+Use in for-profit corporate environments or for direct commercial gain is strictly restricted. If you are interested in a commercial license, please contact the author.
+
 For the full legal text, please refer to the LICENSE file in the root of this repository.
 
 ## Overview
