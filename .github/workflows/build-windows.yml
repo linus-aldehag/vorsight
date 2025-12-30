@@ -35,16 +35,25 @@ jobs:
       id: version
       shell: pwsh
       run: |
-        # CalVer: YYYY.MM.DD.BUILD
-        $date = Get-Date -Format "yyyy.MM.dd"
+        # .NET-compatible CalVer: 1.YYMM.DD.BUILD
+        # Format: Major=1, Minor=YYMM, Patch=DD, Build=BUILD
+        $year = (Get-Date).ToString("yy")
+        $month = (Get-Date).ToString("MM")
+        $day = (Get-Date).ToString("dd")
         $build = "${{ github.run_number }}"
-        $version = "$date.$build"
-        $assemblyVersion = "$version.0"
         
-        echo "version=$version" >> $env:GITHUB_OUTPUT
+        # Display version: YYYY.MM.DD.BUILD (for humans)
+        $displayVersion = (Get-Date).ToString("yyyy.MM.dd") + ".$build"
+        
+        # Assembly version: 1.YYMM.DD.BUILD (for .NET)
+        $minor = "$year$month"
+        $assemblyVersion = "1.$minor.$day.$build"
+        
+        echo "version=$displayVersion" >> $env:GITHUB_OUTPUT
         echo "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
         echo "date_only=$(Get-Date -Format 'yyyy.MM.dd')" >> $env:GITHUB_OUTPUT
-        Write-Host "Generated version: $version"
+        Write-Host "Display version: $displayVersion"
+        Write-Host "Assembly version: $assemblyVersion"
 
     - name: Update Assembly Version
       shell: pwsh
