@@ -51,8 +51,10 @@ vorsight/
 │   ├── Vorsight.Native/        # Windows P/Invoke wrappers
 │   ├── Vorsight.Server/        # Node.js API server
 │   └── Vorsight.Web/           # React web dashboard
-├── installer/                  # Inno Setup installer
-└── deploy/linux/              # Linux deployment scripts
+├── deploy/
+│   ├── windows/                # Windows installer (Inno Setup)
+│   └── linux/                  # Linux deployment scripts
+└── .github/workflows/          # CI/CD (GitHub Actions)
 ```
 
 ### Tech Stack
