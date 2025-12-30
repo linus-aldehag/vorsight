@@ -36,7 +36,7 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=commandline
 
 ; Output
-OutputDir=..\Output
+OutputDir=..\..\Output
 OutputBaseFilename=VorsightSetup
 Compression=lzma2
 SolidCompression=yes
@@ -51,14 +51,14 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; Service executable and dependencies
-Source: "..\publish\Service\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\publish\Service\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Agent executable
-Source: "..\publish\Agent\*"; DestDir: "{app}\Agent"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\publish\Agent\*"; DestDir: "{app}\Agent"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Configuration template (will be modified during install)
 ; onlyifdoesntexist prevents overwriting during upgrades
-Source: "..\src\Vorsight.Service\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist; AfterInstall: ConfigureAppSettings
+Source: "..\..\src\Vorsight.Service\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist; AfterInstall: ConfigureAppSettings
 
 [Dirs]
 ; Create directories for runtime data
