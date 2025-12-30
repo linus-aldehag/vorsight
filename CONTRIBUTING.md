@@ -40,10 +40,6 @@ We welcome feature suggestions! Please open an issue with:
 - Update tests if applicable
 - Ensure CI/CD workflows pass
 
-## Development Setup
-
-See the [setup-dev workflow](.agent/workflows/setup-dev.md) for local development environment setup.
-
 ### Project Structure
 
 ```
