@@ -8,6 +8,7 @@ import { ScreenshotViewer } from './ScreenshotViewer';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { useState, useEffect } from 'react';
 import { useMachine } from '../../context/MachineContext';
+import { socketService } from '../../services/socket';
 
 interface DashboardProps {
     status: StatusResponse;
@@ -16,12 +17,26 @@ interface DashboardProps {
 export function Dashboard({ status }: DashboardProps) {
     const { selectedMachine } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
+    const [machineVersion, setMachineVersion] = useState<string | null>(null);
 
     useEffect(() => {
         if (selectedMachine) {
             VorsightApi.getSettings(selectedMachine.id)
                 .then(setSettings)
                 .catch(console.error);
+
+            // Listen for machine state updates to capture version
+            const handleMachineState = (data: any) => {
+                if (data.machineId === selectedMachine.id && data.state?.version) {
+                    setMachineVersion(data.state.version);
+                }
+            };
+
+            socketService.on('machine:state', handleMachineState);
+
+            return () => {
+                socketService.off('machine:state', handleMachineState);
+            };
         }
     }, [selectedMachine]);
 
@@ -33,7 +48,7 @@ export function Dashboard({ status }: DashboardProps) {
                 <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
                     {/* Row 1: Health & Current Activity */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <HealthStats uptime={status.uptime} />
+                        <HealthStats uptime={status.uptime} version={machineVersion} />
                         <ActivityMonitor activity={status.activity} isDisabled={settings?.pingIntervalSeconds === 0} />
                     </div>
                     {/* Row 2: Timeline & Top Apps (Side-by-side via ActivityStats grid) */}
