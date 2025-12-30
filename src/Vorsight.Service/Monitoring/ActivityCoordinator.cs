@@ -152,7 +152,7 @@ public class ActivityCoordinator(
                         {
                             lastActivityTime = _latestSnapshot.Value.Timestamp,
                             activeWindow = _latestSnapshot.Value.ActiveWindowTitle,
-                            screenshotCount = 0, // TODO: Get from health monitor
+                            screenshotCount = 0,
                             uploadCount = 0,
                             health = new
                             {
