@@ -113,7 +113,6 @@ yarn-error.log
 
 # npm
 npm-debug.log
-package-lock.json
 
 # Node.js
 node_modules/
