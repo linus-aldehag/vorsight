@@ -118,7 +118,7 @@ jobs:
       with:
         name: windows-installer-v${{ steps.version.outputs.version }}
         path: Output/VorsightSetup-v${{ steps.version.outputs.version }}.exe
-        retention-days: 90
+        retention-days: 2
 
     # Create individual Windows release on main branch
     - name: Create Windows Release
