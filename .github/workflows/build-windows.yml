@@ -1,0 +1,136 @@
+name: Build Windows Installer
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/Vorsight.Service/**'
+      - 'src/Vorsight.Agent/**'
+      - 'src/Vorsight.Core/**'
+      - 'src/Vorsight.Native/**'
+      - 'installer/**'
+      - '.github/workflows/build-windows.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'src/Vorsight.Service/**'
+      - 'src/Vorsight.Agent/**'
+      - 'src/Vorsight.Core/**'
+      - 'src/Vorsight.Native/**'
+      - 'installer/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Version (CalVer)
+      id: version
+      shell: pwsh
+      run: |
+        # CalVer: YYYY.MM.DD.BUILD
+        $date = Get-Date -Format "yyyy.MM.dd"
+        $build = "${{ github.run_number }}"
+        $version = "$date.$build"
+        $assemblyVersion = "$version.0"
+        
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+        echo "date_only=$(Get-Date -Format 'yyyy.MM.dd')" >> $env:GITHUB_OUTPUT
+        Write-Host "Generated version: $version"
+
+    - name: Update Assembly Version
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.assembly_version }}"
+        
+        # Update Service project
+        $serviceCsproj = "src/Vorsight.Service/Vorsight.Service.csproj"
+        $content = Get-Content $serviceCsproj -Raw
+        if ($content -match '<Version>.*</Version>') {
+          $content = $content -replace '<Version>.*</Version>', "<Version>$version</Version>"
+        } else {
+          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <Version>$version</Version>"
+        }
+        if ($content -match '<AssemblyVersion>.*</AssemblyVersion>') {
+          $content = $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version</AssemblyVersion>"
+        } else {
+          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <AssemblyVersion>$version</AssemblyVersion>"
+        }
+        Set-Content $serviceCsproj $content
+        
+        # Update Agent project
+        $agentCsproj = "src/Vorsight.Agent/Vorsight.Agent.csproj"
+        $content = Get-Content $agentCsproj -Raw
+        if ($content -match '<Version>.*</Version>') {
+          $content = $content -replace '<Version>.*</Version>', "<Version>$version</Version>"
+        } else {
+          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <Version>$version</Version>"
+        }
+        if ($content -match '<AssemblyVersion>.*</AssemblyVersion>') {
+          $content = $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version</AssemblyVersion>"
+        } else {
+          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <AssemblyVersion>$version</AssemblyVersion>"
+        }
+        Set-Content $agentCsproj $content
+        
+        # Update Inno Setup script
+        $innoScript = "installer/vorsight-setup.iss"
+        (Get-Content $innoScript) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"${{ steps.version.outputs.version }}`"" | Set-Content $innoScript
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Install Inno Setup
+      run: choco install innosetup -y
+        
+    - name: Build Windows Installer
+      run: .\installer\build.ps1 -Configuration Release
+
+    - name: Rename Installer
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.version }}"
+        if (Test-Path "Output/VorsightSetup.exe") {
+          Rename-Item "Output/VorsightSetup.exe" "VorsightSetup-v$version.exe"
+        }
+
+    - name: Upload Windows Installer Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer-v${{ steps.version.outputs.version }}
+        path: Output/VorsightSetup-v${{ steps.version.outputs.version }}.exe
+        retention-days: 90
+
+    # Create individual Windows release on main branch
+    - name: Create Windows Release
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: windows-v${{ steps.version.outputs.version }}
+        name: Windows Client v${{ steps.version.outputs.version }}
+        body: |
+          ## Windows Installer Release
+          
+          **Version:** ${{ steps.version.outputs.version }}
+          **Build Date:** ${{ steps.version.outputs.date_only }}
+          **Commit:** ${{ github.sha }}
+          
+          ### Installation
+          Download `VorsightSetup-v${{ steps.version.outputs.version }}.exe` and run the installer.
+        files: Output/VorsightSetup-v${{ steps.version.outputs.version }}.exe
+        draft: false
+        prerelease: false
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date_only: ${{ steps.version.outputs.date_only }}
