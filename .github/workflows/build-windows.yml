@@ -8,7 +8,7 @@ on:
       - 'src/Vorsight.Agent/**'
       - 'src/Vorsight.Core/**'
       - 'src/Vorsight.Native/**'
-      - 'installer/**'
+      - 'deploy/windows/**'
       - '.github/workflows/build-windows.yml'
   pull_request:
     branches: [ "main" ]
@@ -17,7 +17,7 @@ on:
       - 'src/Vorsight.Agent/**'
       - 'src/Vorsight.Core/**'
       - 'src/Vorsight.Native/**'
-      - 'installer/**'
+      - 'deploy/windows/**'
       - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
@@ -94,7 +94,7 @@ jobs:
         Set-Content $agentCsproj $content
         
         # Update Inno Setup script
-        $innoScript = "installer/vorsight-setup.iss"
+        $innoScript = "deploy/windows/vorsight-setup.iss"
         (Get-Content $innoScript) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"${{ steps.version.outputs.version }}`"" | Set-Content $innoScript
 
     - name: Setup .NET
@@ -106,7 +106,7 @@ jobs:
       run: choco install innosetup -y
         
     - name: Build Windows Installer
-      run: .\installer\build.ps1 -Configuration Release
+      run: .\deploy\windows\build.ps1 -Configuration Release
 
     - name: Rename Installer
       shell: pwsh

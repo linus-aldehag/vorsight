@@ -138,8 +138,8 @@ vorsight/
 │   ├── Vorsight.Native/        # Windows P/Invoke wrappers
 │   ├── Vorsight.Server/        # Node.js API server
 │   └── Vorsight.Web/           # React web dashboard
-├── installer/                  # Inno Setup installer script
 ├── deploy/
+│   ├── windows/                # Windows installer (Inno Setup)
 │   └── linux/                  # Linux deployment scripts & docs
 ├── .github/workflows/          # CI/CD automation
 └── .agent/workflows/           # Development workflows
