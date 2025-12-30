@@ -17,6 +17,9 @@ on:
       - '.github/workflows/build-linux.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write  # Required to create releases
+
 jobs:
   build-linux-server:
     name: Build Linux Server Package

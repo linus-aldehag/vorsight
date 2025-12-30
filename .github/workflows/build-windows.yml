@@ -21,6 +21,9 @@ on:
       - '.github/workflows/build-windows.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write  # Required to create releases
+
 jobs:
   build-windows:
     name: Build Windows Installer
