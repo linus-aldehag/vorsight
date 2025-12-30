@@ -86,7 +86,8 @@ jobs:
         # Copy server files
         cp -r src/Vorsight.Server/src deploy/linux/vorsight-server/
         cp -r src/Vorsight.Server/prisma deploy/linux/vorsight-server/
-        cp -r src/Vorsight.Server/node_modules deploy/linux/vorsight-server/
+        # NOTE: node_modules NOT included - installed on target machine to ensure native modules
+        # like better-sqlite3 are compiled for the correct architecture (ARM for RPi, etc.)
         cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/.env.example deploy/linux/vorsight-server/
