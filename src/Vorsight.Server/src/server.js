@@ -87,6 +87,15 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Version endpoint
+const packageJson = require('../package.json');
+app.get('/api/version', (req, res) => {
+    res.json({
+        server: packageJson.version,
+        node: process.version
+    });
+});
+
 // Protected routes (require browser authentication - tokens signed with service key)
 app.use('/api/machines', authenticateBrowser, machinesRouter);
 app.use('/api/activity', authenticateBrowser, require('./routes/activity'));
@@ -127,7 +136,7 @@ const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
-    console.log(`🚀 Vorsight server running on http://${HOST}:${PORT}`);
+    console.log(`🚀 Vörsight Server v${packageJson.version} running on http://${HOST}:${PORT}`);
     console.log(`📊 Database: ${path.join(__dirname, '../data/vorsight.db')}`);
 });
 

@@ -77,6 +77,13 @@ export function SettingsPage() {
                     <GoogleDriveConnection />
                 </div>
             </div>
+
+            {/* Version Info */}
+            <div className="flex justify-center">
+                <p className="text-xs text-muted-foreground">
+                    Vörsight Web v{__APP_VERSION__}
+                </p>
+            </div>
         </div>
     );
 }

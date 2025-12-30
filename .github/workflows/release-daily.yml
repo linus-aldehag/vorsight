@@ -1,0 +1,119 @@
+name: Create Daily Unified Release
+
+on:
+  # Trigger after both build workflows complete successfully
+  workflow_run:
+    workflows: ["Build Windows Installer", "Build Linux Server Package"]
+    types:
+      - completed
+    branches: [main]
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  create-unified-release:
+    name: Create Unified Release
+    # Only run if both workflows succeeded
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Get Today's Date
+      id: date
+      run: |
+        DATE=$(date +'%Y.%m.%d')
+        echo "date=$DATE" >> $GITHUB_OUTPUT
+        echo "Today's date: $DATE"
+
+    - name: Download Latest Windows Installer
+      uses: dawidd6/action-download-artifact@v3
+      continue-on-error: true
+      with:
+        workflow: build-windows.yml
+        workflow_conclusion: success
+        name_is_regexp: true
+        name: 'windows-installer-v.*'
+        path: artifacts/windows/
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Download Latest Linux Server Package
+      uses: dawidd6/action-download-artifact@v3
+      continue-on-error: true
+      with:
+        workflow: build-linux.yml
+        workflow_conclusion: success
+        name_is_regexp: true
+        name: 'linux-server-v.*'
+        path: artifacts/linux/
+        search_artifacts: true
+        if_no_artifact_found: warn
+
+    - name: Check if Release Already Exists
+      id: check_release
+      run: |
+        if gh release view "v${{ steps.date.outputs.date }}" &>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release v${{ steps.date.outputs.date }} already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release v${{ steps.date.outputs.date }} does not exist yet"
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Create or Update Unified Release
+      if: steps.check_release.outputs.exists == 'false'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.date.outputs.date }}
+        name: Release v${{ steps.date.outputs.date }}
+        body: |
+          ## Vörsight Daily Build - ${{ steps.date.outputs.date }}
+          
+          This release contains both Windows and Linux packages built on ${{ steps.date.outputs.date }}.
+          
+          ### 📦 What's Included
+          
+          - **Windows Installer** (`VorsightSetup-v*.exe`)
+            - Vörsight Service (Windows background service)
+            - Vörsight Agent (user session component)
+            - Inno Setup installer with configuration wizard
+          
+          - **Linux Server Package** (`vorsight-server-v*.tar.gz`)
+            - Node.js server with API and WebSocket support
+            - React web dashboard (pre-built)
+            - Setup and deployment scripts
+            - Database migrations
+          
+          ### 📖 Installation
+          
+          **Windows:**
+          1. Download `VorsightSetup-v*.exe`
+          2. Run the installer
+          3. Follow the configuration wizard
+          
+          **Linux:**
+          ```bash
+          tar -xzf vorsight-server-v*.tar.gz
+          cd vorsight-server
+          sudo ./setup.sh
+          ```
+          
+          See the [README](https://github.com/${{ github.repository }}) for detailed installation and configuration instructions.
+          
+          ---
+          
+          **Note:** Individual component releases are also available with specific version numbers:
+          - `windows-v*` - Windows client only
+          - `server-v*` - Linux server only
+        files: |
+          artifacts/windows/*.exe
+          artifacts/linux/*.tar.gz
+        draft: false
+        prerelease: false

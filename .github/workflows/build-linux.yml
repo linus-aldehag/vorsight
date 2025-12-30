@@ -1,0 +1,143 @@
+name: Build Linux Server Package
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'src/Vorsight.Server/**'
+      - 'src/Vorsight.Web/**'
+      - 'deploy/linux/**'
+      - '.github/workflows/build-linux.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'src/Vorsight.Server/**'
+      - 'src/Vorsight.Web/**'
+      - 'deploy/linux/**'
+      - '.github/workflows/build-linux.yml'
+  workflow_dispatch:
+
+jobs:
+  build-linux-server:
+    name: Build Linux Server Package
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Generate Version (CalVer)
+      id: version
+      run: |
+        # CalVer: YYYY.MM.DD.BUILD
+        DATE_VER=$(date +'%Y.%m.%d')
+        BUILD="${{ github.run_number }}"
+        VERSION="$DATE_VER.$BUILD"
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "date_only=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '25'
+        cache: 'npm'
+        cache-dependency-path: |
+          src/Vorsight.Web/package-lock.json
+          src/Vorsight.Server/package-lock.json
+
+    - name: Update Package Versions
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Update Server package.json
+        cd src/Vorsight.Server
+        npm version $VERSION --no-git-tag-version --allow-same-version
+        cd ../..
+        
+        # Update Web package.json
+        cd src/Vorsight.Web
+        npm version $VERSION --no-git-tag-version --allow-same-version
+        cd ../..
+
+    - name: Build React Web App
+      working-directory: src/Vorsight.Web
+      run: |
+        npm ci
+        npm run build
+
+    - name: Install Server Dependencies
+      working-directory: src/Vorsight.Server
+      run: npm ci --omit=dev
+
+    - name: Create Deployment Package
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Create staging directory
+        mkdir -p deploy/linux/vorsight-server
+        
+        # Copy server files
+        cp -r src/Vorsight.Server/src deploy/linux/vorsight-server/
+        cp -r src/Vorsight.Server/prisma deploy/linux/vorsight-server/
+        cp -r src/Vorsight.Server/node_modules deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/.env.example deploy/linux/vorsight-server/
+        cp src/Vorsight.Server/prisma.config.ts deploy/linux/vorsight-server/
+        
+        # Copy React build to public/
+        cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public
+        
+        # Copy deployment scripts
+        cp deploy/linux/setup.sh deploy/linux/vorsight-server/
+        cp deploy/linux/uninstall.sh deploy/linux/vorsight-server/
+        cp deploy/linux/vorsight.service.template deploy/linux/vorsight-server/
+        cp deploy/linux/README.md deploy/linux/vorsight-server/
+        
+        # Make scripts executable
+        chmod +x deploy/linux/vorsight-server/setup.sh
+        chmod +x deploy/linux/vorsight-server/uninstall.sh
+        
+        # Create tarball
+        cd deploy/linux
+        tar -czf vorsight-server-v${VERSION}.tar.gz vorsight-server/
+
+    - name: Upload Linux Server Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-server-v${{ steps.version.outputs.version }}
+        path: deploy/linux/vorsight-server-v${{ steps.version.outputs.version }}.tar.gz
+        retention-days: 90
+
+    # Create individual Linux release on main branch
+    - name: Create Linux Server Release
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: server-v${{ steps.version.outputs.version }}
+        name: Linux Server v${{ steps.version.outputs.version }}
+        body: |
+          ## Linux Server Package Release
+          
+          **Version:** ${{ steps.version.outputs.version }}
+          **Build Date:** ${{ steps.version.outputs.date_only }}
+          **Commit:** ${{ github.sha }}
+          
+          ### Installation
+          ```bash
+          tar -xzf vorsight-server-v${{ steps.version.outputs.version }}.tar.gz
+          cd vorsight-server
+          sudo ./setup.sh
+          ```
+          
+          See [deployment documentation](https://github.com/${{ github.repository }}/blob/main/deploy/linux/README.md) for details.
+        files: deploy/linux/vorsight-server-v${{ steps.version.outputs.version }}.tar.gz
+        draft: false
+        prerelease: false
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date_only: ${{ steps.version.outputs.date_only }}
