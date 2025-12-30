@@ -44,6 +44,17 @@ jobs:
       with:
         node-version: '25'
 
+    - name: Install Dependencies
+      run: |
+        # Install dependencies first with original package.json
+        cd src/Vorsight.Web
+        npm ci
+        cd ../..
+        
+        cd src/Vorsight.Server
+        npm ci --omit=dev
+        cd ../..
+
     - name: Update Package Versions
       run: |
         VERSION="${{ steps.version.outputs.version }}"
@@ -60,13 +71,7 @@ jobs:
 
     - name: Build React Web App
       working-directory: src/Vorsight.Web
-      run: |
-        npm ci
-        npm run build
-
-    - name: Install Server Dependencies
-      working-directory: src/Vorsight.Server
-      run: npm ci --omit=dev
+      run: npm run build
 
     - name: Create Deployment Package
       run: |
