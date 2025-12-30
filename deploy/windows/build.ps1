@@ -38,7 +38,7 @@ dotnet publish src\Vorsight.Agent\Vorsight.Agent.csproj `
     -o publish\Agent
 
 Write-Host "Compiling Inno Setup installer..."
-& $InnoSetup installer\vorsight-setup.iss /O"Output" /F"VorsightSetup"
+& $InnoSetup deploy\windows\vorsight-setup.iss /O"Output" /F"VorsightSetup"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host ""
