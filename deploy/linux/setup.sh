@@ -53,7 +53,7 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     cp "$INSTALL_DIR/data/vorsight.db" "$DB_BACKUP"
     echo -e "${GREEN}   ✓ Database backed up to: $DB_BACKUP${NC}"
     
-    # Step 3: Update files (preserve data directory)
+    # Step 3: Update files (preserve data directory and exclude node_modules)
     echo -e "${CYAN}📋 Updating files...${NC}"
     rsync -av --exclude='data' --exclude='node_modules' "$SCRIPT_DIR/" "$INSTALL_DIR/"
     echo -e "${GREEN}   ✓ Files updated${NC}"
@@ -138,7 +138,7 @@ else
             echo ""
             echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
             echo -e "${YELLOW}┃ 🔒 IMPORTANT: Save this service key for Windows client installs ┃${NC}"
-            echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
+            echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
             echo -e "${CYAN}   ${SERVICE_KEY}${NC}"
             echo ""
             echo -e "${YELLOW}   ⚠️  This is a SECRET - treat it like a password!${NC}"
