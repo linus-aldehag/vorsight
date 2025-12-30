@@ -148,12 +148,17 @@ public class ActivityCoordinator(
                     // Send heartbeat to server
                     if (_serverConnection.IsConnected && _latestSnapshot != null)
                     {
+                        // Get version from assembly
+                        var version = System.Reflection.Assembly.GetExecutingAssembly()
+                            .GetName().Version?.ToString() ?? "Unknown";
+                        
                         await _serverConnection.SendHeartbeatAsync(new
                         {
                             lastActivityTime = _latestSnapshot.Value.Timestamp,
                             activeWindow = _latestSnapshot.Value.ActiveWindowTitle,
                             screenshotCount = 0,
                             uploadCount = 0,
+                            version = version,  // Add version
                             health = new
                             {
                                 isMonitoring = settings.IsMonitoringEnabled,

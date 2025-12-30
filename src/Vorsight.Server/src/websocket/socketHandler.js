@@ -177,8 +177,15 @@ module.exports = (io) => {
                 // Update last seen
                 db.prepare('UPDATE machines SET last_seen = CURRENT_TIMESTAMP WHERE id = ?').run(machineId);
 
-                // Broadcast to web clients
-                io.emit('machine:state', { machineId, state, timestamp: new Date().toISOString() });
+                // Broadcast to web clients (include version)
+                io.emit('machine:state', {
+                    machineId,
+                    state: {
+                        ...state,
+                        version: state.version || data.version || null  // Include version if provided
+                    },
+                    timestamp: new Date().toISOString()
+                });
             } catch (error) {
                 console.error('Heartbeat error:', error);
             }

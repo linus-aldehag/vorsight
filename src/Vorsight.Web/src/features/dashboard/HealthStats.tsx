@@ -8,9 +8,10 @@ import { VorsightApi, type AgentSettings } from '../../api/client';
 
 interface HealthStatsProps {
     uptime: UptimeStatus;
+    version?: string | null;
 }
 
-export function HealthStats({ uptime }: HealthStatsProps) {
+export function HealthStats({ uptime, version }: HealthStatsProps) {
     const { selectedMachine } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
 
@@ -75,6 +76,11 @@ export function HealthStats({ uptime }: HealthStatsProps) {
                         <p className="text-xs text-muted-foreground mt-0.5">
                             {statusConfig.message}
                         </p>
+                        {version && (
+                            <p className="text-[10px] text-muted-foreground/70 mt-0.5 font-mono">
+                                v{version}
+                            </p>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <span className="relative flex h-3 w-3">
