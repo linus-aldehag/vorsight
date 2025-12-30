@@ -81,12 +81,20 @@ PORT=3000                                    # Server port
 HOST=0.0.0.0                                 # Listen on all interfaces
 NODE_ENV=production
 CLIENT_ORIGIN=http://your-server-ip:3000    # CORS origin
-SERVICE_KEY=your-secure-random-secret-here   # Service key - CHANGE THIS!
-PSK=your-secure-psk-here                    # Pre-shared key (match Windows client)
-DB_PATH=./data/vorsight.db
+WEB_PASSPHRASE=your-secure-passphrase       # Web UI login passphrase
+SERVICE_KEY=your-secure-random-secret       # Auto-generated during setup
+DATABASE_URL=file:./data/vorsight.db        # SQLite database path
+
+# Google Drive OAuth (configure via web UI Settings page)
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
 ```
 
-**Important**: The `PSK` value must match the `PresharedKey` in the Windows client's `appsettings.json`.
+**Important**: 
+- The `WEB_PASSPHRASE` is used to log into the web dashboard
+- The `SERVICE_KEY` is auto-generated during installation and used for machine authentication
+- Google Drive credentials can be configured through the web UI Settings page after initial setup
 
 After editing, restart the service:
 
