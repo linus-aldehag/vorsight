@@ -206,6 +206,38 @@ This keeps the lightweight Node.js server focused on coordination and authentica
 6. Complete OAuth flow in browser
 7. Server stores refresh token, provides access tokens to Windows clients
 
+### Remote Server / SSH Tunneling Setup
+
+If your server is not publicly accessible (e.g., local network, Raspberry Pi), you'll need to set up OAuth differently:
+
+**Option 1: SSH Tunnel (Recommended)**
+
+1. Create an SSH tunnel from your local machine:
+   ```bash
+   ssh -L 3000:localhost:3000 user@your-server
+   ```
+2. In Google Cloud Console, add redirect URI: `http://localhost:3000/api/oauth/google/callback`
+3. Access the web UI via `http://localhost:3000` on your local machine
+4. Complete OAuth flow - it will work through the tunnel
+
+**Option 2: Temporary Public Access**
+
+1. Use a temporary tunnel service (e.g., ngrok, cloudflared):
+   ```bash
+   # On server
+   ngrok http 3000
+   ```
+2. Add the ngrok URL as redirect URI in Google Cloud Console: `https://abc123.ngrok.io/api/oauth/google/callback`
+3. Access web UI via ngrok URL and complete OAuth
+4. After OAuth is complete, you can close the tunnel
+
+**Option 3: Update Redirect URI**
+
+1. Set up OAuth with your actual access method (VPN, Tailscale, local domain)
+2. Add appropriate redirect URI in Google Cloud Console
+3. Update `GOOGLE_REDIRECT_URI` in `/opt/vorsight/.env` to match
+4. Restart: `sudo systemctl restart vorsight`
+
 ### Folder Organization
 
 Screenshots are organized automatically:

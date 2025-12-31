@@ -31,7 +31,7 @@ The package contains:
 - Setup script (`setup.sh`) for fresh installs and upgrades
 - Prisma database migrations
 - systemd service template
-- Environment configuration template (`.env.example`)
+- Environment configuration template (`.env.template`)
 
 ### 2. Transfer to Server
 

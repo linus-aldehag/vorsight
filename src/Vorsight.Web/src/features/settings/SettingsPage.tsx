@@ -1,6 +1,7 @@
 import { Card } from '../../components/ui/card';
 import { useTheme } from '../../context/ThemeContext';
 import { GoogleDriveConnection } from '../dashboard/GoogleDriveConnection';
+import { DataRetention } from './DataRetention';
 import { Palette, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -76,6 +77,9 @@ export function SettingsPage() {
                 <div className="max-w-md">
                     <GoogleDriveConnection />
                 </div>
+
+                {/* Data Retention */}
+                <DataRetention />
             </div>
 
             {/* Version Info */}
