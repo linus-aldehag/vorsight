@@ -40,7 +40,6 @@ For the full legal text, see the [`LICENSE`](LICENSE) file in the root of this r
 
 This software is designed for:
 - **Parental monitoring** of minor children with parental authority
-- **Workplace monitoring** where employees have been informed and consented
 - **Personal device monitoring** of your own equipment
 
 **You must ensure:**
