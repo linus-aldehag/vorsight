@@ -29,6 +29,30 @@ If you are interested in a commercial license, please contact the author.
 
 For the full legal text, see the [`LICENSE`](LICENSE) file in the root of this repository.
 
+## Vörsight
+
+**Vörsight** is a lightweight, self-hosted parental monitoring solution designed for privacy-conscious families. Keep your children safe online while maintaining full control of your data.
+
+## ⚖️ Legal & Ethical Use
+
+> [!CAUTION]
+> **Vörsight is intended for legal, transparent monitoring purposes only.**
+
+This software is designed for:
+- **Parental monitoring** of minor children with parental authority
+- **Workplace monitoring** where employees have been informed and consented
+- **Personal device monitoring** of your own equipment
+
+**You must ensure:**
+- ✅ The monitored individual is **aware** of being monitored (except where legally permitted for minor children under parental supervision)
+- ✅ You have the **legal right** to monitor the device and user
+- ✅ Your use complies with **local laws and regulations** regarding monitoring, privacy, and consent
+- ✅ You are **not using this for illegal surveillance**, stalking, or unauthorized monitoring
+
+**Disclaimer:** The developers of Vörsight assume no liability for misuse of this software. Users are solely responsible for ensuring their use complies with applicable laws. Use at your own discretion and legal risk.
+
+---
+
 ## Overview
 
 Vörsight is a client-server monitoring solution designed for Windows PCs with a Linux server. It provides real-time activity monitoring, screenshot capture, access scheduling, and comprehensive audit logging through a modern web interface.
