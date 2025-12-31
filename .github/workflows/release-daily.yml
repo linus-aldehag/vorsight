@@ -1,12 +1,9 @@
 name: Create Daily Unified Release
 
 on:
-  # Trigger after both build workflows complete successfully
-  workflow_run:
-    workflows: ["Build Windows Installer", "Build Linux Server Package"]
-    types:
-      - completed
-    branches: [main]
+  # Run daily at 2 AM UTC (after nightly builds have completed)
+  schedule:
+    - cron: '0 2 * * *'
   
   # Allow manual trigger
   workflow_dispatch:
@@ -14,8 +11,6 @@ on:
 jobs:
   create-unified-release:
     name: Create Unified Release
-    # Only run if both workflows succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -67,8 +62,27 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
 
-    - name: Create or Update Unified Release
+    - name: Check for New Artifacts
+      id: check_artifacts
       if: steps.check_release.outputs.exists == 'false'
+      run: |
+        # Check if we have any artifacts downloaded
+        WINDOWS_COUNT=$(find artifacts/windows -name "*.exe" 2>/dev/null | wc -l)
+        LINUX_COUNT=$(find artifacts/linux -name "*.tar.gz" 2>/dev/null | wc -l)
+        
+        echo "Windows artifacts found: $WINDOWS_COUNT"
+        echo "Linux artifacts found: $LINUX_COUNT"
+        
+        if [ "$WINDOWS_COUNT" -gt 0 ] || [ "$LINUX_COUNT" -gt 0 ]; then
+          echo "has_artifacts=true" >> $GITHUB_OUTPUT
+          echo "✓ New artifacts available for release"
+        else
+          echo "has_artifacts=false" >> $GITHUB_OUTPUT
+          echo "✗ No new artifacts found - skipping release"
+        fi
+
+    - name: Create or Update Unified Release
+      if: steps.check_release.outputs.exists == 'false' && steps.check_artifacts.outputs.has_artifacts == 'true'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.date.outputs.date }}
@@ -76,7 +90,7 @@ jobs:
         body: |
           ## Vörsight Daily Build - ${{ steps.date.outputs.date }}
           
-          This release contains both Windows and Linux packages built on ${{ steps.date.outputs.date }}.
+          This is an automated daily release combining the latest Windows and Linux builds.
           
           ### 📦 What's Included
           
