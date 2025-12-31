@@ -1,5 +1,14 @@
 # Security Policy
 
+## Legal and Responsible Use
+
+Vörsight is designed for **legal, transparent monitoring** purposes only. Users must:
+- Have legal authority to monitor the device and user
+- Ensure the monitored party is aware of monitoring (except where legally permitted for minor children)
+- Comply with all applicable privacy and monitoring laws
+
+Misuse of this software for illegal surveillance, stalking, or unauthorized monitoring is strictly prohibited and may result in criminal penalties. Users assume all legal responsibility for their use of this software.
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in Vörsight, please report it responsibly.
