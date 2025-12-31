@@ -126,8 +126,8 @@ else
     # Step 5: Configure environment
     echo -e "${CYAN}⚙️  Configuring environment...${NC}"
     if [ ! -f "$INSTALL_DIR/.env" ]; then
-        if [ -f "$INSTALL_DIR/.env.example" ]; then
-            cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
+        if [ -f "$INSTALL_DIR/.env.template" ]; then
+            cp "$INSTALL_DIR/.env.template" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Created .env from template${NC}"
             
             # Auto-generate service key
@@ -136,7 +136,7 @@ else
             sed -i "s|SERVICE_KEY=CHANGE_ME_OR_LET_INSTALLER_GENERATE|SERVICE_KEY=$SERVICE_KEY|" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Service key generated${NC}"
             echo ""
-            echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
+            echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
             echo -e "${YELLOW}┃ 🔒 IMPORTANT: Save this service key for Windows client installs ┃${NC}"
             echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
             echo -e "${CYAN}   ${SERVICE_KEY}${NC}"
@@ -202,10 +202,10 @@ else
                 if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ]; then
                     # Validate format (basic check)
                     if [[ "$GOOGLE_CLIENT_ID" =~ apps.googleusercontent.com$ ]]; then
-                        # Uncomment and set Google OAuth vars
-                        sed -i "s|#GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID|" "$INSTALL_DIR/.env"
-                        sed -i "s|#GOOGLE_CLIENT_SECRET=.*|GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET|" "$INSTALL_DIR/.env"
-                        sed -i "s|#GOOGLE_REDIRECT_URI=.*|GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback|" "$INSTALL_DIR/.env"
+                        # Replace Google OAuth values
+                        sed -i "s|GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID|" "$INSTALL_DIR/.env"
+                        sed -i "s|GOOGLE_CLIENT_SECRET=.*|GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET|" "$INSTALL_DIR/.env"
+                        sed -i "s|GOOGLE_REDIRECT_URI=.*|GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback|" "$INSTALL_DIR/.env"
                         echo -e "${GREEN}   ✓ Google Drive OAuth configured${NC}"
                         echo -e "${CYAN}   After installation completes, connect via web dashboard${NC}"
                         break
@@ -228,7 +228,7 @@ else
                 nano "$INSTALL_DIR/.env" || vi "$INSTALL_DIR/.env" || echo -e "${YELLOW}   No editor available${NC}"
             fi
         else
-            echo -e "${RED}   ❌ .env.example not found!${NC}"
+            echo -e "${RED}   ❌ .env.template not found!${NC}"
             exit 1
         fi
     else
