@@ -19,6 +19,7 @@ interface EditableMachineNameProps {
     machineName: string;
     onUpdate?: (displayName: string | null) => void;
     className?: string;
+    hideId?: boolean; // Hide the machine ID even when a display name is set
 }
 
 export function EditableMachineName({
@@ -26,7 +27,8 @@ export function EditableMachineName({
     displayName,
     machineName,
     onUpdate,
-    className = ''
+    className = '',
+    hideId = false
 }: EditableMachineNameProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(displayName || '');
@@ -112,7 +114,7 @@ export function EditableMachineName({
                 >
                     <X className="h-4 w-4 text-red-500" />
                 </Button>
-                {!displayName && (
+                {!displayName && !hideId && (
                     <span className="text-xs text-muted-foreground">
                         (ID: {machineName})
                     </span>
@@ -132,7 +134,7 @@ export function EditableMachineName({
             >
                 <Pencil className="h-3 w-3" />
             </Button>
-            {displayName && (
+            {displayName && !hideId && (
                 <span className="text-xs text-muted-foreground">
                     (ID: {machineName})
                 </span>

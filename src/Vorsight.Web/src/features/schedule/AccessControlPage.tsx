@@ -120,7 +120,7 @@ export function AccessControlPage() {
     return (
         <div className="space-y-6">
             {/* Header matching Activity/Screenshot pattern */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <Clock size={24} className="text-primary" />
                     <h2 className="text-3xl font-bold tracking-tight">Access Control</h2>
@@ -134,7 +134,7 @@ export function AccessControlPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsConfigOpen(true)}
-                    className="gap-1.5"
+                    className="gap-1.5 self-start sm:self-auto"
                 >
                     <Settings2 size={16} />
                     Configure
@@ -144,7 +144,7 @@ export function AccessControlPage() {
             {/* Configuration Modal */}
             {isConfigOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
-                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col h-full">
                             {/* Modal header */}
                             <div className="flex items-center justify-between p-4 border-b border-border">
@@ -163,8 +163,8 @@ export function AccessControlPage() {
                             <div className="flex-1 p-4 space-y-6 overflow-y-auto">
                                 {error && (
                                     <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                        <AlertCircle size={12} />
-                                        {error}
+                                        <AlertCircle size={12} className="shrink-0" />
+                                        <span>{error}</span>
                                     </div>
                                 )}
 
