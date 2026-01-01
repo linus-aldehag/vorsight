@@ -92,11 +92,15 @@ end;
 
 function IsAppInstalled(): Boolean;
 var
-  AppPath: String;
+  UninstallKey: String;
+  InstallPath: String;
 begin
-  // Check if the application is already installed by looking for the service executable
-  AppPath := ExpandConstant('{app}\{#MyAppServiceExeName}');
-  Result := FileExists(AppPath);
+  // Check registry instead of file system to avoid accessing {app} before it's defined
+  // This prevents crashes when {app} constant isn't initialized yet
+  UninstallKey := 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{{8F4E3D2A-9B7C-4E1D-8A5F-6C3D2B1A0E9F}_is1';
+  Result := RegQueryStringValue(HKEY_LOCAL_MACHINE, UninstallKey, 'InstallLocation', InstallPath);
+  if Result then
+    Log('Found existing installation at: ' + InstallPath);
 end;
 
 function IsUpgrade(): Boolean;
