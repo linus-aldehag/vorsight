@@ -14,10 +14,11 @@ public interface IServerConnection
     Task SendAuditEventAsync(object auditEvent);
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
-    bool IsConnected { get; }
+    bool IsConnected { get; };
     string? ApiKey { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     event EventHandler? ScheduleUpdateReceived;
+    event EventHandler? SettingsUpdateReceived;
 }
 
 public class ServerConnection : IServerConnection
@@ -35,6 +36,7 @@ public class ServerConnection : IServerConnection
     public string? ApiKey => _apiKey;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     public event EventHandler? ScheduleUpdateReceived;
+    public event EventHandler? SettingsUpdateReceived;
     
     public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
@@ -157,8 +159,8 @@ public class ServerConnection : IServerConnection
                 try
                 {
                     var settings = response.GetValue<JsonElement>();
-                    _logger.LogInformation("Received settings update from server");
-                    // Settings will be applied on next poll cycle or can be handled by SettingsManager
+                    _logger.LogInformation("Received settings update from server - triggering reload");
+                    SettingsUpdateReceived?.Invoke(this, EventArgs.Empty);
                 }
                 catch (Exception ex)
                 {
