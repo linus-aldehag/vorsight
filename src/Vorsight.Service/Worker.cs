@@ -114,6 +114,12 @@ public class Worker : BackgroundService
                 }
             };
 
+            // Hook up settings updates
+            _serverConnection.SettingsUpdateReceived += (sender, args) =>
+            {
+                _logger.LogInformation("Settings update event received - settings will be refreshed on next poll");
+            };
+
             // Hook up audit events
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {
