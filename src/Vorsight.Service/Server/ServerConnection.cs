@@ -14,7 +14,7 @@ public interface IServerConnection
     Task SendAuditEventAsync(object auditEvent);
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
-    bool IsConnected { get; };
+    bool IsConnected { get; }
     string? ApiKey { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     event EventHandler? ScheduleUpdateReceived;
