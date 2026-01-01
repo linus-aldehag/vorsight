@@ -5,7 +5,7 @@ import { Dashboard } from './features/dashboard/Dashboard';
 import { ScreenshotGallery } from './features/gallery/ScreenshotGallery';
 import { MachineSelector } from './components/MachineSelector/MachineSelector';
 import { useMachine } from './context/MachineContext';
-import { LayoutDashboard, Image as ImageIcon, Settings, Shield } from 'lucide-react';
+import { LayoutDashboard, Image as ImageIcon, Settings, Shield, Sliders } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { ActivityPage } from './features/activity/ActivityPage';
@@ -14,6 +14,7 @@ import { Activity } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { SettingsPage } from './features/settings/SettingsPage';
+import { ScheduleManager } from './features/schedule/ScheduleManager';
 
 export function App() {
     return (
@@ -243,6 +244,19 @@ function MainLayout() {
                         <Shield size={16} />
                         AUDIT
                     </Button>
+                    <Button
+                        variant={currentView === 'control' ? 'default' : 'ghost'}
+                        onClick={() => handleNavigation('control')}
+                        disabled={!hasMachines}
+                        className={cn(
+                            "gap-2",
+                            currentView === 'control' && "bg-primary/30 text-primary hover:bg-primary/40 border-primary/30",
+                            !hasMachines && "opacity-40 cursor-not-allowed"
+                        )}
+                    >
+                        <Sliders size={16} />
+                        CONTROL
+                    </Button>
                 </div>
             </div>
 
@@ -252,6 +266,7 @@ function MainLayout() {
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
                 {currentView === 'audit' && <AuditPage />}
+                {currentView === 'control' && <ScheduleManager />}
             </main>
         </div>
     );
