@@ -47,7 +47,7 @@ export function Dashboard({ status }: DashboardProps) {
                 {/* Main View (Left/Center) */}
                 <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
                     {/* Row 1: Health & Current Activity */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <HealthStats uptime={status.uptime} version={machineVersion} />
                         <ActivityMonitor activity={status.activity} isDisabled={settings?.pingIntervalSeconds === 0} />
                     </div>

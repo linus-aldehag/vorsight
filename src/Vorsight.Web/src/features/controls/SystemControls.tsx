@@ -28,7 +28,7 @@ export function SystemControls() {
         <div className="space-y-6">
 
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                     variant="outline"
                     className="border-warning text-warning hover:bg-warning/10 hover:text-warning"
