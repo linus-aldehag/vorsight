@@ -95,7 +95,7 @@ export function AuditPage() {
     return (
         <div className="space-y-6">
             {/* Header matching Activity/Screenshot pattern */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <Shield size={24} className="text-primary" />
                     <h2 className="text-3xl font-bold tracking-tight">Audit Log</h2>
@@ -104,7 +104,7 @@ export function AuditPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsConfigOpen(true)}
-                    className="gap-1.5"
+                    className="gap-1.5 self-start sm:self-auto"
                 >
                     <Settings2 size={16} />
                     Configure
@@ -114,7 +114,7 @@ export function AuditPage() {
             {/* Configuration Modal */}
             {isConfigOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
-                    <div className="w-[360px] h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col h-full">
                             {/* Modal header */}
                             <div className="flex items-center justify-between p-4 border-b border-border">
@@ -132,8 +132,8 @@ export function AuditPage() {
                             {/* Modal content */}
                             <div className="flex-1 p-4 space-y-6 overflow-y-auto">
                                 <div className="bg-blue-500/10 text-blue-600 dark:text-blue-500 border border-blue-500/20 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                    <AlertCircle size={12} />
-                                    Audit monitoring is currently always active for security. Enable/disable control coming soon.
+                                    <AlertCircle size={12} className="shrink-0" />
+                                    <span>Audit monitoring is currently always active for security. Enable/disable control coming soon.</span>
                                 </div>
 
                                 {/* Enable/Disable Toggle */}
