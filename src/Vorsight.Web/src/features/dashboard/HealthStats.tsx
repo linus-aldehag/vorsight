@@ -2,7 +2,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import type { UptimeStatus } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { formatDistanceToNow } from 'date-fns';
-import { Activity, Wifi } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { VorsightApi, type AgentSettings } from '../../api/client';
 
@@ -112,7 +112,7 @@ export function HealthStats({ uptime, version }: HealthStatsProps) {
                 )}
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/50">
+                <div className="grid grid-cols-1 gap-3 pt-2 border-t border-border/50">
                     {/* Uptime - greyed out when activity tracking disabled */}
                     <div className={`flex items-center gap-2 ${settings && settings.pingIntervalSeconds === 0 ? 'opacity-40' : ''}`}>
                         <Activity size={14} className="text-primary" />
@@ -120,19 +120,6 @@ export function HealthStats({ uptime, version }: HealthStatsProps) {
                             <div className="text-xs text-muted-foreground">Uptime</div>
                             <div className="text-sm font-mono">
                                 {uptime.currentStart ? formatDistanceToNow(new Date(uptime.currentStart + 'Z')) : 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Network Ping */}
-                    <div className="flex items-center gap-2">
-                        <Wifi size={14} className="text-primary" />
-                        <div>
-                            <div className="text-xs text-muted-foreground">Network</div>
-                            <div className="text-sm font-mono">
-                                {settings?.pingLatency !== undefined && settings.pingLatency !== null
-                                    ? `${Math.round(settings.pingLatency)}ms`
-                                    : 'N/A'}
                             </div>
                         </div>
                     </div>

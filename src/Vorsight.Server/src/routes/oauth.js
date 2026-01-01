@@ -115,6 +115,7 @@ router.get('/google/status', async (req, res) => {
 
         if (!token) {
             return res.json({
+                configured: false,
                 connected: false
             });
         }
@@ -124,6 +125,7 @@ router.get('/google/status', async (req, res) => {
         const isExpired = expiresAt < now;
 
         res.json({
+            configured: true,
             connected: true,
             connectedAt: token.created_at,
             lastUpdated: token.updated_at,
