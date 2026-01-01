@@ -14,7 +14,7 @@ import { Activity } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './components/LoginPage';
 import { SettingsPage } from './features/settings/SettingsPage';
-import { ScheduleManager } from './features/schedule/ScheduleManager';
+import { AccessControlPage } from './features/schedule/AccessControlPage';
 
 export function App() {
     return (
@@ -255,7 +255,7 @@ function MainLayout() {
                         )}
                     >
                         <Sliders size={16} />
-                        CONTROL
+                        ACCESS CONTROL
                     </Button>
                 </div>
             </div>
@@ -266,7 +266,7 @@ function MainLayout() {
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
                 {currentView === 'audit' && <AuditPage />}
-                {currentView === 'control' && <ScheduleManager />}
+                {currentView === 'control' && <AccessControlPage />}
             </main>
         </div>
     );
