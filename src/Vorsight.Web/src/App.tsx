@@ -121,21 +121,18 @@ function MainLayout() {
     const hasMachines = machines.length > 0;
 
     // Sync URL machineId with context
+    // Note: MachineSelector handles user clicks by calling both selectMachine() and navigate()
+    // This effect only handles URL changes from other sources (back/forward buttons, direct navigation)
     useEffect(() => {
         if (machineId && selectedMachine?.id !== machineId) {
+            // URL has a different machine than currently selected, sync context to match URL
             selectMachine(machineId);
-        } else if (!machineId && selectedMachine) {
-            // If no machine in URL but one is selected, update URL
-            navigate(`/${selectedMachine.id}/${view || 'dashboard'}`, { replace: true });
+        } else if (!machineId && selectedMachine && view) {
+            // URL has no machine but we have one selected, update URL to match
+            // Use replace to avoid creating extra history entries
+            navigate(`/${selectedMachine.id}/${view}`, { replace: true });
         }
     }, [machineId, selectedMachine, view, navigate, selectMachine]);
-
-    // Updates when machine changes in context
-    useEffect(() => {
-        if (selectedMachine && machineId !== selectedMachine.id) {
-            navigate(`/${selectedMachine.id}/${view || 'dashboard'}`);
-        }
-    }, [selectedMachine, machineId, view, navigate]);
 
 
     useEffect(() => {
