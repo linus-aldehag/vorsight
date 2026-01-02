@@ -29,7 +29,9 @@ jobs:
       id: windows_release
       run: |
         # Get the latest windows-v* release
-        LATEST=$(gh release list --limit 100 | grep "^windows-v" | head -n1 | awk '{print $1}')
+        # gh release list output format: TITLE  TYPE  TAG_NAME  PUBLISHED
+        # We need to grep for windows-v in any column, then extract the tag from column 3
+        LATEST=$(gh release list --limit 100 | grep "windows-v" | head -n1 | awk '{print $3}')
         
         if [ -n "$LATEST" ]; then
           echo "tag=$LATEST" >> $GITHUB_OUTPUT
@@ -51,7 +53,9 @@ jobs:
       id: linux_release
       run: |
         # Get the latest server-v* release
-        LATEST=$(gh release list --limit 100 | grep "^server-v" | head -n1 | awk '{print $1}')
+        # gh release list output format: TITLE  TYPE  TAG_NAME  PUBLISHED
+        # We need to grep for server-v in any column, then extract the tag from column 3
+        LATEST=$(gh release list --limit 100 | grep "server-v" | head -n1 | awk '{print $3}')
         
         if [ -n "$LATEST" ]; then
           echo "tag=$LATEST" >> $GITHUB_OUTPUT
