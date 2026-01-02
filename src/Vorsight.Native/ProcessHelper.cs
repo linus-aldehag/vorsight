@@ -90,7 +90,7 @@ namespace Vorsight.Native
                 IntPtr.Zero,
                 IntPtr.Zero,
                 false,
-                ProcessInterop.CREATE_UNICODE_ENVIRONMENT | ProcessInterop.NORMAL_PRIORITY_CLASS,
+                ProcessInterop.CREATE_UNICODE_ENVIRONMENT | ProcessInterop.NORMAL_PRIORITY_CLASS | ProcessInterop.CREATE_NO_WINDOW,
                 IntPtr.Zero,
                 workingDirectory,
                 ref startupInfo,
