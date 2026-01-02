@@ -25,29 +25,79 @@ jobs:
         echo "date=$DATE" >> $GITHUB_OUTPUT
         echo "Today's date: $DATE"
 
-    - name: Download Latest Windows Installer
-      uses: dawidd6/action-download-artifact@v3
-      continue-on-error: true
-      with:
-        workflow: build-windows.yml
-        workflow_conclusion: success
-        name_is_regexp: true
-        name: 'windows-installer-v.*'
-        path: artifacts/windows/
-        search_artifacts: true
-        if_no_artifact_found: warn
+    - name: Get Latest Windows Release
+      id: windows_release
+      run: |
+        # Get the latest windows-v* release
+        LATEST=$(gh release list --limit 100 | grep "^windows-v" | head -n1 | awk '{print $1}')
+        
+        if [ -n "$LATEST" ]; then
+          echo "tag=$LATEST" >> $GITHUB_OUTPUT
+          echo "Found latest Windows release: $LATEST"
+          
+          # Extract the date from the version (format: windows-vYYYY.MM.DD.BUILD)
+          DATE=$(echo $LATEST | grep -oP 'windows-v\K\d{4}\.\d{2}\.\d{2}')
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "Windows release date: $DATE"
+        else
+          echo "No Windows releases found"
+          echo "tag=" >> $GITHUB_OUTPUT
+          echo "date=" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
 
-    - name: Download Latest Linux Server Package
-      uses: dawidd6/action-download-artifact@v3
-      continue-on-error: true
-      with:
-        workflow: build-linux.yml
-        workflow_conclusion: success
-        name_is_regexp: true
-        name: 'linux-server-v.*'
-        path: artifacts/linux/
-        search_artifacts: true
-        if_no_artifact_found: warn
+    - name: Get Latest Linux Release
+      id: linux_release
+      run: |
+        # Get the latest server-v* release
+        LATEST=$(gh release list --limit 100 | grep "^server-v" | head -n1 | awk '{print $1}')
+        
+        if [ -n "$LATEST" ]; then
+          echo "tag=$LATEST" >> $GITHUB_OUTPUT
+          echo "Found latest Linux release: $LATEST"
+          
+          # Extract the date from the version (format: server-vYYYY.MM.DD.BUILD)
+          DATE=$(echo $LATEST | grep -oP 'server-v\K\d{4}\.\d{2}\.\d{2}')
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "Linux release date: $DATE"
+        else
+          echo "No Linux releases found"
+          echo "tag=" >> $GITHUB_OUTPUT
+          echo "date=" >> $GITHUB_OUTPUT
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+    - name: Download Binaries from Component Releases
+      run: |
+        mkdir -p artifacts/windows artifacts/linux
+        
+        # Download Windows installer from latest windows-v* release
+        if [ -n "${{ steps.windows_release.outputs.tag }}" ]; then
+          echo "Downloading Windows installer from ${{ steps.windows_release.outputs.tag }}..."
+          gh release download "${{ steps.windows_release.outputs.tag }}" \
+            --pattern "*.exe" \
+            --dir artifacts/windows/ || echo "Failed to download Windows installer"
+        else
+          echo "Skipping Windows - no release found"
+        fi
+        
+        # Download Linux package from latest server-v* release
+        if [ -n "${{ steps.linux_release.outputs.tag }}" ]; then
+          echo "Downloading Linux server package from ${{ steps.linux_release.outputs.tag }}..."
+          gh release download "${{ steps.linux_release.outputs.tag }}" \
+            --pattern "*.tar.gz" \
+            --dir artifacts/linux/ || echo "Failed to download Linux package"
+        else
+          echo "Skipping Linux - no release found"
+        fi
+        
+        # List downloaded files
+        echo "Downloaded files:"
+        find artifacts -type f -exec ls -lh {} \;
+      env:
+        GH_TOKEN: ${{ github.token }}
 
     - name: Check if Release Already Exists
       id: check_release
