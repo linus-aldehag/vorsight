@@ -23,6 +23,11 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 
+; Architecture settings for 64-bit installation
+; This ensures installation to "Program Files" instead of "Program Files (x86)"
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=x64compatible
+
 ; Default installation directory
 #if StealthMode == 1
   DefaultDirName={autopf}\Windows Update Helper
