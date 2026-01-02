@@ -26,10 +26,119 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    // Handle command-line arguments for service installation
+    if (args.Length > 0)
+    {
+        var command = args[0].ToLowerInvariant();
+        
+        if (command == "install")
+        {
+            var serviceName = "VorsightService";
+            var displayName = "Vörsight Service";
+            var description = "Vörsight monitoring and management service";
+            
+            // Check for custom service name (stealth mode)
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i] == "--service-name" && i + 1 < args.Length)
+                    serviceName = args[i + 1];
+                else if (args[i] == "--display-name" && i + 1 < args.Length)
+                    displayName = args[i + 1];
+                else if (args[i] == "--description" && i + 1 < args.Length)
+                    description = args[i + 1];
+            }
+            
+            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? 
+                         System.Reflection.Assembly.GetExecutingAssembly().Location;
+            
+            // Use sc.exe to create the service
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "sc.exe",
+                Arguments = $"create \"{serviceName}\" binPath= \"\\\"{exePath}\\\"\" DisplayName= \"{displayName}\" start= auto",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            if (process != null)
+            {
+                process.WaitForExit();
+                var output = process.StandardOutput.ReadToEnd();
+                var error = process.StandardError.ReadToEnd();
+                
+                if (process.ExitCode == 0)
+                {
+                    Console.WriteLine($"Service '{serviceName}' installed successfully.");
+                    
+                    // Set description
+                    var descStartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sc.exe",
+                        Arguments = $"description \"{serviceName}\" \"{description}\"",
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    };
+                    using var descProcess = System.Diagnostics.Process.Start(descStartInfo);
+                    descProcess?.WaitForExit();
+                }
+                else
+                {
+                    Console.WriteLine($"Failed to install service: {error}");
+                    return 1;
+                }
+            }
+            return 0;
+        }
+        else if (command == "uninstall")
+        {
+            var serviceName = "VorsightService";
+            
+            // Check for custom service name
+            for (int i = 1; i < args.Length; i++)
+            {
+                if (args[i] == "--service-name" && i + 1 < args.Length)
+                    serviceName = args[i + 1];
+            }
+            
+            var startInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "sc.exe",
+                Arguments = $"delete \"{serviceName}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            
+            using var process = System.Diagnostics.Process.Start(startInfo);
+            if (process != null)
+            {
+                process.WaitForExit();
+                if (process.ExitCode == 0)
+                {
+                    Console.WriteLine($"Service '{serviceName}' uninstalled successfully.");
+                }
+                else
+                {
+                    var error = process.StandardError.ReadToEnd();
+                    Console.WriteLine($"Failed to uninstall service: {error}");
+                    return 1;
+                }
+            }
+            return 0;
+        }
+    }
+
     Log.Information("Vörsight Service starting...");
     Log.Information("Application directory: {Directory}", AppContext.BaseDirectory);
 
     var builder = WebApplication.CreateBuilder(args);
+    
+    // Enable Windows Service support
+    builder.Host.UseWindowsService();
 
     Log.Debug($"Environment: {builder.Environment.EnvironmentName}");
     Log.Debug($"ContentRootPath: {builder.Environment.ContentRootPath}");
@@ -120,8 +229,11 @@ try
 catch (Exception ex)
 {
     Log.Fatal(ex, "Vörsight Service terminated unexpectedly");
+    return 1;
 }
 finally
 {
     Log.CloseAndFlush();
 }
+
+return 0;
