@@ -12,6 +12,7 @@ namespace Vorsight.Native
         // Constants
         public const uint CREATE_UNICODE_ENVIRONMENT = 0x00000400;
         public const uint NORMAL_PRIORITY_CLASS = 0x00000020;
+        public const uint CREATE_NO_WINDOW = 0x08000000;
 
         // Delegate for process information
         [StructLayout(LayoutKind.Sequential)]
