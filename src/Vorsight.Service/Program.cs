@@ -37,17 +37,6 @@ try
             var displayName = "Vörsight Service";
             var description = "Vörsight monitoring and management service";
             
-            // Check for custom service name (stealth mode)
-            for (int i = 1; i < args.Length; i++)
-            {
-                if (args[i] == "--service-name" && i + 1 < args.Length)
-                    serviceName = args[i + 1];
-                else if (args[i] == "--display-name" && i + 1 < args.Length)
-                    displayName = args[i + 1];
-                else if (args[i] == "--description" && i + 1 < args.Length)
-                    description = args[i + 1];
-            }
-            
             var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? 
                          System.Reflection.Assembly.GetExecutingAssembly().Location;
             

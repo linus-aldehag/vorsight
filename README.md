@@ -110,7 +110,6 @@ Combined with "foresight" (the ability to predict or anticipate future events), 
 ### 🔧 **Streamlined Installation**
 - Windows installer (Inno Setup) with guided setup
 - Server generates service key automatically during Linux setup
-- **Optional stealth mode** for parental monitoring (appears as "Windows Update Helper")
 
 ## Quick Start
 
@@ -143,10 +142,7 @@ Download the latest `VorsightSetup.exe` from [GitHub Releases](../../releases):
    - **Server Address** (e.g., `raspberrypi.local` or IP address)
    - **Server Port** (default: `3000`)
    - **Service Key** (obtained from Linux server installation output)
-3. **(Optional)** Enable stealth mode:
-   - Checkbox: "Use stealth application naming"
-   - Installs as "Windows Update Helper" for parental monitoring
-4. Complete installation
+3. Complete installation
 
 The service starts automatically and begins monitoring.
 
@@ -271,20 +267,6 @@ Screenshots are organized automatically:
           ├── 14-30-15 - Chrome.png
           └── 14-45-22 - Visual Studio.png
 ```
-
-## Stealth Mode (Parental Monitoring)
-
-For parental monitoring scenarios, the installer offers an optional "stealth mode" that makes the software less obvious to tech-savvy users.
-
-**When enabled during installation:**
-- Directory: `C:\Program Files\Windows Update Helper\`
-- Service: `WindowsUpdateService.exe` / `Windows Update Helper Service`
-- Agent: `wuhelper.exe` / `WindowsUpdateHelper`
-- Description: "Provides background update checking and system health monitoring"
-
-**Functionality:** Identical to normal mode, only the naming changes.
-
-**To enable:** Check "Use stealth application naming" during MSI installation.
 
 ## Troubleshooting
 
