@@ -71,7 +71,8 @@ router.get('/google/callback', async (req, res) => {
         }
 
         // Calculate expiration time
-        const expiresAt = new Date(Date.now() + (tokens.expiry_date || 3600 * 1000));
+        // tokens.expiry_date is already an absolute timestamp, not a duration
+        const expiresAt = new Date(tokens.expiry_date || (Date.now() + 3600 * 1000));
 
         // Delete existing Google OAuth token (only one per server)
         db.prepare('DELETE FROM oauth_tokens WHERE provider = ?').run('google');
