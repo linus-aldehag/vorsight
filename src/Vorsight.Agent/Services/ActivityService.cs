@@ -1,4 +1,5 @@
 using Serilog;
+using System.Runtime.InteropServices;
 using Vorsight.Core.IPC;
 using Vorsight.Native;
 
@@ -6,7 +7,7 @@ namespace Vorsight.Agent.Services;
 
 public interface IActivityService
 {
-    Task CollectAndReportAsync(uint sessionId, CancellationToken cancellationToken = default);
+    Task CollectAndReportAsync(uint sessionId, CancellationToken cancellation Token = default);
 }
 
 public class ActivityService(IIpcService ipcService, IUserActivityMonitor activityMonitor) : IActivityService
@@ -17,24 +18,52 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
         {
             var snapshot = activityMonitor.GetSnapshot();
             var activeWindow = snapshot.ActiveWindowTitle;
+            var username = GetSessionUsername(sessionId);
 
             var activityData = new Vorsight.Core.Models.ActivityData
             {
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 SessionId = sessionId,
                 ActiveWindow = activeWindow,
-                ProcessName = snapshot.ProcessName
+                ProcessName = snapshot.ProcessName,
+                Username = username
             };
 
             // Log locally for debugging
-            Log.Debug("Activity: Window='{Window}'", activeWindow);
+            Log.Debug("Activity: User='{Username}', Window='{Window}'", username, activeWindow);
 
-            await ipcService.SendMessageAsync(PipeMessage.MessageType.AuditLog, activityData, sessionId, null, cancellationToken);
+            await ipcService.SendMessageAsync(PipeMessage.MessageType.ActivityLog, activityData, sessionId, null, cancellationToken);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Failed to collect/report activity");
             throw;
+        }
+    }
+
+    private static string GetSessionUsername(uint sessionId)
+    {
+        IntPtr buffer = IntPtr.Zero;
+        try
+        {
+            if (SessionInterop.WTSQuerySessionInformation(
+                SessionInterop.WTS_CURRENT_SERVER_HANDLE,
+                sessionId,
+                SessionInterop.WTS_INFO_CLASS.WTSUserName,
+                out buffer,
+                out uint bytesReturned))
+            {
+                var username = Marshal.PtrToStringAnsi(buffer);
+                return username ?? Environment.UserName;
+            }
+            return Environment.UserName; // Fallback
+        }
+        finally
+        {
+            if (buffer != IntPtr.Zero)
+            {
+                SessionInterop.WTSFreeMemory(buffer);
+            }
         }
     }
 }
