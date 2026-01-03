@@ -32,12 +32,19 @@ export function ScreenshotGallery() {
 
     useEffect(() => {
         if (selectedMachine) {
+            // Clear images immediately when machine changes to avoid showing stale data
+            setImages([]);
+            setLoading(true);
             loadImages();
             if (!isConfigOpen) { // Don't reload settings while editing
                 loadSettings();
             }
+        } else {
+            // No machine selected, clear everything
+            setImages([]);
+            setLoading(false);
         }
-    }, [selectedMachine]);
+    }, [selectedMachine?.id]); // Use selectedMachine.id as dependency to trigger on machine change
 
     const loadSettings = async () => {
         if (!selectedMachine) return;
