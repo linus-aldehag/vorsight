@@ -158,14 +158,14 @@ export function ScheduleManager() {
                 <div className="space-y-6">
                     {/* Screenshot Monitoring */}
                     {/* Screenshot Monitoring */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
-                        <div className="p-6 pr-0 flex items-start">
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col lg:flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 lg:pr-0 flex items-start">
                             <Switch checked={screenshotEnabled} onCheckedChange={setScreenshotEnabled} className="mt-1" />
                         </div>
 
-                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+                        <div className="w-full h-px lg:w-px lg:h-auto bg-white/10 lg:my-4 lg:mx-6 lg:self-stretch" />
 
-                        <div className="flex-1 py-6 pr-6 pl-0">
+                        <div className="flex-1 py-6 px-6 lg:pr-6 lg:pl-0">
                             <div className="space-y-1 mb-4">
                                 <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Eye size={16} className="text-primary" />
@@ -195,14 +195,14 @@ export function ScheduleManager() {
 
                     {/* Activity Tracking */}
                     {/* Activity Tracking */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
-                        <div className="p-6 pr-0 flex items-start">
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col lg:flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 lg:pr-0 flex items-start">
                             <Switch checked={activityTrackingEnabled} onCheckedChange={setActivityTrackingEnabled} className="mt-1" />
                         </div>
 
-                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+                        <div className="w-full h-px lg:w-px lg:h-auto bg-white/10 lg:my-4 lg:mx-6 lg:self-stretch" />
 
-                        <div className="flex-1 py-6 pr-6 pl-0">
+                        <div className="flex-1 py-6 px-6 lg:pr-6 lg:pl-0">
                             <div className="space-y-1 mb-4">
                                 <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Activity size={16} className="text-primary" />
@@ -232,14 +232,14 @@ export function ScheduleManager() {
 
                     {/* Schedule Enforcement */}
                     {/* Schedule Enforcement */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-row overflow-hidden transition-all duration-300">
-                        <div className="p-6 pr-0 flex items-start">
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col lg:flex-row overflow-hidden transition-all duration-300">
+                        <div className="p-6 lg:pr-0 flex items-start">
                             <Switch checked={scheduleEnforcementEnabled} onCheckedChange={setScheduleEnforcementEnabled} className="mt-1" />
                         </div>
 
-                        <div className="w-px bg-white/10 my-4 mx-6 self-stretch" />
+                        <div className="w-full h-px lg:w-px lg:h-auto bg-white/10 lg:my-4 lg:mx-6 lg:self-stretch" />
 
-                        <div className="flex-1 py-6 pr-6 pl-0">
+                        <div className="flex-1 py-6 px-6 lg:pr-6 lg:pl-0">
                             <div className="space-y-1 mb-4">
                                 <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Clock size={16} className="text-primary" />
@@ -250,7 +250,7 @@ export function ScheduleManager() {
 
                             {scheduleEnforcementEnabled && (
                                 <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Start Time (24h)</label>
                                             <Input
