@@ -233,11 +233,22 @@ public class ActivityCoordinator(
 
     private string ResolveAgentPath()
     {
-        // First, try the configured path
+        // First, try the configured path (may be relative or absolute)
         var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
-        if (!string.IsNullOrEmpty(configuredPath) && File.Exists(configuredPath))
+        if (!string.IsNullOrEmpty(configuredPath))
         {
-            return configuredPath;
+            // Try as absolute path first
+            if (File.Exists(configuredPath))
+            {
+                return configuredPath;
+            }
+            
+            // Try as relative path from base directory
+            var absolutePath = Path.Combine(AppContext.BaseDirectory, configuredPath);
+            if (File.Exists(absolutePath))
+            {
+                return absolutePath;
+            }
         }
 
         // Fallback 1: Look for wuapihost.exe in the same directory (production)
