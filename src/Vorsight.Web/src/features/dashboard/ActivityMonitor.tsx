@@ -1,44 +1,74 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import type { ActivitySnapshot } from '../../api/client';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import type { ActivitySnapshot } from '@/api/client';
+import { Clock, Activity as ActivityIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ActivityMonitorProps {
     activity: ActivitySnapshot | null;
     isDisabled?: boolean;
 }
 
-export function ActivityMonitor({ activity, isDisabled = false }: ActivityMonitorProps) {
-    if (!activity) return (
-        <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
-            <CardContent className="p-6">
-                <div className="text-sm text-muted-foreground">No activity data</div>
-            </CardContent>
-        </Card>
-    );
+export function ActivityMonitor({ activity, isDisabled }: ActivityMonitorProps) {
+    // ActivitySnapshot has: activeWindowTitle, timeSinceLastInput, timestamp
+    const windowTitle = activity?.activeWindowTitle || 'No activity';
+    const timestamp = activity?.timestamp
+        ? new Date(activity.timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        })
+        : 'Never';
 
     return (
-        <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold tracking-wide text-foreground uppercase">Current Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    <div>
-                        <div className="text-xs uppercase font-bold text-muted-foreground mb-1">
-                            Active Window
-                        </div>
-                        <div className="text-lg font-medium truncate" title={activity.activeWindowTitle}>
-                            {activity.activeWindowTitle || 'IDLE / Desktop'}
+        <Card className={cn(
+            "border-border/50 bg-card/50 backdrop-blur-sm h-full",
+            isDisabled && "opacity-60"
+        )}>
+            <CardContent className="p-4 space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2">
+                    <h5 className="text-sm font-semibold tracking-wide text-foreground uppercase">
+                        Current Activity
+                    </h5>
+                    <Badge
+                        variant="outline"
+                        className="text-xs font-mono bg-success/20 text-success border-success/50"
+                    >
+                        ACTIVE
+                    </Badge>
+                </div>
+
+                {/* Activity Info */}
+                <div className="space-y-3">
+                    {/* Active Window */}
+                    <div className="flex items-start gap-3 p-3 rounded-md border border-border/50 bg-surface/30">
+                        <ActivityIcon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <div className="text-xs text-muted-foreground">Window</div>
+                            <div className="text-sm font-mono truncate" title={windowTitle}>
+                                {windowTitle}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground pt-2 border-t border-white/5">
-                        Last snapshot: {new Date(activity.timestamp).toLocaleString('sv-SE', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        })}
+                    {/* Last Snapshot Time */}
+                    <div className="flex items-start gap-3 p-3 rounded-md border border-border/50 bg-surface/30">
+                        <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                            <div className="text-xs text-muted-foreground">Last Snapshot</div>
+                            <div className="text-sm font-mono">{timestamp}</div>
+                        </div>
                     </div>
                 </div>
+
+                {isDisabled && (
+                    <div className="pt-2 border-t border-border/50">
+                        <p className="text-xs text-warning text-center">
+                            Activity tracking disabled
+                        </p>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
