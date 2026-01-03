@@ -67,7 +67,7 @@ public class ScreenshotHandler
 
                 // Create Date-based folder structure
                 var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                var tempPath = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Screenshots", dateFolder);
+                var tempPath = Path.Combine(Vorsight.Core.IO.PathConfiguration.GetScreenshotTempPath(), dateFolder);
                 Directory.CreateDirectory(tempPath);
                 
                 // Format: HH-mm-ss - {Title}.png (using local time for readability)

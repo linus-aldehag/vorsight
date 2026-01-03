@@ -16,9 +16,9 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Debug) // Enable Microsoft logs for debugging startup
     .WriteTo.File(
-        path: Path.Combine(AppContext.BaseDirectory, "logs", "vorsight-service-.log"),
+        path: Path.Combine(Vorsight.Core.IO.PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
-        retainedFileCountLimit: 30,
+        retainedFileCountLimit: 3,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .WriteTo.Console(
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
