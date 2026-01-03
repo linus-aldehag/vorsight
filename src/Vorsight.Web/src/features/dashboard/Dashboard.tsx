@@ -1,14 +1,14 @@
-import { type StatusResponse, type AgentSettings, VorsightApi } from '../../api/client';
+import { type StatusResponse, type AgentSettings, VorsightApi } from '@/api/client';
 import { HealthStats } from './HealthStats';
 import { ActivityStats } from './ActivityStats';
 import { ActivityMonitor } from './ActivityMonitor';
 import { AuditAlert } from './AuditAlert';
 import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
-import { useMachine } from '../../context/MachineContext';
-import { socketService } from '../../services/socket';
+import { useMachine } from '@/context/MachineContext';
+import { socketService } from '@/services/socket';
 
 interface DashboardProps {
     status: StatusResponse;
@@ -41,46 +41,63 @@ export function Dashboard({ status }: DashboardProps) {
     }, [selectedMachine]);
 
     return (
-        <div className="flex flex-col gap-6 h-full">
-            {/* Top Section: Main grid */}
-            <div className="grid grid-cols-12 gap-6">
-                {/* Main View (Left/Center) */}
-                <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-                    {/* Row 1: Health & Current Activity */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6 h-full">
+            {/* Top Section: Main grid - Mobile-first */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+                {/* Main View - stack on mobile, 8/12 cols on large */}
+                <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-6">
+                    {/* Row 1: Health & Current Activity - side by side on small screens and up */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <HealthStats uptime={status.uptime} version={machineVersion} />
                         <ActivityMonitor activity={status.activity} isDisabled={settings?.pingIntervalSeconds === 0} />
                     </div>
-                    {/* Row 2: Timeline & Top Apps (Side-by-side via ActivityStats grid) */}
+
+                    {/* Row 2: Activity Stats */}
                     <ActivityStats isDisabled={settings?.pingIntervalSeconds === 0} />
                 </div>
 
-                {/* Side Panel (Right) */}
-                <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                    {/* Visual Feed Thumbnail - fills remaining space */}
-                    <div className="flex-1">
+                {/* Side Panel - full width on mobile, 4/12 cols on large */}
+                <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-6">
+                    {/* Screenshot Viewer */}
+                    <div className="min-h-[300px] lg:min-h-0 lg:flex-1">
                         <ScreenshotViewer isDisabled={settings?.screenshotIntervalSeconds === 0} />
                     </div>
 
-                    {/* System Controls */}
-                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg tracking-wide text-primary">SYSTEM CONTROL</CardTitle>
+                    {/* System Controls - hide on mobile, show on large screens */}
+                    <Card className="hidden lg:block border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-semibold tracking-wide uppercase">
+                                System Control
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="pt-0">
                             <SystemControls />
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            {/* Bottom Section: Full-width Audit Log */}
+            {/* Bottom Section: Audit Log - Collapsed on mobile */}
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
                 <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-sm tracking-wide text-primary">AUDIT LOG</CardTitle>
+                    <CardTitle className="text-xs sm:text-sm font-semibold tracking-wide uppercase">
+                        Audit Log
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <AuditAlert />
+                </CardContent>
+            </Card>
+
+            {/* Mobile-only: System Controls at bottom */}
+            <Card className="lg:hidden border-border/50 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-semibold tracking-wide uppercase">
+                        System Control
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                    <SystemControls />
                 </CardContent>
             </Card>
         </div>
