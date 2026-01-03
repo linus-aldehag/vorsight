@@ -245,8 +245,8 @@ end;
 [Run]
 ; Install and start the Windows Service
 ; Note: During upgrades, the service is already installed, so we just need to start it
-Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden nowait; Check: not IsUpgrade
-Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden nowait
+Filename: "{app}\{#MyAppServiceExeName}"; Parameters: "install"; StatusMsg: "Installing Windows service..."; Flags: runhidden waituntilterminated; Check: not IsUpgrade
+Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting service..."; Flags: runhidden waituntilterminated
 
 [UninstallDelete]
 ; Clean up runtime data
