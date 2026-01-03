@@ -16,47 +16,6 @@ namespace Vorsight.Core.Audit
         Task InitializeAsync();
 
         /// <summary>
-        /// Adds a filter for audit event monitoring.
-        /// </summary>
-        Task AddFilterAsync(AuditEventFilter filter);
-
-        /// <summary>
-        /// Removes a filter.
-        /// </summary>
-        Task RemoveFilterAsync(string filterId);
-
-        /// <summary>
-        /// Gets all active audit filters.
-        /// </summary>
-        Task<IEnumerable<AuditEventFilter>> GetFiltersAsync();
-
-        /// <summary>
-        /// Logs an audit event to the Vörsight audit trail.
-        /// These logs are stored separately from Windows Event Log for tamper-resistance.
-        /// </summary>
-        Task LogAuditEventAsync(AuditEvent auditEvent);
-
-        /// <summary>
-        /// Retrieves audit events for a specific time range.
-        /// </summary>
-        Task<IEnumerable<AuditEvent>> GetAuditEventsAsync(DateTime startTime, DateTime endTime);
-
-        /// <summary>
-        /// Retrieves flagged events (suspicious activity).
-        /// </summary>
-        Task<IEnumerable<AuditEvent>> GetFlaggedEventsAsync(int limit = 100);
-
-        /// <summary>
-        /// Retrieves all audit events for a specific user.
-        /// </summary>
-        Task<IEnumerable<AuditEvent>> GetUserEventsAsync(string username);
-
-        /// <summary>
-        /// Clears audit logs (should require admin confirmation).
-        /// </summary>
-        Task ClearAuditLogsAsync(string reason);
-
-        /// <summary>
         /// Event raised when a critical/flagged event is detected.
         /// </summary>
         event EventHandler<AuditEventDetectedEventArgs> CriticalEventDetected;
@@ -80,16 +39,6 @@ namespace Vorsight.Core.Audit
         /// Whether monitoring is currently active.
         /// </summary>
         bool IsMonitoring { get; }
-
-        /// <summary>
-        /// Gets count of events in audit log.
-        /// </summary>
-        Task<int> GetEventCountAsync();
-
-        /// <summary>
-        /// Gets size of audit log in bytes.
-        /// </summary>
-        Task<long> GetAuditLogSizeAsync();
     }
 
     /// <summary>
@@ -98,7 +47,7 @@ namespace Vorsight.Core.Audit
     public class AuditEventDetectedEventArgs : EventArgs
     {
         public required AuditEvent Event { get; set; }
-        public required AuditEventFilter MatchingFilter { get; set; }
+        public required string Description { get; set; }
         public DateTime DetectedTime { get; set; }
     }
 

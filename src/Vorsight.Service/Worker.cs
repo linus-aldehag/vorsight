@@ -124,8 +124,8 @@ public class Worker : BackgroundService
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {
                 _logger.LogCritical(
-                    "SECURITY ALERT: Critical audit event detected - Event ID {EventId} at {Time}",
-                    args.MatchingFilter?.EventId, args.DetectedTime);
+                    "SECURITY ALERT: Critical audit event detected - Event ID {EventId}, Description: {Description} at {Time}",
+                    args.Event.EventId, args.Description, args.DetectedTime);
                 
                 // Send to server
                 _logger.LogInformation("Server connection status: {Status}", _serverConnection.IsConnected);
