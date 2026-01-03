@@ -34,8 +34,7 @@ public class CommandDispatcher(
                 case "activity":
                     return await HandleActivityAsync(sessionId, options);
                 
-                case "ping":
-                    return await HandlePingAsync(sessionId);
+
 
                 default:
                     Log.Error("Unknown command: {Command}", command);
@@ -79,24 +78,12 @@ public class CommandDispatcher(
         }
     }
 
-    private async Task<int> HandlePingAsync(uint sessionId)
-    {
-        Log.Debug("Pinging service from session {SessionId}", sessionId);
-        // Ping payload can be timestamp or empty
-        var payload = BitConverter.GetBytes(DateTime.UtcNow.Ticks);
-        await ipcService.SendMessageAsync(PipeMessage.MessageType.PingResponse, payload, sessionId); // Using PingResponse as Ping? 
-        // Note: Ping logic usually Service Pings Agent. Here Agent Pings Service?
-        // Service interprets 'PingResponse' as a heartbeat.
-        return 0;
-    }
-
     private static void ShowUsage()
     {
         Log.Information("Usage: wuapihost.exe <command> [options]");
         Log.Information("Commands:");
         Log.Information("  activity   - Capture and report current activity");
         Log.Information("  screenshot - Capture and report screenshot");
-        Log.Information("  ping       - Send heartbeat");
     }
 
     private static uint GetSessionId()
