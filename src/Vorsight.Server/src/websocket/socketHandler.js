@@ -285,7 +285,7 @@ module.exports = (io) => {
 
                     // Broadcast updated machines list to all web clients
                     const machines = db.prepare(`
-                        SELECT m.id, m.name, m.displayName, m.hostname, m.last_seen,
+                        SELECT m.id, m.name, m.displayName, m.hostname, m.ip_address, m.last_seen,
                                ms.health_status as ping_status, ms.settings
                         FROM machines m
                         LEFT JOIN machine_state ms ON m.id = ms.machine_id
@@ -304,18 +304,29 @@ module.exports = (io) => {
 
                         const status = getConnectionStatus(m.last_seen, pingIntervalSeconds);
 
+                        // Enhanced status with ping
                         let connectionStatus = status.connectionStatus;
                         if (connectionStatus === 'offline' && m.ping_status === 'reachable') {
                             connectionStatus = 'reachable';
                         }
-                        return {
+
+                        const machine = {
                             id: m.id,
                             name: m.name,
                             displayName: m.displayName,
                             hostname: m.hostname,
-                            ...status,
+                            ipAddress: m.ip_address,
+                            isOnline: status.isOnline,
+                            connectionStatus,
+                            pingStatus: m.ping_status,
+                            settings: m.settings,
                             lastSeen: m.last_seen
                         };
+
+                        // Add rich status text
+                        machine.statusText = getStatusText(machine);
+
+                        return machine;
                     });
                     io.emit('machines:list', machines);
                 } catch (error) {
