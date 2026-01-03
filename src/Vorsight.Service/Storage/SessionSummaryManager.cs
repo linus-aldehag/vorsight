@@ -106,7 +106,7 @@ public class SessionSummaryManager : ISessionSummaryManager
             var fileName = $"session-{summary.SessionId}-{summary.StartTime:yyyyMMddHHmmss}.json";
             
             // Construct path: Temp/Vorsight/{Machine}/Logs
-            var logDir = Path.Combine(Path.GetTempPath(), "Vorsight", Environment.MachineName, "Logs");
+            var logDir = Vorsight.Core.IO.PathConfiguration.GetSessionLogPath();
             Directory.CreateDirectory(logDir);
             
             var tempPath = Path.Combine(logDir, fileName);

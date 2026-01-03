@@ -52,14 +52,13 @@ static class Program
 
     private static void SetupLogging()
     {
-        var logDir = Path.Combine(Path.GetTempPath(), "Vorsight", "Logs");
-        Directory.CreateDirectory(logDir);
+        var logDir = Vorsight.Core.IO.PathConfiguration.GetAgentLogPath();
         var logPath = Path.Combine(logDir, "agent-.log");
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console()
-            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+            .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 3)
             .CreateLogger();
     }
 }
