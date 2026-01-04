@@ -1,10 +1,19 @@
-import { Monitor, Circle } from 'lucide-react';
+import * as React from 'react';
+import { Monitor, Circle, ChevronsUpDown } from 'lucide-react';
 import { useMachine } from '../../context/MachineContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { EditableMachineName } from './EditableMachineName';
 import { cn } from '../../lib/utils';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
+} from "../ui/dialog";
 
 export function MachineSelector() {
     const { machines, selectedMachine, selectMachine, isLoading, refreshMachines } = useMachine();
@@ -56,25 +65,77 @@ export function MachineSelector() {
         );
     }
 
-    // For multiple machines, use button group with display names
+    // For multiple machines, use a Dialog-based switcher for better mobile capability
+    const [isOpen, setIsOpen] = React.useState(false);
+
     return (
-        <div className="flex bg-muted/50 p-1 rounded-lg gap-1 max-w-full overflow-x-auto">
-            {machines.map(machine => (
-                <Button
-                    key={machine.id}
-                    variant={selectedMachine?.id === machine.id ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => handleMachineClick(machine.id)}
-                    className="h-8 gap-2 shrink-0"
-                >
-                    <Monitor size={14} />
-                    <span className="truncate max-w-[120px]">{machine.displayName || machine.name}</span>
-                    <Circle
-                        size={6}
-                        className={machine.isOnline ? "fill-success text-success" : "fill-muted text-muted"}
-                    />
-                </Button>
-            ))}
-        </div>
+        <>
+            <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={isOpen}
+                className="w-full justify-between gap-2 min-w-[200px] md:w-auto"
+                onClick={() => setIsOpen(true)}
+            >
+                <div className="flex items-center gap-2 truncate">
+                    <Monitor size={16} className="shrink-0" />
+                    <span className="truncate">
+                        {selectedMachine
+                            ? (selectedMachine.displayName || selectedMachine.name)
+                            : "Select Machine..."}
+                    </span>
+                </div>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Switch Machine</DialogTitle>
+                        <DialogDescription>
+                            Select a machine from the list to view its dashboard.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-2 py-4 max-h-[60vh] overflow-y-auto">
+                        {machines.map((machine) => (
+                            <Button
+                                key={machine.id}
+                                variant={selectedMachine?.id === machine.id ? "secondary" : "ghost"}
+                                size="lg"
+                                onClick={() => {
+                                    handleMachineClick(machine.id);
+                                    setIsOpen(false);
+                                }}
+                                className="w-full justify-between h-auto py-3"
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <Monitor size={18} className="text-muted-foreground shrink-0" />
+                                    <div className="flex flex-col items-start min-w-0">
+                                        <span className="font-medium truncate w-full text-left">
+                                            {machine.displayName || machine.name}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground truncate w-full text-left">
+                                            ID: {machine.name}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Circle
+                                    size={8}
+                                    className={cn(
+                                        "shrink-0 ml-2",
+                                        machine.isOnline ? "fill-success text-success" : "fill-muted text-muted"
+                                    )}
+                                />
+                            </Button>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsOpen(false)}>
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
