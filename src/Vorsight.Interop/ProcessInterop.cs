@@ -107,6 +107,12 @@ namespace Vorsight.Interop
         [DllImport("kernel32.dll")]
         public static extern uint GetCurrentProcessId();
 
+        [DllImport("userenv.dll", SetLastError = true)]
+        public static extern bool CreateEnvironmentBlock(out IntPtr lpEnvironment, IntPtr hToken, bool bInherit);
+
+        [DllImport("userenv.dll", SetLastError = true)]
+        public static extern bool DestroyEnvironmentBlock(IntPtr lpEnvironment);
+
         // Process access rights
         public const uint PROCESS_ALL_ACCESS = 0x001F0FFF;
         public const uint PROCESS_QUERY_INFORMATION = 0x0400;
