@@ -48,8 +48,7 @@ try
             var displayName = "Vörsight Service";
             var description = "Vörsight monitoring and management service";
             
-            var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? 
-                         System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var exePath = Path.Combine(AppContext.BaseDirectory, "Vorsight.Service.exe");
             
             // Use sc.exe to create the service
             var startInfo = new System.Diagnostics.ProcessStartInfo
