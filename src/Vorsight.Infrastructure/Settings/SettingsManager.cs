@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
+using Vorsight.Infrastructure.IO;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Models;
 using Vorsight.Contracts.Settings;
@@ -21,8 +22,7 @@ namespace Vorsight.Infrastructure.Settings
         {
             _logger = logger;
             _settingsPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "Vorsight",
+                PathConfiguration.GetBaseDataDirectory(),
                 "settings.json");
         }
 
