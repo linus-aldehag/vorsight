@@ -1,6 +1,7 @@
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Vorsight.Agent.Contracts;
 using Vorsight.Contracts.Screenshots;
 
 namespace Vorsight.Agent.Services;

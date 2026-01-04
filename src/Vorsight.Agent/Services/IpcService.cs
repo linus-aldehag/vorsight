@@ -3,13 +3,9 @@ using System.Text;
 using System.Text.Json;
 using Serilog;
 using Vorsight.Contracts.IPC;
+using Vorsight.Agent.Contracts;
 
 namespace Vorsight.Agent.Services;
-
-public interface IIpcService
-{
-    Task SendMessageAsync(PipeMessage.MessageType type, object? payloadData, uint sessionId, string? metadata = null, CancellationToken cancellationToken = default);
-}
 
 public class IpcService : IIpcService
 {

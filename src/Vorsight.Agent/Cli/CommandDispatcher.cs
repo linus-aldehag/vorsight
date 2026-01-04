@@ -1,7 +1,7 @@
 using Serilog;
 using Vorsight.Agent.Services;
 using Vorsight.Contracts.IPC;
-using Vorsight.Contracts.Screenshots;
+using Vorsight.Agent.Contracts;
 using Vorsight.Interop;
 
 namespace Vorsight.Agent.Cli;

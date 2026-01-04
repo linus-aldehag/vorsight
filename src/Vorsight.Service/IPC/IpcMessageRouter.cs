@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Service.IPC;
 

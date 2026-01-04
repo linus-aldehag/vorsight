@@ -28,7 +28,7 @@ static class Program
             var ipcService = new IpcService();
             
             // Create typed logger for ScreenshotService
-            var screenshotLogger = loggerFactory.CreateLogger<Vorsight.Contracts.Screenshots.IScreenshotService>();
+            var screenshotLogger = loggerFactory.CreateLogger<Vorsight.Agent.Contracts.IScreenshotService>();
             var screenshotService = new ScreenshotService(screenshotLogger);
             
             var userActivityMonitor = new UserActivityMonitor();

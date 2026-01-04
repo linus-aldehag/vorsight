@@ -4,9 +4,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
-using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Models;
-using Vorsight.Contracts.Audit;
 using Vorsight.Contracts.Settings;
 using Vorsight.Contracts.Screenshots;
 

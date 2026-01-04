@@ -2,6 +2,7 @@ using Vorsight.Contracts.Audit;
 using Vorsight.Contracts.IPC;
 using Vorsight.Contracts.Scheduling;
 using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Contracts;
 
 
 using Vorsight.Service.Agents;

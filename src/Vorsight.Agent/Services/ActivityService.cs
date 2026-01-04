@@ -3,13 +3,9 @@ using System.Runtime.InteropServices;
 using Vorsight.Contracts.IPC;
 using Vorsight.Interop;
 using Vorsight.Infrastructure.Monitoring;
+using Vorsight.Agent.Contracts;
 
 namespace Vorsight.Agent.Services;
-
-public interface IActivityService
-{
-    Task CollectAndReportAsync(uint sessionId, CancellationToken cancellationToken = default);
-}
 
 public class ActivityService(IIpcService ipcService, IUserActivityMonitor activityMonitor) : IActivityService
 {

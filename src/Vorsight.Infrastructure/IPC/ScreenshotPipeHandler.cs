@@ -3,11 +3,9 @@ using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Threading.Tasks;
 
-using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Models;
-using Vorsight.Contracts.Audit;
-using Vorsight.Contracts.Settings;
-using Vorsight.Contracts.Screenshots;
+using Vorsight.Contracts.IPC;
 
 namespace Vorsight.Infrastructure.IPC
 {

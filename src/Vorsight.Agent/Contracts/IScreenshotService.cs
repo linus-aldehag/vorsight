@@ -1,4 +1,6 @@
-﻿namespace Vorsight.Contracts.Screenshots;
+﻿using Vorsight.Contracts.Screenshots;
+
+namespace Vorsight.Agent.Contracts;
 
 /// <summary>
 /// Screenshot capture service using GDI+.

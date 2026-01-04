@@ -1,5 +1,6 @@
 using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Logging;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Audit;
 
 namespace Vorsight.Infrastructure.Audit;
