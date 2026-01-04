@@ -138,7 +138,7 @@ export const VorsightApi = {
         if (res.status === 404) {
             // Return defaults if settings don't exist yet
             return {
-                screenshotIntervalSeconds: 60,
+                screenshotIntervalSeconds: 300,
                 pingIntervalSeconds: 30,
                 isMonitoringEnabled: true,
                 isAuditEnabled: true

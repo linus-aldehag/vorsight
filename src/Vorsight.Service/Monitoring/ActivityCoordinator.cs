@@ -73,23 +73,29 @@ public class ActivityCoordinator(
 
             logger.LogDebug("Activity changed: '{Old}' ({Dur}s) -> '{New}'", _currentWindow, duration, data.ActiveWindow);
 
-            // Trigger Screenshot on Window Change (only if screenshot monitoring enabled)
-            var settings = _settingsManager.GetSettingsAsync().Result;
-            if (!string.IsNullOrEmpty(data.ActiveWindow) && settings.ScreenshotIntervalSeconds > 0)
-            {
-                _ = RequestScreenshotAsync("WindowChange", new ActivitySnapshot 
-                { 
-                    ActiveWindowTitle = data.ActiveWindow,
-                    ProcessName = data.ProcessName,
-                    Timestamp = now 
-                });
-            }
-
             // Update state
             _currentWindow = data.ActiveWindow;
             _currentProcess = data.ProcessName;
             _currentUsername = data.Username;
             _currentActivityStart = now;
+        }
+        else
+        {
+            // Window hasn't changed, but still send periodic activity ping
+            // This ensures activity is continuously tracked, not just on window changes
+            var duration = (int)(now - _currentActivityStart).TotalSeconds;
+            if (_serverConnection.IsConnected && duration > 0)
+            {
+                _ = _serverConnection.SendActivityAsync(new
+                {
+                    timestamp = _currentActivityStart,
+                    activeWindow = _currentWindow,
+                    processName = _currentProcess,
+                    duration = duration,
+                    username = !string.IsNullOrEmpty(_currentUsername) ? _currentUsername : data.Username,
+                    isContinuation = true // Flag to indicate this is a continuation, not a window change
+                });
+            }
         }
 
         // Always update latest snapshot for Heartbeat/Dashboard
@@ -144,6 +150,15 @@ public class ActivityCoordinator(
                 var pollInterval = TimeSpan.FromSeconds(settings.PingIntervalSeconds);
                 var screenshotInterval = TimeSpan.FromSeconds(settings.ScreenshotIntervalSeconds);
 
+                // Log current settings every 10 iterations for diagnostics
+                if (_lastPollTime == DateTime.MinValue || (now - _lastPollTime).TotalMinutes > 5)
+                {
+                    monitorLogger.LogInformation("Activity monitoring settings: Screenshot={Screenshot}s, Ping={Ping}s, Monitoring={Enabled}", 
+                        settings.ScreenshotIntervalSeconds, 
+                        settings.PingIntervalSeconds, 
+                        settings.IsMonitoringEnabled);
+                }
+
                 // Poll Agent for Activity
                 if (now - _lastPollTime > pollInterval)
                 {
@@ -151,7 +166,7 @@ public class ActivityCoordinator(
                     // Agent path already validated at startup
                     _commandExecutor.RunCommandAsUser(agentPath, "activity");
                     
-                    // Send heartbeat to server
+                    // Send heartbeat to server with current activity
                     if (_serverConnection.IsConnected && _latestSnapshot != null)
                     {
                         // Get version from assembly
