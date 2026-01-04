@@ -1,7 +1,7 @@
 using Serilog;
 using System.Runtime.InteropServices;
-using Vorsight.Core.IPC;
-using Vorsight.Native;
+using Vorsight.Contracts.IPC;
+using Vorsight.Interop;
 
 namespace Vorsight.Agent.Services;
 
@@ -20,7 +20,7 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
             var activeWindow = snapshot.ActiveWindowTitle;
             var username = GetSessionUsername(sessionId);
 
-            var activityData = new Vorsight.Core.Models.ActivityData
+            var activityData = new Vorsight.Contracts.Models.ActivityData
             {
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 SessionId = sessionId,

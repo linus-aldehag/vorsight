@@ -2,7 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using Serilog;
-using Vorsight.Core.IPC;
+using Vorsight.Contracts.IPC;
 
 namespace Vorsight.Agent.Services;
 

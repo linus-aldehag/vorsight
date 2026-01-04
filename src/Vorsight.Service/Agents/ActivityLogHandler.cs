@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Vorsight.Core.IPC;
+using Vorsight.Contracts.IPC;
 using Vorsight.Service.Monitoring;
 
 namespace Vorsight.Service.Agents;
@@ -30,7 +30,7 @@ public class ActivityLogHandler
             if (message.Payload != null && message.Payload.Length > 0)
             {
                 var json = System.Text.Encoding.UTF8.GetString(message.Payload);
-                var data = System.Text.Json.JsonSerializer.Deserialize<Vorsight.Core.Models.ActivityData>(json);
+                var data = System.Text.Json.JsonSerializer.Deserialize<Vorsight.Contracts.Models.ActivityData>(json);
                 
                 if (data != null)
                 {

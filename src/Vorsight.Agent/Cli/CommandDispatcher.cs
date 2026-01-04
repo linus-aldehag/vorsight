@@ -1,7 +1,8 @@
 using Serilog;
 using Vorsight.Agent.Services;
-using Vorsight.Core.IPC;
-using Vorsight.Core.Screenshots;
+using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Screenshots;
+using Vorsight.Interop;
 
 namespace Vorsight.Agent.Cli;
 
@@ -89,7 +90,7 @@ public class CommandDispatcher(
     private static uint GetSessionId()
     {
         // Use P/Invoke to get Session ID
-        if (Vorsight.Native.ProcessInterop.ProcessIdToSessionId(Vorsight.Native.ProcessInterop.GetCurrentProcessId(), out var sessionId))
+        if (ProcessInterop.ProcessIdToSessionId(ProcessInterop.GetCurrentProcessId(), out var sessionId))
         {
             return sessionId;
         }

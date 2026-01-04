@@ -27,8 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Vorsight.Core\Vorsight.Core.csproj" />
-    <ProjectReference Include="..\Vorsight.Native\Vorsight.Native.csproj" />
+    <ProjectReference Include="..\Vorsight.Contracts\Vorsight.Contracts.csproj" />
+    <ProjectReference Include="..\Vorsight.Infrastructure\Vorsight.Infrastructure.csproj" />
+    <ProjectReference Include="..\Vorsight.Interop\Vorsight.Interop.csproj" />
   </ItemGroup>
 
 </Project>

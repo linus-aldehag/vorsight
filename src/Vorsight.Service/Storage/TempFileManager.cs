@@ -25,7 +25,7 @@ public class TempFileManager(
     IUploadQueueProcessor uploadQueueProcessor)
     : ITempFileManager
 {
-    private readonly string _tempPath = Vorsight.Core.IO.PathConfiguration.GetTempPath();
+    private readonly string _tempPath = Vorsight.Infrastructure.IO.PathConfiguration.GetTempPath();
     private readonly TimeSpan _maxFileAge = TimeSpan.FromHours(configuration.GetValue("TempFileManager:MaxFileAgeHours", 24));
     private readonly TimeSpan _retryFailedUploadsInterval = TimeSpan.FromMinutes(configuration.GetValue("TempFileManager:RetryFailedUploadsIntervalMinutes", 30));
     private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(configuration.GetValue("TempFileManager:CleanupIntervalHours", 6));

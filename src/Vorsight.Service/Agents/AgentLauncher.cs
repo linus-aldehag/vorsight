@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Vorsight.Native;
+using Vorsight.Interop;
 
 namespace Vorsight.Service.Agents;
 

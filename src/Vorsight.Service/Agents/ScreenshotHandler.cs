@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using Vorsight.Core.IPC;
+using Vorsight.Contracts.IPC;
 using Vorsight.Service.Server;
 using Vorsight.Service.Storage;
 using Vorsight.Service.Monitoring;
@@ -67,7 +67,7 @@ public class ScreenshotHandler
 
                 // Create Date-based folder structure
                 var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                var tempPath = Path.Combine(Vorsight.Core.IO.PathConfiguration.GetScreenshotTempPath(), dateFolder);
+                var tempPath = Path.Combine(Vorsight.Infrastructure.IO.PathConfiguration.GetScreenshotTempPath(), dateFolder);
                 Directory.CreateDirectory(tempPath);
                 
                 // Format: HH-mm-ss - {Title}.png (using local time for readability)

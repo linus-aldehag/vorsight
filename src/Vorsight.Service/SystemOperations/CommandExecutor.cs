@@ -1,4 +1,4 @@
-using Vorsight.Native;
+using Vorsight.Interop;
 
 namespace Vorsight.Service.SystemOperations;
 
@@ -16,7 +16,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             logger.LogInformation("Attempting to run command as user: {Command} {Args}", command, arguments);
 
             // 1. Get Active Session
-            var sessionId = Vorsight.Native.ProcessHelper.GetActiveConsoleSessionId();
+            var sessionId = ProcessHelper.GetActiveConsoleSessionId();
             if (sessionId == 0xFFFFFFFF)
             {
                 logger.LogError("No active console session found");
@@ -51,7 +51,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             // 3. Open Process Token
             // 3. Open Process Token
             // Use specific access rights to avoid Access Denied from Process.Handle (which requests ALL_ACCESS)
-            if (!Vorsight.Native.ProcessHelper.TryOpenProcess((uint)userProcess.Id, Vorsight.Native.ProcessInterop.PROCESS_QUERY_LIMITED_INFORMATION, out var hProcess))
+            if (!ProcessHelper.TryOpenProcess((uint)userProcess.Id, ProcessInterop.PROCESS_QUERY_LIMITED_INFORMATION, out var hProcess))
             {
                 logger.LogError("Failed to open process handle for explorer.exe (PID: {Pid})", userProcess.Id);
                 return false;
@@ -59,7 +59,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
 
             try
             {
-                if (!Vorsight.Native.ProcessHelper.TryOpenProcessToken(hProcess, Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE, out var hToken))
+                if (!ProcessHelper.TryOpenProcessToken(hProcess, ProcessInterop.TOKEN_DUPLICATE, out var hToken))
                 {
                     logger.LogError("Failed to open process token for explorer.exe");
                     return false;
@@ -68,14 +68,14 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 try
                 {
                 // 4. Duplicate Token
-                if (!Vorsight.Native.ProcessHelper.TryDuplicateTokenEx(
+                if (!ProcessHelper.TryDuplicateTokenEx(
                     hToken, 
-                    Vorsight.Native.ProcessInterop.TOKEN_ASSIGN_PRIMARY | 
-                    Vorsight.Native.ProcessInterop.TOKEN_DUPLICATE | 
-                    Vorsight.Native.ProcessInterop.TOKEN_QUERY | 
-                    Vorsight.Native.ProcessInterop.TOKEN_ADJUST_PRIVILEGES,
-                    Vorsight.Native.ProcessInterop.SecurityImpersonation,
-                    Vorsight.Native.ProcessInterop.TokenPrimary,
+                    ProcessInterop.TOKEN_ASSIGN_PRIMARY | 
+                    ProcessInterop.TOKEN_DUPLICATE | 
+                    ProcessInterop.TOKEN_QUERY | 
+                    ProcessInterop.TOKEN_ADJUST_PRIVILEGES,
+                    ProcessInterop.SecurityImpersonation,
+                    ProcessInterop.TokenPrimary,
                     out var hUserToken))
                 {
                     logger.LogError("Failed to duplicate token");
@@ -85,7 +85,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 try
                 {
                     // 5. Create Process as User
-                    if (Vorsight.Native.ProcessHelper.TryCreateProcessAsUser(
+                    if (ProcessHelper.TryCreateProcessAsUser(
                         hUserToken,
                         null!, // Application Name
                         $"\"{command}\" {arguments}", // Command Line
@@ -103,17 +103,17 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 }
                 finally
                 {
-                    Vorsight.Native.ProcessInterop.CloseHandle(hUserToken);
+                    ProcessInterop.CloseHandle(hUserToken);
                 }
             }
                 finally
                 {
-                    Vorsight.Native.ProcessInterop.CloseHandle(hToken);
+                    ProcessInterop.CloseHandle(hToken);
                 }
             }
             finally
             {
-                Vorsight.Native.ProcessInterop.CloseHandle(hProcess);
+                ProcessInterop.CloseHandle(hProcess);
             }
         }
         catch (Exception ex)

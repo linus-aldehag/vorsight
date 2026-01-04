@@ -1,8 +1,9 @@
-using Vorsight.Core.IPC;
-using Vorsight.Native;
+using Vorsight.Contracts.IPC;
+using Vorsight.Interop;
 
 using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Server;
+using Vorsight.Contracts.Settings;
 
 namespace Vorsight.Service.Monitoring;
 
@@ -10,7 +11,7 @@ public interface IActivityCoordinator
 {
     Task StartMonitoringAsync(CancellationToken cancellationToken);
     ActivitySnapshot? GetCurrentActivity();
-    void UpdateActivity(Vorsight.Core.Models.ActivityData data);
+    void UpdateActivity(Vorsight.Contracts.Models.ActivityData data);
     Task RequestManualScreenshotAsync(string source);
 }
 
@@ -20,14 +21,14 @@ public class ActivityCoordinator(
     IConfiguration config,
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
-    Vorsight.Core.Settings.ISettingsManager settingsManager,
+    Vorsight.Contracts.Settings.ISettingsManager settingsManager,
     IServerConnection serverConnection)
     : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly INamedPipeServer _ipcServer = ipcServer;
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
-    private readonly Vorsight.Core.Settings.ISettingsManager _settingsManager = settingsManager;
+    private readonly Vorsight.Contracts.Settings.ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
     private string _currentWindow = string.Empty;
     private string _currentProcess = string.Empty;
@@ -36,7 +37,7 @@ public class ActivityCoordinator(
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
 
-    public void UpdateActivity(Vorsight.Core.Models.ActivityData data)
+    public void UpdateActivity(Vorsight.Contracts.Models.ActivityData data)
     {
         var now = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime;
 

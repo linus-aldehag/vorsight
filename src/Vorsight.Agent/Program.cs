@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Vorsight.Agent.Cli;
 using Vorsight.Agent.Services;
+using Vorsight.Interop;
 
 namespace Vorsight.Agent;
 
@@ -26,10 +27,10 @@ static class Program
             var ipcService = new IpcService();
             
             // Create typed logger for ScreenshotService
-            var screenshotLogger = loggerFactory.CreateLogger<Core.Screenshots.IScreenshotService>();
+            var screenshotLogger = loggerFactory.CreateLogger<Vorsight.Contracts.Screenshots.IScreenshotService>();
             var screenshotService = new ScreenshotService(screenshotLogger);
             
-            var userActivityMonitor = new Vorsight.Native.UserActivityMonitor();
+            var userActivityMonitor = new UserActivityMonitor();
             var activityService = new ActivityService(ipcService, userActivityMonitor);
             
             var dispatcher = new CommandDispatcher(screenshotService, activityService, ipcService);
@@ -52,7 +53,7 @@ static class Program
 
     private static void SetupLogging()
     {
-        var logDir = Vorsight.Core.IO.PathConfiguration.GetAgentLogPath();
+        var logDir = Vorsight.Infrastructure.IO.PathConfiguration.GetAgentLogPath();
         var logPath = Path.Combine(logDir, "agent-.log");
 
         Log.Logger = new LoggerConfiguration()

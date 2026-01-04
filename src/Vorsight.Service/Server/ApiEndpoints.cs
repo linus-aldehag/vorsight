@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Vorsight.Core.IPC;
-using Vorsight.Core.Uptime;
-using Vorsight.Native;
+using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Uptime;
+using Vorsight.Interop;
 
-using Vorsight.Core.Scheduling;
+using Vorsight.Contracts.Scheduling;
 
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.SystemOperations;
@@ -191,15 +191,15 @@ public static class ApiEndpoints
 
         // Settings API
         app.MapGet("/api/settings", async (
-            Core.Settings.ISettingsManager settingsManager) =>
+            Vorsight.Contracts.Settings.ISettingsManager settingsManager) =>
         {
             var settings = await settingsManager.GetSettingsAsync();
             return Results.Json(settings);
         });
 
         app.MapPost("/api/settings", async (
-            [FromBody] Core.Settings.AgentSettings settings,
-            Core.Settings.ISettingsManager settingsManager) =>
+            [FromBody] Vorsight.Contracts.Settings.AgentSettings settings,
+            Vorsight.Contracts.Settings.ISettingsManager settingsManager) =>
         {
             try
             {

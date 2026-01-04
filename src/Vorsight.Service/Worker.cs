@@ -1,7 +1,7 @@
-using Vorsight.Core.Audit;
-using Vorsight.Core.IPC;
-using Vorsight.Core.Scheduling;
-using Vorsight.Core.Settings;
+using Vorsight.Contracts.Audit;
+using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Scheduling;
+using Vorsight.Contracts.Settings;
 
 
 using Vorsight.Service.Agents;
@@ -29,7 +29,7 @@ public class Worker : BackgroundService
     private readonly ITempFileManager _tempFileManager;
     private readonly IHealthMonitor _healthMonitor;
     private readonly IActivityCoordinator _activityCoordinator;
-    private readonly Vorsight.Core.Uptime.UptimeMonitor _uptimeMonitor;
+    private readonly Vorsight.Infrastructure.Uptime.UptimeMonitor _uptimeMonitor;
     private readonly ISessionSummaryManager _sessionSummaryManager;
     private readonly ISettingsManager _settingsManager;
     private readonly IServerConnection _serverConnection;
@@ -48,9 +48,9 @@ public class Worker : BackgroundService
         ITempFileManager tempFileManager,
         IHealthMonitor healthMonitor,
         IActivityCoordinator activityCoordinator,
-        Vorsight.Core.Uptime.UptimeMonitor uptimeMonitor,
+        Vorsight.Infrastructure.Uptime.UptimeMonitor uptimeMonitor,
         ISessionSummaryManager sessionSummaryManager,
-        Core.Settings.ISettingsManager settingsManager,
+        ISettingsManager settingsManager,
         IServerConnection serverConnection,
         IIpcMessageRouter ipcMessageRouter,
         IServerCommandProcessor serverCommandProcessor)
