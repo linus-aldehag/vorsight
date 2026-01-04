@@ -23,7 +23,8 @@ router.get('/', (req, res) => {
         const defaults = {
             screenshotIntervalSeconds: 300,
             pingIntervalSeconds: 30,
-            isMonitoringEnabled: true
+            isMonitoringEnabled: true,
+            isAuditEnabled: true
         };
 
         // Merge stored settings with defaults

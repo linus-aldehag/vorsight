@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuditEvents } from '@/hooks/useAudit';
 import { useMachine } from '@/context/MachineContext';
 import { Shield, Settings2, X, AlertCircle } from 'lucide-react';
@@ -6,6 +6,117 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { AuditFilters } from './AuditFilters';
 import { AuditTable } from './AuditTable';
+import { VorsightApi, type AgentSettings } from '@/api/client';
+
+function AuditConfigurationModal({ machineId, onClose }: { machineId: string, onClose: () => void }) {
+    const [settings, setSettings] = useState<AgentSettings | null>(null);
+    const [enabled, setEnabled] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        loadSettings();
+    }, [machineId]);
+
+    const loadSettings = async () => {
+        try {
+            const data = await VorsightApi.getSettings(machineId);
+            setSettings(data);
+            // Default to true if undefined (legacy settings)
+            setEnabled(data.isAuditEnabled !== false);
+        } catch (err) {
+            console.error('Failed to load settings:', err);
+            setError('Failed to load settings');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!settings) return;
+
+        setSaving(true);
+        setError(null);
+
+        try {
+            const updatedSettings = {
+                ...settings,
+                isAuditEnabled: enabled
+            };
+
+            await VorsightApi.saveSettings(machineId, updatedSettings);
+            onClose();
+        } catch (err) {
+            setError('Failed to save settings');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={onClose}>
+            <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col h-full">
+                    <div className="flex items-center justify-between p-4 border-b border-border">
+                        <h3 className="text-lg font-semibold">Audit Monitoring</h3>
+                        <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+                            <X size={16} />
+                        </Button>
+                    </div>
+
+                    <div className="flex-1 p-4 space-y-6 overflow-y-auto">
+                        {error && (
+                            <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
+                                <AlertCircle size={12} className="shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        {isLoading ? (
+                            <div className="text-center py-8 text-muted-foreground">Loading settings...</div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
+                                        <Switch
+                                            checked={enabled}
+                                            onCheckedChange={setEnabled}
+                                        />
+                                        <div>
+                                            <div className="text-sm font-medium">
+                                                {enabled ? 'Enabled' : 'Disabled'}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {enabled
+                                                    ? 'Security event monitoring is active'
+                                                    : 'Security event monitoring is paused'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-3">
+                                    Audit logging tracks security-relevant events like failed logons, privilege escalations, and system modifications.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
+                        <Button variant="outline" onClick={onClose} disabled={saving}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSave} disabled={saving || isLoading}>
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export function AuditPage() {
     const { selectedMachine } = useMachine();
@@ -54,9 +165,7 @@ export function AuditPage() {
         }
     };
 
-    const handleCancel = () => {
-        setIsConfigOpen(false);
-    };
+
 
     // Get unique event types from data
     const eventTypes = Array.from(new Set(auditEvents.map(e => e.event_type))).sort();
@@ -113,65 +222,10 @@ export function AuditPage() {
 
             {/* Configuration Modal */}
             {isConfigOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
-                    <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col h-full">
-                            {/* Modal header */}
-                            <div className="flex items-center justify-between p-4 border-b border-border">
-                                <h3 className="text-lg font-semibold">Audit Monitoring</h3>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCancel}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X size={16} />
-                                </Button>
-                            </div>
-
-                            {/* Modal content */}
-                            <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-                                <div className="bg-blue-500/10 text-blue-600 dark:text-blue-500 border border-blue-500/20 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                    <AlertCircle size={12} className="shrink-0" />
-                                    <span>Audit monitoring is currently always active for security. Enable/disable control coming soon.</span>
-                                </div>
-
-                                {/* Enable/Disable Toggle */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Status</label>
-                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                                        <Switch
-                                            checked={true}
-                                            disabled={true}
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium">
-                                                Enabled
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                Security event monitoring is always active
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-3">
-                                    Audit logging tracks security-relevant events like failed logons, privilege escalations, and system modifications.
-                                </p>
-                            </div>
-
-                            {/* Modal footer */}
-                            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleCancel}
-                                >
-                                    Close
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <AuditConfigurationModal
+                    machineId={selectedMachine.id}
+                    onClose={() => setIsConfigOpen(false)}
+                />
             )}
 
             {/* Filters */}

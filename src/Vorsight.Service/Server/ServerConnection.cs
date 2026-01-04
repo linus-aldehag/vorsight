@@ -16,6 +16,7 @@ public interface IServerConnection
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     Task<string?> FetchScheduleJsonAsync();
+    Task<string?> FetchSettingsJsonAsync();
     bool IsConnected { get; }
     string? ApiKey { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
@@ -329,6 +330,32 @@ public class ServerConnection : IServerConnection
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching schedule JSON");
+            return null;
+        }
+    }
+    
+    public async Task<string?> FetchSettingsJsonAsync()
+    {
+        if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
+            return null;
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/settings?machineId={_machineId}");
+            request.Headers.Add("x-api-key", _apiKey);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to fetch settings: {Status}", response.StatusCode);
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching settings JSON");
             return null;
         }
     }

@@ -45,6 +45,7 @@ export interface AgentSettings {
     screenshotIntervalSeconds: number;
     pingIntervalSeconds: number;
     isMonitoringEnabled: boolean;
+    isAuditEnabled: boolean;
     screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     // Ping monitor data
@@ -139,7 +140,8 @@ export const VorsightApi = {
             return {
                 screenshotIntervalSeconds: 60,
                 pingIntervalSeconds: 30,
-                isMonitoringEnabled: true
+                isMonitoringEnabled: true,
+                isAuditEnabled: true
             };
         }
         if (!res.ok) throw new Error(`Failed to fetch settings: ${res.statusText}`);
