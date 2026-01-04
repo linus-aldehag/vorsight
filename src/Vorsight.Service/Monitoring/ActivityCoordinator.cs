@@ -38,6 +38,7 @@ public class ActivityCoordinator(
     private DateTime _lastTimedScreenshot = DateTime.MinValue;
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
+    private string _currentUsername = string.Empty;
 
     public void UpdateActivity(Vorsight.Contracts.Models.ActivityData data)
     {
@@ -48,6 +49,7 @@ public class ActivityCoordinator(
         {
             _currentWindow = data.ActiveWindow;
             _currentProcess = data.ProcessName;
+            _currentUsername = data.Username;
             _currentActivityStart = now;
         }
 
@@ -65,7 +67,7 @@ public class ActivityCoordinator(
                     activeWindow = _currentWindow,
                     processName = _currentProcess,
                     duration = duration,
-                    username = Environment.UserName
+                    username = !string.IsNullOrEmpty(_currentUsername) ? _currentUsername : data.Username
                 });
             }
 
@@ -86,6 +88,7 @@ public class ActivityCoordinator(
             // Update state
             _currentWindow = data.ActiveWindow;
             _currentProcess = data.ProcessName;
+            _currentUsername = data.Username;
             _currentActivityStart = now;
         }
 
