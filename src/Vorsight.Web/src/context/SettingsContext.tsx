@@ -7,6 +7,8 @@ interface SettingsContextType {
     timeFormat: TimeFormat;
     setTimeFormat: (format: TimeFormat) => void;
     formatTimestamp: (date: Date | number | string, options?: TimestampOptions) => string;
+    formatTimeInput: (timeStr: string) => string;
+    parseTimeInput: (inputStr: string) => string | null;
 }
 
 interface TimestampOptions {
@@ -47,11 +49,44 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         return format(d, timeStr);
     };
 
+    const formatTimeInput = (timeStr: string): string => {
+        if (!timeStr) return '';
+        if (timeFormat === '24h') return timeStr;
+
+        // Parse HH:mm
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return timeStr;
+
+        const date = new Date();
+        date.setHours(hours);
+        date.setMinutes(minutes);
+
+        return format(date, 'hh:mm a');
+    };
+
+    const parseTimeInput = (inputStr: string): string | null => {
+        if (!inputStr) return null;
+        if (timeFormat === '24h') return inputStr;
+
+        // Try to parse 12h format
+        try {
+            // Flexible parsing (1:00 pm, 01:00 PM, etc)
+            const date = new Date(`2000/01/01 ${inputStr}`);
+            if (isNaN(date.getTime())) return null;
+
+            return format(date, 'HH:mm');
+        } catch {
+            return null;
+        }
+    };
+
     return (
         <SettingsContext.Provider value={{
             timeFormat,
             setTimeFormat: setTimeFormatAndSave,
-            formatTimestamp
+            formatTimestamp,
+            formatTimeInput,
+            parseTimeInput
         }}>
             {children}
         </SettingsContext.Provider>

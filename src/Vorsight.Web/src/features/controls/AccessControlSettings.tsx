@@ -3,7 +3,7 @@ import { VorsightApi, type AccessSchedule } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
-import { Input } from '../../components/ui/input';
+import { TimeInput } from '../../components/ui/time-input';
 import {
     Dialog,
     DialogContent,
@@ -111,22 +111,18 @@ export function AccessControlSettings({ schedule, onScheduleChange }: AccessCont
                         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Start Time (24h)</label>
-                                    <Input
-                                        type="text"
+                                    <label className="text-sm font-medium">Start Time</label>
+                                    <TimeInput
                                         value={startTime}
-                                        onChange={(e) => setStartTime(e.target.value)}
-                                        placeholder="08:00"
+                                        onChange={setStartTime}
                                         className="font-mono"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">End Time (24h)</label>
-                                    <Input
-                                        type="text"
+                                    <label className="text-sm font-medium">End Time</label>
+                                    <TimeInput
                                         value={endTime}
-                                        onChange={(e) => setEndTime(e.target.value)}
-                                        placeholder="22:00"
+                                        onChange={setEndTime}
                                         className="font-mono"
                                     />
                                 </div>
