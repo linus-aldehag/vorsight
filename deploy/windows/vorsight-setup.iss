@@ -120,7 +120,7 @@ begin
     ServerConfigPage := CreateInputQueryPage(wpSelectDir,
       'Server Configuration', 
       'Configure connection to Vörsight server',
-      'Enter the address and port of your Vörsight server (e.g., raspberrypi.local or 192.168.1.100)');
+      'Enter the address and port of your Vörsight server (e.g., server-hostname or 192.168.1.100)');
     ServerConfigPage.Add('Server Address:', False);
     ServerConfigPage.Add('Server Port:', False);
     ServerConfigPage.Values[0] := '';  // Server address - empty by default
@@ -154,7 +154,7 @@ begin
       
       if ServerAddress = '' then
       begin
-        MsgBox('Please enter a server address (e.g., raspberrypi.local or 192.168.1.100).', mbError, MB_OK);
+        MsgBox('Please enter a server address (e.g., server-hostname or 192.168.1.100).', mbError, MB_OK);
         Result := False;
       end
       else if ServerPort = '' then
