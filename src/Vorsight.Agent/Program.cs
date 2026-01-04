@@ -22,7 +22,7 @@ static class Program
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.AddSerilog(); 
-                builder.SetMinimumLevel(LogLevel.Debug);
+                builder.SetMinimumLevel(LogLevel.Information);
             });
 
             var ipcService = new IpcService();
@@ -58,7 +58,7 @@ static class Program
         var logPath = Path.Combine(logDir, "agent-.log");
 
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .WriteTo.Console()
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 3)
             .CreateLogger();
