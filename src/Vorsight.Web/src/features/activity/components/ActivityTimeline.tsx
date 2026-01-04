@@ -1,5 +1,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { useSettings } from "@/context/SettingsContext";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
 import { Monitor, Terminal, FileText } from "lucide-react";
 
@@ -8,6 +9,8 @@ interface ActivityTimelineProps {
 }
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
+    const { formatTimestamp } = useSettings();
+
     // Group activities by hour
     const groupedActivities = activities.reduce((acc, activity) => {
         const date = new Date(activity.timestamp);
@@ -30,14 +33,14 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                     sortedKeys.map((key) => (
                         <div key={key} className="relative">
                             <div className="sticky top-0 z-10 bg-background/95 pb-4 pt-2 font-semibold backdrop-blur-sm">
-                                {format(new Date(key), "MMM d, HH:00")}
+                                {formatTimestamp(key, { includeDate: true, includeSeconds: false })}
                             </div>
                             <div className="ml-4 space-y-4 border-l-2 pl-4">
                                 {groupedActivities[key].map((activity) => (
                                     <div key={activity.id} className="relative">
                                         <div className="absolute -left-[25px] mt-1.5 h-4 w-4 rounded-full border bg-background" />
                                         <div className="mb-1 text-sm font-medium leading-none text-muted-foreground">
-                                            {format(new Date(activity.timestamp), "HH:mm:ss")}
+                                            {formatTimestamp(activity.timestamp, { includeSeconds: true })}
                                         </div>
                                         <div className="rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md">
                                             <div className="flex items-center gap-2">

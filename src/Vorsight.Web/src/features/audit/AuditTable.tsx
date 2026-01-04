@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, ChevronLeft, ChevronRight, Flag, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
+import { useSettings } from '@/context/SettingsContext';
 import { useState } from 'react';
 import type { AuditEvent } from '@/hooks/useAudit';
 
@@ -29,6 +29,7 @@ export function AuditTable({
     totalItems,
     onPageChange
 }: AuditTableProps) {
+    const { formatTimestamp } = useSettings();
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
     const toggleExpand = (id: number) => {
@@ -96,7 +97,6 @@ export function AuditTable({
             <div className="space-y-3">
                 {paginatedEvents.map(event => {
                     const isExpanded = expandedIds.has(event.id);
-                    const eventDate = new Date(event.timestamp);
 
                     return (
                         <Card
@@ -128,7 +128,7 @@ export function AuditTable({
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
                                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                                    {format(eventDate, 'MMM d, HH:mm:ss')}
+                                                    {formatTimestamp(event.timestamp, { includeDate: true, includeSeconds: true })}
                                                 </span>
                                                 {event.source_log_name && (
                                                     <Badge variant="outline" className="text-xs">

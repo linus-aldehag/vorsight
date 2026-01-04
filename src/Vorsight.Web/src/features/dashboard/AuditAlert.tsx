@@ -1,7 +1,7 @@
 import { useRecentAuditEvents } from '@/hooks/useAudit';
 import { useMachine } from '@/context/MachineContext';
 import { AlertTriangle, ShieldAlert, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { format } from 'date-fns';
+import { useSettings } from '@/context/SettingsContext';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +18,7 @@ function getAuthHeaders(): HeadersInit {
 export function AuditAlert() {
     const { selectedMachine } = useMachine();
     const { auditEvents, isLoading, isError, mutate } = useRecentAuditEvents(selectedMachine?.id || '');
+    const { formatTimestamp } = useSettings();
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
     const handleDismiss = async (id: number) => {
@@ -95,7 +96,7 @@ export function AuditAlert() {
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                                    {format(new Date(event.timestamp), 'HH:mm:ss')}
+                                                    {formatTimestamp(event.timestamp, { includeSeconds: true })}
                                                 </div>
                                                 <Button
                                                     variant="ghost"

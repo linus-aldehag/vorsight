@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
+import { useSettings } from '@/context/SettingsContext';
 import { Image as ImageIcon, Info } from 'lucide-react';
 import { useState } from 'react';
 import useSWR from 'swr';
@@ -12,6 +13,7 @@ interface ScreenshotViewerProps {
 
 export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
     const { selectedMachine } = useMachine();
+    const { formatTimestamp } = useSettings();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
 
@@ -71,7 +73,7 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
                         <span>Latest Screenshot</span>
                         {latestScreenshot && (
                             <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
-                                {new Date(latestScreenshot.capture_time + 'Z').toLocaleTimeString()}
+                                {formatTimestamp(latestScreenshot.capture_time + 'Z', { includeSeconds: true })}
                             </Badge>
                         )}
                     </div>

@@ -7,10 +7,12 @@ import { Switch } from '../../components/ui/switch';
 import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle, ImageOff } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
+import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
+    const { formatTimestamp } = useSettings();
     const [images, setImages] = useState<DriveFile[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
@@ -124,15 +126,7 @@ export function ScreenshotGallery() {
     };
 
     const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        return date.toLocaleString('sv-SE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
+        return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
     };
 
     // Apply date range filter

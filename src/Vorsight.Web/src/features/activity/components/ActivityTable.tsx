@@ -6,7 +6,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { format } from "date-fns";
+import { useSettings } from "@/context/SettingsContext";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
 
 interface ActivityTableProps {
@@ -14,6 +14,8 @@ interface ActivityTableProps {
 }
 
 export function ActivityTable({ activities }: ActivityTableProps) {
+    const { formatTimestamp } = useSettings();
+
     return (
         <div className="rounded-md border">
             <Table>
@@ -37,7 +39,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                         activities.map((activity) => (
                             <TableRow key={activity.id}>
                                 <TableCell>
-                                    {format(new Date(activity.timestamp), "MMM d, HH:mm:ss")}
+                                    {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
                                 </TableCell>
                                 <TableCell className="font-medium">{activity.username || '-'}</TableCell>
                                 <TableCell className="font-medium">{activity.process_name}</TableCell>
