@@ -7,7 +7,7 @@ namespace Vorsight.Agent.Services;
 
 public interface IActivityService
 {
-    Task CollectAndReportAsync(uint sessionId, CancellationToken cancellation Token = default);
+    Task CollectAndReportAsync(uint sessionId, CancellationToken cancellationToken = default);
 }
 
 public class ActivityService(IIpcService ipcService, IUserActivityMonitor activityMonitor) : IActivityService
