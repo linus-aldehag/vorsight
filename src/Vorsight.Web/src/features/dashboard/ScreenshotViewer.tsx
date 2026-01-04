@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Image as ImageIcon, Info } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useSWR from 'swr';
 import { cn } from '@/lib/utils';
 
@@ -16,9 +16,6 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
     const { formatTimestamp } = useSettings();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
-
-    // State for the authenticated image URL
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     const fetcher = async (url: string) => {
         const token = localStorage.getItem('auth_token');
@@ -36,44 +33,6 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
     );
 
     const latestScreenshot = screenshots?.[0];
-
-    // Fetch the actual image blob with authentication
-    useEffect(() => {
-        let active = true;
-        let objectUrl: string | null = null;
-
-        const loadAuthenticatedImage = async () => {
-            if (!latestScreenshot?.id) {
-                setPreviewUrl(null);
-                return;
-            }
-
-            try {
-                const token = localStorage.getItem('auth_token');
-                const res = await fetch(`/api/screenshots/${latestScreenshot.id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (res.ok && active) {
-                    const blob = await res.blob();
-                    objectUrl = URL.createObjectURL(blob);
-                    setPreviewUrl(objectUrl);
-                }
-            } catch (error) {
-                console.error('Failed to load screenshot image', error);
-            }
-        };
-
-        loadAuthenticatedImage();
-
-        return () => {
-            active = false;
-            // Cleanup object URL to avoid memory leaks
-            if (objectUrl) {
-                URL.revokeObjectURL(objectUrl);
-            }
-        };
-    }, [latestScreenshot?.id]);
 
     const handleCapture = async () => {
         if (!selectedMachine) return;
@@ -122,7 +81,7 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
                         <span>Latest Screenshot</span>
                         {latestScreenshot && (
                             <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
-                                {formatTimestamp(getSafeTimestamp(latestScreenshot.capture_time), { includeSeconds: true })}
+                                {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
                             </Badge>
                         )}
                     </div>
@@ -156,16 +115,12 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
                     </div>
                 ) : (
                     <div className="relative w-full h-full flex items-center justify-center group">
-                        {previewUrl ? (
-                            <img
-                                src={previewUrl}
-                                alt="Latest screenshot"
-                                className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                                onClick={() => setSelectedImage(previewUrl)}
-                            />
-                        ) : (
-                            <div className="animate-pulse bg-muted rounded w-full h-full min-h-[150px]" />
-                        )}
+                        <img
+                            src={`/api/media/${latestScreenshot.id}`}
+                            alt="Latest screenshot"
+                            className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
+                            onClick={() => setSelectedImage(`/api/media/${latestScreenshot.id}`)}
+                        />
                         <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                             Click to expand
                         </div>
