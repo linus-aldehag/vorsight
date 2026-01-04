@@ -30,17 +30,22 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Generate Version (CalVer)
+    - name: Get Version
       id: version
       run: |
-        # CalVer: YYYY.MM.DD.BUILD
-        DATE_VER=$(date +'%Y.%m.%d')
-        BUILD="${{ github.run_number }}"
-        VERSION="$DATE_VER.$BUILD"
+        # Read version from package.json (1.0.6)
+        RAW_VERSION=$(node -p "require('./src/Vorsight.Server/package.json').version")
+        
+        # Split Major.Minor
+        MAJOR=$(echo $RAW_VERSION | cut -d. -f1)
+        MINOR=$(echo $RAW_VERSION | cut -d. -f2)
+        
+        # New Version: Major.Minor.RunNumber
+        VERSION="$MAJOR.$MINOR.${{ github.run_number }}"
         
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "date_only=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
-        echo "Generated version: $VERSION"
+        echo "Using auto-incremented version: $VERSION"
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -49,27 +54,17 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        # Install dependencies first with original package.json
+        # Update package.json version temporarily for build
+        VERSION="${{ steps.version.outputs.version }}"
+        
         cd src/Vorsight.Web
+        npm version $VERSION --no-git-tag-version --allow-same-version
         npm ci
         cd ../..
         
         cd src/Vorsight.Server
+        npm version $VERSION --no-git-tag-version --allow-same-version
         npm ci --omit=dev
-        cd ../..
-
-    - name: Update Package Versions
-      run: |
-        VERSION="${{ steps.version.outputs.version }}"
-        
-        # Update Server package.json
-        cd src/Vorsight.Server
-        npm version $VERSION --no-git-tag-version --allow-same-version
-        cd ../..
-        
-        # Update Web package.json
-        cd src/Vorsight.Web
-        npm version $VERSION --no-git-tag-version --allow-same-version
         cd ../..
 
     - name: Build React Web App
