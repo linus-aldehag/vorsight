@@ -29,6 +29,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     const formatTimestamp = (date: Date | number | string, options: TimestampOptions = {}) => {
         const d = new Date(date);
+        if (isNaN(d.getTime())) {
+            return 'Invalid Date';
+        }
 
         let timeStr = '';
         if (timeFormat === '12h') {
