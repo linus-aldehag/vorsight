@@ -13,7 +13,8 @@ export function ScheduleManager() {
     const [agentSettings, setAgentSettings] = useState<AgentSettings>({
         screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
-        isMonitoringEnabled: true
+        isMonitoringEnabled: true,
+        isAuditEnabled: true
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -85,7 +86,8 @@ export function ScheduleManager() {
                 ...agentSettings,
                 screenshotIntervalSeconds: screenshotEnabled ? agentSettings.screenshotIntervalSeconds : 0,
                 pingIntervalSeconds: activityTrackingEnabled ? agentSettings.pingIntervalSeconds : 0,
-                isMonitoringEnabled: screenshotEnabled || activityTrackingEnabled
+                isMonitoringEnabled: screenshotEnabled || activityTrackingEnabled,
+                isAuditEnabled: agentSettings.isAuditEnabled
             };
             await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
         } catch (err) {
