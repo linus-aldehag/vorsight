@@ -49,19 +49,17 @@ public static class ApiEndpoints
 
 
 
-        app.MapPost("/api/system/shutdown", (
-            ICommandExecutor executor) =>
+        app.MapPost("/api/system/shutdown", () =>
         {
-            // Immediate shutdown, no delay, no message
-            var success = executor.RunCommandAsUser("shutdown", "/s /t 0");
+            // Initiate system shutdown (5 second delay to allow response to return)
+            var success = ShutdownHelper.TryInitiateShutdown(5, "Shutdown requested via Dashboard");
             return success ? Results.Ok(new { status = "Shutdown initiated" }) : Results.StatusCode(500);
         });
 
-        app.MapPost("/api/system/logout", (
-            ICommandExecutor executor) =>
+        app.MapPost("/api/system/logout", () =>
         {
-            // Log off current user
-            var success = executor.RunCommandAsUser("shutdown", "/l");
+            // Log off interactive user
+            var success = ShutdownHelper.TryForceLogoffInteractiveUser();
             return success ? Results.Ok(new { status = "Logout initiated" }) : Results.StatusCode(500);
         });
 
