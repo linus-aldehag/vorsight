@@ -85,10 +85,29 @@ public class Worker : BackgroundService
         {
             // Initialize components with granular error handling
             await TryStartComponent("SettingsManager", () => _settingsManager.InitializeAsync());
-            await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
             await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
             await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
             await TryStartComponent("ServerConnection", () => _serverConnection.InitializeAsync());
+            await TryStartComponent("SessionSummaryManager", () => _sessionSummaryManager.InitializeAsync());
+            await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
+
+            // Try to fetch initial schedule from server
+            try 
+            {
+                if (_serverConnection.ApiKey != null)
+                {
+                    _logger.LogInformation("Attempting to fetch initial schedule from server...");
+                    var scheduleJson = await _serverConnection.FetchScheduleJsonAsync();
+                    if (scheduleJson != null)
+                    {
+                        await _scheduleManager.UpdateScheduleFromJsonAsync(scheduleJson);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch initial schedule");
+            }
 
             // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
             if (_ipcServer.IsRunning) // Check if valid
@@ -107,7 +126,11 @@ public class Worker : BackgroundService
                 _logger.LogInformation("Schedule update event received - reloading from server");
                 try
                 {
-                    await _scheduleManager.ReloadScheduleFromServerAsync();
+                    var json = await _serverConnection.FetchScheduleJsonAsync();
+                    if (json != null)
+                    {
+                        await _scheduleManager.UpdateScheduleFromJsonAsync(json);
+                    }
                 }
                 catch (Exception ex)
                 {

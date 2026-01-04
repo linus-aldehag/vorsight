@@ -65,20 +65,9 @@ namespace Vorsight.Infrastructure.Scheduling
 
             try
             {
-                // Try to load from server first (if available)
-                if (_httpClient != null)
-                {
-                    var scheduleData = await FetchScheduleFromServerAsync();
-                    if (scheduleData != null)
-                    {
-                        _currentSchedule = ConvertToAccessSchedule(scheduleData);
-                        _logger.LogInformation("Loaded schedule from server (IsActive: {IsActive})", 
-                            _currentSchedule?.IsActive ?? false);
-                        return;
-                    }
-                }
+                // Only load from local file primarily
+                // Remote schedule is pushed via UpdateScheduleFromJsonAsync
                 
-                // Fallback to local file
                 if (File.Exists(_schedulePath))
                 {
                     var json = await File.ReadAllTextAsync(_schedulePath);
@@ -92,15 +81,39 @@ namespace Vorsight.Infrastructure.Scheduling
                 }
                 else
                 {
-                    _logger.LogInformation("No schedule found (server or file)");
+                    _logger.LogInformation("No schedule found (waiting for server update)");
                     Directory.CreateDirectory(Path.GetDirectoryName(_schedulePath)!);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error initializing schedule");
-                // Don't throw, just start empty
             }
+        }
+
+        public async Task UpdateScheduleFromJsonAsync(string json)
+        {
+             ThrowIfDisposed();
+             if (string.IsNullOrWhiteSpace(json) || json == "null") return;
+
+             try 
+             {
+                 var scheduleData = JsonSerializer.Deserialize<ScheduleDataDto>(json);
+                 if (scheduleData != null)
+                 {
+                     var newSchedule = ConvertToAccessSchedule(scheduleData);
+                     if (newSchedule != null)
+                     {
+                         _currentSchedule = newSchedule;
+                         await PersistScheduleAsync();
+                         _logger.LogInformation("Schedule updated from server JSON (Active: {IsActive})", _currentSchedule.IsActive);
+                     }
+                 }
+             }
+             catch (Exception ex)
+             {
+                 _logger.LogError(ex, "Error updating schedule from JSON");
+             }
         }
 
         public async Task<AccessSchedule> CreateScheduleAsync(AccessSchedule schedule)

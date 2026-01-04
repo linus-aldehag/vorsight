@@ -15,6 +15,7 @@ public interface IServerConnection
     Task SendAuditEventAsync(object auditEvent);
     Task SendScreenshotNotificationAsync(object screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
+    Task<string?> FetchScheduleJsonAsync();
     bool IsConnected { get; }
     string? ApiKey { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
@@ -302,6 +303,32 @@ public class ServerConnection : IServerConnection
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to upload file to server");
+            return null;
+        }
+    }
+
+    public async Task<string?> FetchScheduleJsonAsync()
+    {
+        if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
+            return null;
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/schedule?machineId={_machineId}");
+            request.Headers.Add("x-api-key", _apiKey);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to fetch schedule: {Status}", response.StatusCode);
+                return null;
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching schedule JSON");
             return null;
         }
     }
