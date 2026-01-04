@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Vorsight.Interop;
-using Vorsight.Interop;
+
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Scheduling;
 using Vorsight.Infrastructure.Identity;
