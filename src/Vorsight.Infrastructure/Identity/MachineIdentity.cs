@@ -2,7 +2,7 @@ using System.Management;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace Vorsight.Contracts.Identity;
+namespace Vorsight.Infrastructure.Identity;
 
 public static class MachineIdentity
 {

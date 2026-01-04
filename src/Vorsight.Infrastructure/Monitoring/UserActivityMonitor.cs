@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Vorsight.Interop;
+namespace Vorsight.Infrastructure.Monitoring;
 
 public struct ActivitySnapshot
 {

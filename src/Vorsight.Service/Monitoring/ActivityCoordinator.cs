@@ -4,6 +4,7 @@ using Vorsight.Interop;
 using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Server;
 using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Monitoring;
 
 namespace Vorsight.Service.Monitoring;
 

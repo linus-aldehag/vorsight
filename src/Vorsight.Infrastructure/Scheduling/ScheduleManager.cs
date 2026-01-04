@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Vorsight.Interop;
 using Vorsight.Contracts.Scheduling;
-using Vorsight.Contracts.Identity;
+using Vorsight.Infrastructure.Identity;
 
 namespace Vorsight.Infrastructure.Scheduling
 {
@@ -52,7 +52,7 @@ namespace Vorsight.Infrastructure.Scheduling
             {
                 _httpClient = httpClientFactory.CreateClient();
                 _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
-                _machineId = Vorsight.Contracts.Identity.MachineIdentity.GenerateMachineId();
+                _machineId = Vorsight.Infrastructure.Identity.MachineIdentity.GenerateMachineId();
                 _httpClient.BaseAddress = new Uri(_serverUrl);
             }
         }
