@@ -32,7 +32,7 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
             // Log locally for debugging
             Log.Debug("Activity: User='{Username}', Window='{Window}'", username, activeWindow);
 
-            await ipcService.SendMessageAsync(PipeMessage.MessageType.ActivityLog, activityData, sessionId, null, cancellationToken);
+            await ipcService.SendMessageAsync(PipeMessage.MessageType.Activity, activityData, sessionId, null, cancellationToken);
         }
         catch (Exception ex)
         {

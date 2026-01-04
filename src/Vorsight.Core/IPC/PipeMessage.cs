@@ -15,10 +15,7 @@ public class PipeMessage
         Screenshot = 1,
         ScreenshotRequest = 2,
         ShutdownCommand = 3,
-        PingRequest = 4,
-        PingResponse = 5,
-        ConfigurationUpdate = 6,
-        AuditLog = 7
+        Activity = 4
     }
 
     /// <summary>
@@ -41,27 +38,27 @@ public class PipeMessage
     /// </summary>
     public uint SessionId { get; set; }
 
-        /// <summary>
-        /// User SID associated with this message.
-        /// </summary>
-        public string? UserSid { get; set; }
+    /// <summary>
+    /// User SID associated with this message.
+    /// </summary>
+    public string? UserSid { get; set; }
 
-        /// <summary>
-        /// Payload data - can be image bytes, JSON config, etc.
-        /// For screenshots: raw PNG or JPEG bytes
-        /// For other messages: UTF-8 encoded JSON
-        /// </summary>
-        public byte[]? Payload { get; set; }
+    /// <summary>
+    /// Payload data - can be image bytes, JSON config, etc.
+    /// For screenshots: raw PNG or JPEG bytes
+    /// For other messages: UTF-8 encoded JSON
+    /// </summary>
+    public byte[]? Payload { get; set; }
 
-        /// <summary>
-        /// Size of the payload in bytes.
-        /// </summary>
-        public int PayloadSize => Payload?.Length ?? 0;
+    /// <summary>
+    /// Size of the payload in bytes.
+    /// </summary>
+    public int PayloadSize => Payload?.Length ?? 0;
 
-        /// <summary>
-        /// Optional metadata/properties dictionary (as JSON).
-        /// </summary>
-        public string? Metadata { get; set; }
+    /// <summary>
+    /// Optional metadata/properties dictionary (as JSON).
+    /// </summary>
+    public string? Metadata { get; set; }
 
     public PipeMessage()
     {
