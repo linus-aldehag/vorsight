@@ -9,6 +9,7 @@ namespace Vorsight.Service.Server;
 public interface IServerConnection
 {
     Task InitializeAsync();
+    Task EnsureConnectedAsync(CancellationToken cancellationToken);
     Task SendHeartbeatAsync(object state);
     Task SendActivityAsync(object activity);
     Task SendAuditEventAsync(object auditEvent);
@@ -63,7 +64,31 @@ public class ServerConnection : IServerConnection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize server connection");
+            _logger.LogError(ex, "Failed to initialize server connection (will retry in background)");
+        }
+    }
+
+    public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
+    {
+        if (_socket != null && _socket.Connected) return;
+
+        try 
+        {
+            _logger.LogInformation("Connection Watchdog: Attempting to connect to server...");
+            
+            // If socket is null or disposed, recreate it
+            if (_socket == null)
+            {
+                await ConnectWebSocketAsync();
+            }
+            else
+            {
+                await _socket.ConnectAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Connection Watchdog: Failed to connect ({Message})", ex.Message);
         }
     }
     

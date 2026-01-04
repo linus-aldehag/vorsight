@@ -183,6 +183,9 @@ public class Worker : BackgroundService
                 {
                     _logger.LogDebug("Service health check: OK");
                     
+                    // Ensure server connection
+                    await _serverConnection.EnsureConnectedAsync(cancellationToken);
+
                     // Update uptime
                     _uptimeMonitor.RecordHeartbeat();
 

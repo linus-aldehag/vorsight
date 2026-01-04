@@ -123,7 +123,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: server-v${{ steps.version.outputs.version }}
-        name: Linux Server v${{ steps.version.outputs.version }}
+        name: Linux Server v.${{ steps.version.outputs.version }}
         body: |
           ## Linux Server Package Release
           
