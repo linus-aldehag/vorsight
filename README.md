@@ -161,8 +161,7 @@ vorsight/
 ├── deploy/
 │   ├── windows/                # Windows installer (Inno Setup)
 │   └── linux/                  # Linux deployment scripts & docs
-├── .github/workflows/          # CI/CD automation
-└── .agent/workflows/           # Development workflows
+└── .github/workflows/          # CI/CD automation
 ```
 
 ## Configuration
