@@ -34,68 +34,48 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Generate Version (CalVer)
+    - name: Get Version
       id: version
       shell: pwsh
       run: |
-        # .NET-compatible CalVer: 1.YYMM.DD.BUILD
-        # Format: Major=1, Minor=YYMM, Patch=DD, Build=BUILD
-        $year = (Get-Date).ToString("yy")
-        $month = (Get-Date).ToString("MM")
-        $day = (Get-Date).ToString("dd")
-        $build = "${{ github.run_number }}"
+        $csproj = "src/Vorsight.Service/Vorsight.Service.csproj"
+        $xml = [xml](Get-Content $csproj)
+        # Parse 1.4.136 -> get 1.4
+        $rawVersion = $xml.Project.PropertyGroup.Version
+        $parts = $rawVersion.Split('.')
+        # Fallback if version is just "1.4"
+        $major = $parts[0]
+        $minor = if ($parts.Length -gt 1) { $parts[1] } else { "0" }
         
-        # Display version: YYYY.MM.DD.BUILD (for humans)
-        $displayVersion = (Get-Date).ToString("yyyy.MM.dd") + ".$build"
+        # New Version: Major.Minor.RunNumber
+        $buildNumber = "${{ github.run_number }}"
+        $version = "$major.$minor.$buildNumber"
         
-        # Assembly version: 1.YYMM.DD.BUILD (for .NET)
-        $minor = "$year$month"
-        $assemblyVersion = "1.$minor.$day.$build"
-        
-        echo "version=$displayVersion" >> $env:GITHUB_OUTPUT
-        echo "assembly_version=$assemblyVersion" >> $env:GITHUB_OUTPUT
+        echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "date_only=$(Get-Date -Format 'yyyy.MM.dd')" >> $env:GITHUB_OUTPUT
-        Write-Host "Display version: $displayVersion"
-        Write-Host "Assembly version: $assemblyVersion"
+        Write-Host "Using auto-incremented version: $version"
+
+        # Update Inno Setup script with this version
+        $innoScript = "deploy/windows/vorsight-setup.iss"
+        (Get-Content $innoScript) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$version`"" | Set-Content $innoScript
 
     - name: Update Assembly Version
       shell: pwsh
       run: |
-        $version = "${{ steps.version.outputs.assembly_version }}"
+        # Inject the computed version into the actual build files temporarily
+        $version = "${{ steps.version.outputs.version }}"
         
-        # Update Service project
-        $serviceCsproj = "src/Vorsight.Service/Vorsight.Service.csproj"
-        $content = Get-Content $serviceCsproj -Raw
-        if ($content -match '<Version>.*</Version>') {
-          $content = $content -replace '<Version>.*</Version>', "<Version>$version</Version>"
-        } else {
-          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <Version>$version</Version>"
+        # Helper function
+        function Update-Csproj ($path, $ver) {
+            $content = Get-Content $path -Raw
+            $content = $content -replace "<Version>.*</Version>", "<Version>$ver</Version>"
+            $content = $content -replace "<AssemblyVersion>.*</AssemblyVersion>", "<AssemblyVersion>$ver</AssemblyVersion>"
+            $content = $content -replace "<FileVersion>.*</FileVersion>", "<FileVersion>$ver</FileVersion>"
+            Set-Content $path $content
         }
-        if ($content -match '<AssemblyVersion>.*</AssemblyVersion>') {
-          $content = $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version</AssemblyVersion>"
-        } else {
-          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <AssemblyVersion>$version</AssemblyVersion>"
-        }
-        Set-Content $serviceCsproj $content
         
-        # Update Agent project
-        $agentCsproj = "src/Vorsight.Agent/Vorsight.Agent.csproj"
-        $content = Get-Content $agentCsproj -Raw
-        if ($content -match '<Version>.*</Version>') {
-          $content = $content -replace '<Version>.*</Version>', "<Version>$version</Version>"
-        } else {
-          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <Version>$version</Version>"
-        }
-        if ($content -match '<AssemblyVersion>.*</AssemblyVersion>') {
-          $content = $content -replace '<AssemblyVersion>.*</AssemblyVersion>', "<AssemblyVersion>$version</AssemblyVersion>"
-        } else {
-          $content = $content -replace '(<PropertyGroup>)', "`$1`n    <AssemblyVersion>$version</AssemblyVersion>"
-        }
-        Set-Content $agentCsproj $content
-        
-        # Update Inno Setup script
-        $innoScript = "deploy/windows/vorsight-setup.iss"
-        (Get-Content $innoScript) -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"${{ steps.version.outputs.version }}`"" | Set-Content $innoScript
+        Update-Csproj "src/Vorsight.Service/Vorsight.Service.csproj" $version
+        Update-Csproj "src/Vorsight.Agent/Vorsight.Agent.csproj" $version
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4

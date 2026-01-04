@@ -9,6 +9,9 @@
     <SupportedOSPlatform>windows</SupportedOSPlatform>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <Version>1.4.136</Version>
+    <AssemblyVersion>1.4.136</AssemblyVersion>
+    <FileVersion>1.4.136</FileVersion>
   </PropertyGroup>
 
   <!-- Release configuration: optimized, no debug symbols -->
