@@ -24,7 +24,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
 
 ; Default installation directory
-DefaultDirName={autopf}\Vörsight
+DefaultDirName={autopf}\Vorsight
 
 ; Privileges - Must be admin for Windows Service installation
 ; (Windows services cannot be installed per-user, only system-wide)
@@ -58,9 +58,9 @@ Source: "..\..\src\Vorsight.Service\appsettings.json"; DestDir: "{app}"; Flags: 
 
 [Dirs]
 ; Create directories for runtime data
-Name: "{commonappdata}\Vörsight"
-Name: "{commonappdata}\Vörsight\logs"
-Name: "{commonappdata}\Vörsight\screenshots"
+Name: "{commonappdata}\Vorsight"
+Name: "{commonappdata}\Vorsight\logs"
+Name: "{commonappdata}\Vorsight\screenshots"
 
 [Code]
 var
@@ -250,4 +250,4 @@ Filename: "sc"; Parameters: "start VorsightService"; StatusMsg: "Starting servic
 
 [UninstallDelete]
 ; Clean up runtime data
-Type: filesandordirs; Name: "{commonappdata}\Vörsight"
+Type: filesandordirs; Name: "{commonappdata}\Vorsight"
