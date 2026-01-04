@@ -117,8 +117,9 @@ export const VorsightApi = {
         return response.json();
     },
 
-    async getScreenshots(machineId: string, limit: number = 20): Promise<DriveFile[]> {
-        const response = await fetch(`${BASE_URL}/screenshots/${machineId}?limit=${limit}`, { headers: getAuthHeaders() });
+    async getScreenshots(machineId: string, limit: number = 30, after?: string): Promise<PaginatedScreenshots> {
+        const afterParam = after ? `&after=${after}` : '';
+        const response = await fetch(`${BASE_URL}/screenshots/${machineId}?limit=${limit}${afterParam}`, { headers: getAuthHeaders() });
         if (!response.ok) throw new Error('Failed to fetch screenshots');
         return response.json();
     },
@@ -183,6 +184,12 @@ export interface DriveFile {
     webViewLink: string;
     webContentLink?: string;
     thumbnailLink?: string;
+}
+
+export interface PaginatedScreenshots {
+    screenshots: DriveFile[];
+    hasMore: boolean;
+    cursor: string | null;
 }
 
 export interface ActivitySummary {
