@@ -201,7 +201,7 @@ try
 
     // Initialize Global Exception Handling
     var sessionManager = app.Services.GetRequiredService<ISessionSummaryManager>();
-    await sessionManager.InitializeAsync(); // Check for previous crashes
+    // Session initialization moved to Worker.cs to ensure ServerConnection is ready
     
     AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
     {
