@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { ActivitySnapshot } from '@/api/client';
 import { Clock, Activity as ActivityIcon } from 'lucide-react';
+import { useSettings } from '@/context/SettingsContext';
 import { cn } from '@/lib/utils';
 
 interface ActivityMonitorProps {
@@ -10,14 +11,11 @@ interface ActivityMonitorProps {
 }
 
 export function ActivityMonitor({ activity, isDisabled }: ActivityMonitorProps) {
+    const { formatTimestamp } = useSettings();
     // ActivitySnapshot has: activeWindowTitle, timeSinceLastInput, timestamp
     const windowTitle = activity?.activeWindowTitle || 'No activity';
     const timestamp = activity?.timestamp
-        ? new Date(activity.timestamp).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        })
+        ? formatTimestamp(activity.timestamp, { includeSeconds: true })
         : 'Never';
 
     return (

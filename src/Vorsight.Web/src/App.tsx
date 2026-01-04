@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { LoginPage } from './components/LoginPage';
 import { MainLayout } from './components/Layout/MainLayout';
 import { SettingsLayout } from './components/Layout/SettingsLayout';
@@ -8,7 +9,9 @@ import { SettingsLayout } from './components/Layout/SettingsLayout';
 export function App() {
     return (
         <AuthProvider>
-            <AppContent />
+            <SettingsProvider>
+                <AppContent />
+            </SettingsProvider>
         </AuthProvider>
     );
 }
