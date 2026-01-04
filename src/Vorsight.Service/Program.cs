@@ -15,9 +15,17 @@ using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Auditing;
 
 // Configure Serilog for structured logging
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(AppContext.BaseDirectory)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true)
+    .AddEnvironmentVariables()
+    .Build();
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
-    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Debug) // Enable Microsoft logs for debugging startup
+    .ReadFrom.Configuration(configuration)
+    .MinimumLevel.Information() // Default if not in config
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information) 
     .WriteTo.File(
         path: Path.Combine(Vorsight.Infrastructure.IO.PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
