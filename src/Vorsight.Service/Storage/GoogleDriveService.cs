@@ -158,57 +158,116 @@ public class GoogleDriveService : IGoogleDriveService
 
     private async Task<string> InternalUploadFileAsync(string filePath, CancellationToken cancellationToken)
     {
-        // Get credentials from server
-        var accessToken = await GetAccessTokenAsync(cancellationToken);
-
-        // Create Drive service with server-provided credentials
-        var credential = GoogleCredential.FromAccessToken(accessToken);
-        var driveService = new DriveService(new BaseClientService.Initializer
+        return await ExecuteWithRetryAsync(async (accessToken) =>
         {
-            HttpClientInitializer = credential,
-            ApplicationName = "Vorsight"
-        });
+            // Create Drive service with server-provided credentials
+            var credential = GoogleCredential.FromAccessToken(accessToken);
+            var driveService = new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "Vorsight"
+            });
 
-        // Use /Vorsight/MachineName/YYYY-MM-DD structure
-        var machineName = Environment.MachineName;
-        var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-        var folderPath = $"Vorsight/{machineName}/{dateFolder}";
+            // Use /Vorsight/MachineName/YYYY-MM-DD structure
+            var machineName = Environment.MachineName;
+            var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
+            var folderPath = $"Vorsight/{machineName}/{dateFolder}";
 
-        // Create all necessary folders
-        var folderId = await GetOrCreateFolderAsync(driveService, folderPath, cancellationToken);
+            // Create all necessary folders
+            var folderId = await GetOrCreateFolderAsync(driveService, folderPath, cancellationToken);
 
-        _logger.LogInformation("Starting upload of file: {FilePath} to folder: {FolderPath} ({FolderId})", filePath, folderPath, folderId);
+            _logger.LogInformation("Starting upload of file: {FilePath} to folder: {FolderPath} ({FolderId})", filePath, folderPath, folderId);
 
-        var fileMetadata = new DriveFile
+            var fileMetadata = new DriveFile
+            {
+                Name = Path.GetFileName(filePath),
+                Description = $"Screenshot from {Environment.MachineName} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
+                Parents = [folderId]
+            };
+
+            await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var request = driveService.Files.Create(fileMetadata, stream, "image/png");
+            request.Fields = "id, webViewLink";
+
+            var response = await request.UploadAsync(cancellationToken);
+
+            if (response.Status == Google.Apis.Upload.UploadStatus.Completed)
+            {
+                var file = request.ResponseBody;
+                _logger.LogInformation("File uploaded successfully. ID: {FileId}, Link: {Link}",
+                    file.Id, file.WebViewLink);
+                return file.Id;
+            }
+            else if (response.Exception != null)
+            {
+                // Rethrow specific exceptions to trigger retry if applicable
+                // UploadAsync swallows exceptions into response.Exception
+                throw response.Exception;
+            }
+            else
+            {
+                _logger.LogError("Upload failed with status: {Status}", response.Status);
+                throw new InvalidOperationException($"Upload failed with status: {response.Status}");
+            }
+        }, cancellationToken);
+    }
+
+    private async Task<T> ExecuteWithRetryAsync<T>(Func<string, Task<T>> action, CancellationToken cancellationToken)
+    {
+        bool retried = false;
+        while (true)
         {
-            Name = Path.GetFileName(filePath),
-            Description = $"Screenshot from {Environment.MachineName} at {DateTime.Now:yyyy-MM-dd HH:mm:ss}",
-            Parents = [folderId]
-        };
+            string accessToken;
+            try
+            {
+                accessToken = await GetAccessTokenAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get access token");
+                throw;
+            }
 
-        await using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var request = driveService.Files.Create(fileMetadata, stream, "image/png");
-        request.Fields = "id, webViewLink";
-
-        var response = await request.UploadAsync(cancellationToken);
-
-        if (response.Status == Google.Apis.Upload.UploadStatus.Completed)
-        {
-            var file = request.ResponseBody;
-            _logger.LogInformation("File uploaded successfully. ID: {FileId}, Link: {Link}",
-                file.Id, file.WebViewLink);
-            return file.Id;
+            try
+            {
+                return await action(accessToken);
+            }
+            catch (Google.GoogleApiException ex) when (ex.HttpStatusCode == System.Net.HttpStatusCode.Unauthorized && !retried)
+            {
+                _logger.LogWarning("Got 401 Unauthorized from Google API. Invalidating cached access token and retrying...");
+                InvalidateToken();
+                retried = true;
+                // Loop will continue and call GetAccessTokenAsync again, which will fetch a fresh token
+            }
+            catch (Exception ex) when (!retried && IsAuthFailure(ex))
+            {
+                _logger.LogWarning(ex, "Got potential auth failure ({Message}). Invalidating cached access token and retrying...", ex.Message);
+                InvalidateToken();
+                retried = true;
+            }
+            catch (Exception)
+            {
+                // If it's not an auth error or we already retried, let it bubble up
+                throw;
+            }
         }
-        else if (response.Exception != null)
-        {
-            _logger.LogError(response.Exception, "Upload failed with exception. Status: {Status}", response.Status);
-            throw new InvalidOperationException($"Upload failed: {response.Exception.Message}", response.Exception);
-        }
-        else
-        {
-            _logger.LogError("Upload failed with status: {Status}", response.Status);
-            throw new InvalidOperationException($"Upload failed with status: {response.Status}");
-        }
+    }
+
+    private bool IsAuthFailure(Exception ex)
+    {
+        // Check for other common shapes of auth errors if the SDK doesn't always throw GoogleApiException
+        // Sometimes wrapped in AggregateException or other wrappers
+        var baseEx = ex.GetBaseException(); 
+        if (baseEx is Google.GoogleApiException gaEx && gaEx.HttpStatusCode == System.Net.HttpStatusCode.Unauthorized)
+            return true;
+            
+        return false;
+    }
+
+    private void InvalidateToken()
+    {
+        _cachedAccessToken = null;
+        _tokenExpiresAt = DateTime.MinValue;
     }
 
     private async Task<string> GetAccessTokenAsync(CancellationToken cancellationToken)
@@ -308,30 +367,32 @@ public class GoogleDriveService : IGoogleDriveService
     {
         try
         {
-            var accessToken = await GetAccessTokenAsync(CancellationToken.None);
-            var credential = GoogleCredential.FromAccessToken(accessToken);
-            var driveService = new DriveService(new BaseClientService.Initializer
+            return await ExecuteWithRetryAsync(async (accessToken) =>
             {
-                HttpClientInitializer = credential,
-                ApplicationName = "Vorsight"
-            });
+                var credential = GoogleCredential.FromAccessToken(accessToken);
+                var driveService = new DriveService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Vorsight"
+                });
 
-            var listRequest = driveService.Files.List();
-            listRequest.Q = "mimeType = 'image/png' and name contains 'screenshot' and trashed = false";
-            listRequest.OrderBy = "createdTime desc";
-            listRequest.PageSize = 1;
-            listRequest.Fields = "files(id, name)";
+                var listRequest = driveService.Files.List();
+                listRequest.Q = "mimeType = 'image/png' and name contains 'screenshot' and trashed = false";
+                listRequest.OrderBy = "createdTime desc";
+                listRequest.PageSize = 1;
+                listRequest.Fields = "files(id, name)";
 
-            var files = await listRequest.ExecuteAsync();
-            var latestFile = files.Files?.FirstOrDefault();
+                var files = await listRequest.ExecuteAsync();
+                var latestFile = files.Files?.FirstOrDefault();
 
-            if (latestFile == null) return null;
+                if (latestFile == null) return null;
 
-            var stream = new MemoryStream();
-            var getRequest = driveService.Files.Get(latestFile.Id);
-            await getRequest.DownloadAsync(stream);
-            stream.Position = 0;
-            return stream;
+                var stream = new MemoryStream();
+                var getRequest = driveService.Files.Get(latestFile.Id);
+                await getRequest.DownloadAsync(stream);
+                stream.Position = 0;
+                return stream;
+            }, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -344,41 +405,43 @@ public class GoogleDriveService : IGoogleDriveService
     {
         try
         {
-            var accessToken = await GetAccessTokenAsync(CancellationToken.None);
-            var credential = GoogleCredential.FromAccessToken(accessToken);
-            var driveService = new DriveService(new BaseClientService.Initializer
+            return await ExecuteWithRetryAsync(async (accessToken) =>
             {
-                HttpClientInitializer = credential,
-                ApplicationName = "Vorsight"
-            });
+                var credential = GoogleCredential.FromAccessToken(accessToken);
+                var driveService = new DriveService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Vorsight"
+                });
 
-            // Find the Vorsight root folder first
-            var folderRequest = driveService.Files.List();
-            folderRequest.Q = "mimeType = 'application/vnd.google-apps.folder' and name = 'Vorsight' and trashed = false";
-            folderRequest.Fields = "files(id)";
-            var folders = await folderRequest.ExecuteAsync();
+                // Find the Vorsight root folder first
+                var folderRequest = driveService.Files.List();
+                folderRequest.Q = "mimeType = 'application/vnd.google-apps.folder' and name = 'Vorsight' and trashed = false";
+                folderRequest.Fields = "files(id)";
+                var folders = await folderRequest.ExecuteAsync();
 
-            if (folders.Files?.Any() != true)
-            {
-                _logger.LogWarning("Vorsight folder not found in Google Drive");
-                return new List<DriveFile>();
-            }
+                if (folders.Files?.Any() != true)
+                {
+                    _logger.LogWarning("Vorsight folder not found in Google Drive");
+                    return new List<DriveFile>();
+                }
 
-            var vorsightFolderId = folders.Files[0].Id;
-            var allFolders = await GetAllSubfoldersAsync(driveService, vorsightFolderId);
-            allFolders.Insert(0, vorsightFolderId);
+                var vorsightFolderId = folders.Files[0].Id;
+                var allFolders = await GetAllSubfoldersAsync(driveService, vorsightFolderId);
+                allFolders.Insert(0, vorsightFolderId);
 
-            var folderQueries = allFolders.Select(f => $"'{f}' in parents");
-            var query = $"mimeType = 'image/png' and ({string.Join(" or ", folderQueries)}) and trashed = false";
+                var folderQueries = allFolders.Select(f => $"'{f}' in parents");
+                var query = $"mimeType = 'image/png' and ({string.Join(" or ", folderQueries)}) and trashed = false";
 
-            var listRequest = driveService.Files.List();
-            listRequest.Q = query;
-            listRequest.OrderBy = "createdTime desc";
-            listRequest.PageSize = limit;
-            listRequest.Fields = "files(id, name, createdTime, webViewLink, webContentLink, thumbnailLink)";
+                var listRequest = driveService.Files.List();
+                listRequest.Q = query;
+                listRequest.OrderBy = "createdTime desc";
+                listRequest.PageSize = limit;
+                listRequest.Fields = "files(id, name, createdTime, webViewLink, webContentLink, thumbnailLink)";
 
-            var result = await listRequest.ExecuteAsync();
-            return result.Files?.ToList() ?? new List<DriveFile>();
+                var result = await listRequest.ExecuteAsync();
+                return result.Files?.ToList() ?? new List<DriveFile>();
+            }, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -391,19 +454,21 @@ public class GoogleDriveService : IGoogleDriveService
     {
         try
         {
-            var accessToken = await GetAccessTokenAsync(CancellationToken.None);
-            var credential = GoogleCredential.FromAccessToken(accessToken);
-            var driveService = new DriveService(new BaseClientService.Initializer
+            return await ExecuteWithRetryAsync(async (accessToken) =>
             {
-                HttpClientInitializer = credential,
-                ApplicationName = "Vorsight"
-            });
+                var credential = GoogleCredential.FromAccessToken(accessToken);
+                var driveService = new DriveService(new BaseClientService.Initializer
+                {
+                    HttpClientInitializer = credential,
+                    ApplicationName = "Vorsight"
+                });
 
-            var request = driveService.Files.Get(fileId);
-            var stream = new MemoryStream();
-            await request.DownloadAsync(stream);
-            stream.Position = 0;
-            return stream;
+                var request = driveService.Files.Get(fileId);
+                var stream = new MemoryStream();
+                await request.DownloadAsync(stream);
+                stream.Position = 0;
+                return stream;
+            }, CancellationToken.None);
         }
         catch (Exception ex)
         {
