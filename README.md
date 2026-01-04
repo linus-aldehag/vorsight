@@ -139,7 +139,7 @@ Download the latest `VorsightSetup.exe` from [GitHub Releases](../../releases):
 
 1. Run the installer
 2. Configure server connection:
-   - **Server Address** (e.g., `raspberrypi.local` or IP address)
+   - **Server Address** (e.g., `server-hostname` or IP address)
    - **Server Port** (default: `3000`)
    - **Service Key** (obtained from Linux server installation output)
 3. Complete installation
@@ -151,10 +151,11 @@ The service starts automatically and begins monitoring.
 ```
 vorsight/
 ├── src/
-│   ├── Vorsight.Service/      # Windows Service (C#) - "The Brain"
+│   ├── Vorsight.Service/       # Windows Service (C#) - "The Brain"
 │   ├── Vorsight.Agent/         # User Session Agent (C#) - "The Eye"
-│   ├── Vorsight.Core/          # Shared libraries
-│   ├── Vorsight.Native/        # Windows P/Invoke wrappers
+│   ├── Vorsight.Contracts/     # Shared contracts
+│   ├── Vorsight.Infrastructure/# Shared infrastructure & logic
+│   ├── Vorsight.Interop/       # Windows P/Invoke wrappers
 │   ├── Vorsight.Server/        # Node.js API server
 │   └── Vorsight.Web/           # React web dashboard
 ├── deploy/
@@ -229,7 +230,15 @@ This keeps the lightweight Node.js server focused on coordination and authentica
 
 If your server is not publicly accessible (e.g., local network, Raspberry Pi), you'll need to set up OAuth differently:
 
-**Option 1: SSH Tunnel (Recommended)**
+**Option 1: Manual URL Trick (Simplest)**
+
+1. Start the OAuth flow from the web UI.
+2. Google will redirect you to `http://localhost:3000/...` which will fail (connection refused).
+3. Copy the full URL from your browser address bar.
+4. Replace `localhost` with your server's IP address (e.g., `192.168.1.100`) and go to the new URL.
+5. The server will receive the code and complete the setup.
+
+**Option 2: SSH Tunnel (Recommended)**
 
 1. Create an SSH tunnel from your local machine:
    ```bash
@@ -239,7 +248,7 @@ If your server is not publicly accessible (e.g., local network, Raspberry Pi), y
 3. Access the web UI via `http://localhost:3000` on your local machine
 4. Complete OAuth flow - it will work through the tunnel
 
-**Option 2: Temporary Public Access**
+**Option 3: Temporary Public Access**
 
 1. Use a temporary tunnel service (e.g., ngrok, cloudflared):
    ```bash
@@ -250,7 +259,7 @@ If your server is not publicly accessible (e.g., local network, Raspberry Pi), y
 3. Access web UI via ngrok URL and complete OAuth
 4. After OAuth is complete, you can close the tunnel
 
-**Option 3: Update Redirect URI**
+**Option 4: Update Redirect URI**
 
 1. Set up OAuth with your actual access method (VPN, Tailscale, local domain)
 2. Add appropriate redirect URI in Google Cloud Console
