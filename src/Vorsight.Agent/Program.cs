@@ -3,6 +3,7 @@ using Serilog;
 using Vorsight.Agent.Cli;
 using Vorsight.Agent.Services;
 using Vorsight.Interop;
+using Vorsight.Infrastructure.Monitoring;
 
 namespace Vorsight.Agent;
 

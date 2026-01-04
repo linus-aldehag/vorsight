@@ -2,6 +2,7 @@ using Serilog;
 using System.Runtime.InteropServices;
 using Vorsight.Contracts.IPC;
 using Vorsight.Interop;
+using Vorsight.Infrastructure.Monitoring;
 
 namespace Vorsight.Agent.Services;
 

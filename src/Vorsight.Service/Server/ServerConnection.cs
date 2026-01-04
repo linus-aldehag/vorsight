@@ -1,6 +1,6 @@
 using System.Text.Json;
 using SocketIOClient;
-using Vorsight.Contracts.Identity;
+using Vorsight.Infrastructure.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
