@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Vorsight.Contracts.Audit;
 using Vorsight.Contracts.IPC;
 using Vorsight.Contracts.Scheduling;
@@ -109,6 +110,9 @@ public class Worker : BackgroundService
                 _logger.LogError(ex, "Failed to fetch initial schedule");
             }
 
+            // Try to fetch initial settings
+            await FetchAndApplySettingsAsync();
+
             // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
             if (_ipcServer.IsRunning) // Check if valid
             {
@@ -139,9 +143,10 @@ public class Worker : BackgroundService
             };
 
             // Hook up settings updates
-            _serverConnection.SettingsUpdateReceived += (sender, args) =>
+            _serverConnection.SettingsUpdateReceived += async (sender, args) =>
             {
-                _logger.LogInformation("Settings update event received - settings will be refreshed on next poll");
+                _logger.LogInformation("Settings update event received - reloading from server");
+                await FetchAndApplySettingsAsync();
             };
 
             // Hook up audit events
@@ -195,8 +200,16 @@ public class Worker : BackgroundService
             // Start enforcement
             await TryStartComponent("ScheduleManager Enforcement", () => _scheduleManager.StartEnforcementAsync());
 
-            // Start audit monitoring
-            await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync());
+            // Start audit monitoring (respecting settings)
+            var currentSettings = await _settingsManager.GetSettingsAsync();
+            if (currentSettings.IsAuditEnabled)
+            {
+                await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync());
+            }
+            else
+            {
+                _logger.LogInformation("Audit monitoring disabled by settings on startup");
+            }
 
             _logger.LogInformation("Vörsight Service initialized successfully");
 
@@ -365,5 +378,54 @@ public class Worker : BackgroundService
             "Agent session disconnected: SessionId={SessionId}, Reason={Reason}",
             e.SessionId,
             e.Reason ?? "normal");
+    }
+
+    private async Task FetchAndApplySettingsAsync()
+    {
+        try
+        {
+            var json = await _serverConnection.FetchSettingsJsonAsync();
+            if (json != null)
+            {
+                var settings = JsonSerializer.Deserialize<AgentSettings>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (settings != null)
+                {
+                    await _settingsManager.UpdateSettingsAsync(settings);
+                    await ApplySettingsAsync(settings);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch and apply settings");
+        }
+    }
+
+    private async Task ApplySettingsAsync(AgentSettings settings)
+    {
+        try
+        {
+            // Apply Audit Settings
+            if (settings.IsAuditEnabled)
+            {
+                if (!_auditManager.IsMonitoring)
+                {
+                    _logger.LogInformation("Enabling Audit Monitoring based on settings");
+                    await _auditManager.StartMonitoringAsync();
+                }
+            }
+            else
+            {
+                if (_auditManager.IsMonitoring)
+                {
+                    _logger.LogInformation("Disabling Audit Monitoring based on settings");
+                    await _auditManager.StopMonitoringAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply settings");
+        }
     }
 }
