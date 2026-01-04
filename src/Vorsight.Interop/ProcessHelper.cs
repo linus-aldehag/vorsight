@@ -75,36 +75,61 @@ namespace Vorsight.Interop
             out uint processId)
         {
             processId = 0;
+            IntPtr lpEnvironment = IntPtr.Zero;
+            bool envCreated = false;
 
-            var startupInfo = new ProcessInterop.STARTUPINFO
+            try
             {
-                cb = (uint)Marshal.SizeOf(typeof(ProcessInterop.STARTUPINFO)),
-                lpDesktop = "winsta0\\default",
-                dwFlags = 0
-            };
+                if (!ProcessInterop.CreateEnvironmentBlock(out lpEnvironment, userToken, false))
+                {
+                    var err = Marshal.GetLastWin32Error();
+                    System.Diagnostics.Debug.WriteLine($"CreateEnvironmentBlock failed: {err}");
+                    // Fallback to parent environment if creation fails? 
+                    // Or keep it null/zero which implies parent (Service/System) environment.
+                    // We'll proceed with zero but it is suboptimal.
+                }
+                else
+                {
+                    envCreated = true;
+                }
 
-            if (!ProcessInterop.CreateProcessAsUser(
-                userToken,
-                applicationPath,
-                commandLine,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                false,
-                ProcessInterop.CREATE_UNICODE_ENVIRONMENT | ProcessInterop.NORMAL_PRIORITY_CLASS | ProcessInterop.CREATE_NO_WINDOW,
-                IntPtr.Zero,
-                workingDirectory,
-                ref startupInfo,
-                out var processInfo))
-            {
-                var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"CreateProcessAsUser failed: {err}");
-                return false;
+                var startupInfo = new ProcessInterop.STARTUPINFO
+                {
+                    cb = (uint)Marshal.SizeOf(typeof(ProcessInterop.STARTUPINFO)),
+                    lpDesktop = "winsta0\\default",
+                    dwFlags = 0
+                };
+
+                if (!ProcessInterop.CreateProcessAsUser(
+                    userToken,
+                    applicationPath,
+                    commandLine,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    false,
+                    ProcessInterop.CREATE_UNICODE_ENVIRONMENT | ProcessInterop.NORMAL_PRIORITY_CLASS | ProcessInterop.CREATE_NO_WINDOW,
+                    lpEnvironment,
+                    workingDirectory,
+                    ref startupInfo,
+                    out var processInfo))
+                {
+                    var err = Marshal.GetLastWin32Error();
+                    System.Diagnostics.Debug.WriteLine($"CreateProcessAsUser failed: {err}");
+                    return false;
+                }
+
+                processId = processInfo.dwProcessId;
+                ProcessInterop.CloseHandle(processInfo.hProcess);
+                ProcessInterop.CloseHandle(processInfo.hThread);
+                return true;
             }
-
-            processId = processInfo.dwProcessId;
-            ProcessInterop.CloseHandle(processInfo.hProcess);
-            ProcessInterop.CloseHandle(processInfo.hThread);
-            return true;
+            finally
+            {
+                if (envCreated && lpEnvironment != IntPtr.Zero)
+                {
+                    ProcessInterop.DestroyEnvironmentBlock(lpEnvironment);
+                }
+            }
         }
 
         /// <summary>
