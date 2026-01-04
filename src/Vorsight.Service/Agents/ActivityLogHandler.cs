@@ -17,7 +17,7 @@ public class ActivityLogHandler
         _logger = logger;
     }
 
-    public void HandleAuditLog(uint sessionId, PipeMessage message)
+    public void HandleActivity(uint sessionId, PipeMessage message)
     {
         _logger.LogInformation(
             "Audit log from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",

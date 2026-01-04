@@ -43,12 +43,8 @@ public class IpcMessageRouter : IIpcMessageRouter
                     await _screenshotHandler.HandleScreenshotMessageAsync(e.SessionId, e.Message);
                     break;
 
-                case PipeMessage.MessageType.PingResponse:
-                    HandlePingResponse(e.SessionId, e.Message);
-                    break;
-
-                case PipeMessage.MessageType.AuditLog:
-                    _activityLogHandler.HandleAuditLog(e.SessionId, e.Message);
+                case PipeMessage.MessageType.Activity:
+                    _activityLogHandler.HandleActivity(e.SessionId, e.Message);
                     break;
 
                 default:
@@ -60,14 +56,5 @@ public class IpcMessageRouter : IIpcMessageRouter
         {
             _logger.LogError(ex, "Error processing message from session {SessionId}", e.SessionId);
         }
-    }
-
-    private void HandlePingResponse(uint sessionId, PipeMessage message)
-    {
-        _logger.LogDebug(
-            "Heartbeat response from session {SessionId}: ID={MessageId}, Time={CreatedUtc}",
-            sessionId,
-            message.MessageId,
-            message.CreatedUtc);
     }
 }

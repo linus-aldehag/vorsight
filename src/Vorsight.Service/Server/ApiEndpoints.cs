@@ -213,6 +213,3 @@ public static class ApiEndpoints
         });
     }
 }
-
-
-public record PingRequest(string Host); // Kept for legacy compatibility if needed, but not mapped
