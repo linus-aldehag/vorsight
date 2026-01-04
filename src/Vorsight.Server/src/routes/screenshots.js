@@ -66,16 +66,33 @@ router.get('/latest', (req, res) => {
     }
 });
 
-// Get screenshots for a machine
+// Get screenshots for a machine with cursor-based pagination
 router.get('/:machineId', (req, res) => {
     try {
-        const { limit = 20 } = req.query;
-        const screenshots = db.prepare(`
-      SELECT * FROM screenshots 
-      WHERE machine_id = ? 
-      ORDER BY capture_time DESC 
-      LIMIT ?
-    `).all(req.params.machineId, parseInt(limit));
+        const { limit = 30, after } = req.query;
+        const machineId = req.params.machineId;
+
+        let query, params;
+        if (after) {
+            // Fetch screenshots BEFORE this ID (since we order DESC by capture_time)
+            query = `
+                SELECT * FROM screenshots 
+                WHERE machine_id = ? AND id < ? 
+                ORDER BY capture_time DESC 
+                LIMIT ?
+            `;
+            params = [machineId, parseInt(after), parseInt(limit)];
+        } else {
+            query = `
+                SELECT * FROM screenshots 
+                WHERE machine_id = ? 
+                ORDER BY capture_time DESC 
+                LIMIT ?
+            `;
+            params = [machineId, parseInt(limit)];
+        }
+
+        const screenshots = db.prepare(query).all(...params);
 
         // Transform to match DriveFile interface
         const transformed = screenshots.map(s => ({
@@ -83,10 +100,18 @@ router.get('/:machineId', (req, res) => {
             name: s.file_name || `screenshot_${s.capture_time}.png`,
             createdTime: s.capture_time,
             size: s.file_size || 0,
-            mimeType: 'image/png'
+            mimeType: 'image/png',
+            webViewLink: '',
         }));
 
-        res.json(transformed);
+        // Check if there are more screenshots
+        const hasMore = screenshots.length === parseInt(limit);
+
+        res.json({
+            screenshots: transformed,
+            hasMore,
+            cursor: transformed.length > 0 ? transformed[transformed.length - 1].id : null
+        });
     } catch (error) {
         console.error('Get screenshots error:', error);
         res.status(500).json({ error: 'Failed to fetch screenshots' });

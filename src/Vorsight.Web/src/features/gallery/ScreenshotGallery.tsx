@@ -1,20 +1,71 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Switch } from '../../components/ui/switch';
-import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle, ImageOff } from 'lucide-react';
+import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle, ImageOff, Loader2 } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
+import { Virtuoso } from 'react-virtuoso';
+
+// Screenshot Card Component
+interface ScreenshotCardProps {
+    screenshot: DriveFile;
+    onImageClick: (img: DriveFile) => void;
+    onImageError: (imgId: string) => void;
+    failedImages: Set<string>;
+    formatDate: (dateStr: string) => string;
+}
+
+function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, formatDate }: ScreenshotCardProps) {
+    return (
+        <Card
+            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
+            onClick={() => onImageClick(screenshot)}
+        >
+            <div className="aspect-video relative bg-black">
+                {failedImages.has(screenshot.id) ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/20">
+                        <ImageOff className="text-muted-foreground" size={32} />
+                        <span className="text-xs text-muted-foreground">File not found</span>
+                    </div>
+                ) : (
+                    <img
+                        src={`/api/media/${screenshot.id}`}
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        alt={screenshot.name}
+                        onError={() => onImageError(screenshot.id)}
+                    />
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Maximize2 className="text-white" />
+                </div>
+            </div>
+            <CardContent className="p-3">
+                <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground font-mono">
+                        {formatDate(screenshot.createdTime)}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] h-5">
+                        DRIVE
+                    </Badge>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
     const { formatTimestamp } = useSettings();
-    const [images, setImages] = useState<DriveFile[]>([]);
+    const [screenshots, setScreenshots] = useState<DriveFile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [cursor, setCursor] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -35,19 +86,20 @@ export function ScreenshotGallery() {
 
     useEffect(() => {
         if (selectedMachine) {
-            // Clear images immediately when machine changes to avoid showing stale data
-            setImages([]);
+            // Clear screenshots immediately when machine changes to avoid showing stale data
+            setScreenshots([]);
+            setCursor(null);
+            setHasMore(true);
             setLoading(true);
-            loadImages();
-            if (!isConfigOpen) { // Don't reload settings while editing
+            loadInitialScreenshots();
+            if (!isConfigOpen) {
                 loadSettings();
             }
         } else {
-            // No machine selected, clear everything
-            setImages([]);
+            setScreenshots([]);
             setLoading(false);
         }
-    }, [selectedMachine?.id]); // Use selectedMachine.id as dependency to trigger on machine change
+    }, [selectedMachine?.id]);
 
     const loadSettings = async () => {
         if (!selectedMachine) return;
@@ -55,7 +107,6 @@ export function ScreenshotGallery() {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
             const isEnabled = data.screenshotIntervalSeconds > 0;
-            // Use preserved value if disabled, otherwise current value
             const intervalToUse = isEnabled
                 ? data.screenshotIntervalSeconds
                 : (data.screenshotIntervalSecondsWhenEnabled || 300);
@@ -69,18 +120,36 @@ export function ScreenshotGallery() {
         }
     };
 
-    const loadImages = async () => {
+    const loadInitialScreenshots = async () => {
         if (!selectedMachine) return;
 
         setLoading(true);
-        setFailedImages(new Set()); // Clear failed images cache on refresh
+        setFailedImages(new Set());
         try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 24);
-            setImages(data);
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50);
+            setScreenshots(data.screenshots);
+            setCursor(data.cursor);
+            setHasMore(data.hasMore);
         } catch (err) {
-            console.error(err);
+            console.error('Failed to load screenshots:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMore = async () => {
+        if (!selectedMachine || !hasMore || loadingMore || !cursor) return;
+
+        setLoadingMore(true);
+        try {
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50, cursor);
+            setScreenshots(prev => [...prev, ...data.screenshots]);
+            setCursor(data.cursor);
+            setHasMore(data.hasMore);
+        } catch (err) {
+            console.error('Failed to load more screenshots:', err);
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -94,7 +163,7 @@ export function ScreenshotGallery() {
             const updatedSettings = {
                 ...settings,
                 screenshotIntervalSeconds: tempEnabled ? tempInterval * 60 : 0,
-                screenshotIntervalSecondsWhenEnabled: tempInterval * 60, // Always preserve the interval value
+                screenshotIntervalSecondsWhenEnabled: tempInterval * 60,
                 isMonitoringEnabled: tempEnabled || settings.pingIntervalSeconds > 0
             };
 
@@ -131,25 +200,29 @@ export function ScreenshotGallery() {
     };
 
     // Apply date range filter
-    const filteredImages = images.filter(img => {
-        if (dateRangeFilter === 'all') return true;
+    const filteredImages = useMemo(() => {
+        return screenshots.filter(img => {
+            if (dateRangeFilter === 'all') return true;
 
-        const imageDate = new Date(img.createdTime);
-        const now = new Date();
-        const diffHours = (now.getTime() - imageDate.getTime()) / (1000 * 60 * 60);
+            const imageDate = new Date(img.createdTime);
+            const now = new Date();
+            const diffHours = (now.getTime() - imageDate.getTime()) / (1000 * 60 * 60);
 
-        if (dateRangeFilter === '24h' && diffHours > 24) return false;
-        if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
-        if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
+            if (dateRangeFilter === '24h' && diffHours > 24) return false;
+            if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
+            if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
 
-        return true;
-    });
+            return true;
+        });
+    }, [screenshots, dateRangeFilter]);
 
-    if (loading && images.length === 0) return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
+    if (loading && screenshots.length === 0) {
+        return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
+    }
 
     return (
         <div className="space-y-6">
-            {/* Simple header: title + icon on left, status badge + configure button on right */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <Eye size={24} className="text-primary" />
@@ -180,7 +253,6 @@ export function ScreenshotGallery() {
                 <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
                     <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex flex-col h-full">
-                            {/* Modal header */}
                             <div className="flex items-center justify-between p-4 border-b border-border">
                                 <h3 className="text-lg font-semibold">Screenshot Capture</h3>
                                 <Button
@@ -193,7 +265,6 @@ export function ScreenshotGallery() {
                                 </Button>
                             </div>
 
-                            {/* Modal content */}
                             <div className="flex-1 p-4 space-y-6 overflow-y-auto">
                                 {error && (
                                     <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
@@ -202,7 +273,6 @@ export function ScreenshotGallery() {
                                     </div>
                                 )}
 
-                                {/* Enable/Disable Toggle */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Status</label>
                                     <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
@@ -221,7 +291,6 @@ export function ScreenshotGallery() {
                                     </div>
                                 </div>
 
-                                {/* Interval Setting */}
                                 {tempEnabled && (
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Capture Interval</label>
@@ -243,18 +312,11 @@ export function ScreenshotGallery() {
                                 )}
                             </div>
 
-                            {/* Modal footer */}
                             <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleCancel}
-                                >
+                                <Button variant="outline" onClick={handleCancel}>
                                     Cancel
                                 </Button>
-                                <Button
-                                    onClick={handleApply}
-                                    disabled={saving}
-                                >
+                                <Button onClick={handleApply} disabled={saving}>
                                     {saving ? 'Applying...' : 'Apply'}
                                 </Button>
                             </div>
@@ -269,63 +331,54 @@ export function ScreenshotGallery() {
                 onDateRangeFilterChange={setDateRangeFilter}
             />
 
-            {/* Gallery Grid */}
+            {/* Gallery Controls */}
             <div className="flex justify-between items-center">
                 <h4 className="text-lg font-semibold">
-                    Screenshots {filteredImages.length !== images.length && `(${filteredImages.length} of ${images.length})`}
+                    Screenshots {filteredImages.length !== screenshots.length && `(${filteredImages.length} of ${screenshots.length})`}
                 </h4>
-                <Button onClick={loadImages} disabled={loading} variant="outline" className="gap-2">
+                <Button onClick={loadInitialScreenshots} disabled={loading} variant="outline" className="gap-2">
                     <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                     Refresh
                 </Button>
             </div>
 
-            {images.length === 0 ? (
+            {/* Virtualized Gallery Grid */}
+            {screenshots.length === 0 ? (
                 <div className="p-20 text-center border border-dashed border-border rounded-lg text-muted-foreground">
                     No screenshots found.
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredImages.map((img) => (
-                        <Card
-                            key={img.id}
-                            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
-                            onClick={() => handleImageClick(img)}
-                        >
-                            <div className="aspect-video relative bg-black">
-                                {failedImages.has(img.id) ? (
-                                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted/20">
-                                        <ImageOff className="text-muted-foreground" size={32} />
-                                        <span className="text-xs text-muted-foreground">File not found</span>
-                                    </div>
-                                ) : (
-                                    <img
-                                        src={`/api/media/${img.id}`}
-                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-                                        alt={img.name}
-                                        onError={() => handleImageError(img.id)}
-                                    />
-                                )}
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <Maximize2 className="text-white" />
-                                </div>
+                <Virtuoso
+                    style={{ height: '70vh' }}
+                    data={filteredImages}
+                    endReached={loadMore}
+                    overscan={200}
+                    components={{
+                        List: ({ children, ...props }) => (
+                            <div {...props} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {children}
                             </div>
-                            <CardContent className="p-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                        {formatDate(img.createdTime)}
-                                    </span>
-                                    <Badge variant="outline" className="text-[10px] h-5">
-                                        DRIVE
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+                        ),
+                        Footer: () => loadingMore ? (
+                            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Loading more screenshots...</span>
+                            </div>
+                        ) : null
+                    }}
+                    itemContent={(_index, img) => (
+                        <ScreenshotCard
+                            screenshot={img}
+                            onImageClick={handleImageClick}
+                            onImageError={handleImageError}
+                            failedImages={failedImages}
+                            formatDate={formatDate}
+                        />
+                    )}
+                />
             )}
 
-            {/* Simple Modal */}
+            {/* Modal */}
             {isModalOpen && selectedImage && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4" onClick={() => setIsModalOpen(false)}>
                     <div className="relative max-w-[90vw] max-h-[90vh]" onClick={e => e.stopPropagation()}>
