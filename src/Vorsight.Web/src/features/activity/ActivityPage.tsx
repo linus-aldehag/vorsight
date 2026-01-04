@@ -20,7 +20,8 @@ export function ActivityPage() {
     const [settings, setSettings] = useState<AgentSettings>({
         screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
-        isMonitoringEnabled: true
+        isMonitoringEnabled: true,
+        isAuditEnabled: true
     });
     const [enabled, setEnabled] = useState(true);
     const [interval, setInterval] = useState(30);
