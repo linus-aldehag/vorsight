@@ -1,4 +1,6 @@
-namespace Vorsight.Contracts.IPC;
+using Vorsight.Contracts.IPC;
+
+namespace Vorsight.Infrastructure.Contracts;
 
 /// <summary>
 /// Interface for Named Pipe server implementation.

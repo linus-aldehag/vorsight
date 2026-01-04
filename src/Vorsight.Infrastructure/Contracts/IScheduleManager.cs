@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Vorsight.Contracts.Scheduling;
 
-namespace Vorsight.Contracts.Scheduling
+namespace Vorsight.Infrastructure.Contracts
 {
     /// <summary>
     /// Interface for managing access schedules and enforcing access time limits.

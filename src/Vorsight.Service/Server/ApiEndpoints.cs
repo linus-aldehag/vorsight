@@ -6,6 +6,7 @@ using Vorsight.Infrastructure.Uptime;
 using Vorsight.Interop;
 
 using Vorsight.Contracts.Scheduling;
+using Vorsight.Infrastructure.Contracts;
 
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.SystemOperations;
@@ -191,7 +192,7 @@ public static class ApiEndpoints
 
         // Settings API
         app.MapGet("/api/settings", async (
-            Vorsight.Contracts.Settings.ISettingsManager settingsManager) =>
+            ISettingsManager settingsManager) =>
         {
             var settings = await settingsManager.GetSettingsAsync();
             return Results.Json(settings);
@@ -199,7 +200,7 @@ public static class ApiEndpoints
 
         app.MapPost("/api/settings", async (
             [FromBody] Vorsight.Contracts.Settings.AgentSettings settings,
-            Vorsight.Contracts.Settings.ISettingsManager settingsManager) =>
+            ISettingsManager settingsManager) =>
         {
             try
             {

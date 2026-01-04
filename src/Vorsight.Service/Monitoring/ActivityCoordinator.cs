@@ -4,6 +4,7 @@ using Vorsight.Interop;
 using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Server;
 using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.Monitoring;
 
 namespace Vorsight.Service.Monitoring;
@@ -22,14 +23,14 @@ public class ActivityCoordinator(
     IConfiguration config,
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
-    Vorsight.Contracts.Settings.ISettingsManager settingsManager,
+    ISettingsManager settingsManager,
     IServerConnection serverConnection)
     : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly INamedPipeServer _ipcServer = ipcServer;
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
-    private readonly Vorsight.Contracts.Settings.ISettingsManager _settingsManager = settingsManager;
+    private readonly ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
     private string _currentWindow = string.Empty;
     private string _currentProcess = string.Empty;

@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Vorsight.Contracts.Audit;
 
-namespace Vorsight.Contracts.Audit
+namespace Vorsight.Infrastructure.Contracts
 {
     /// <summary>
     /// Interface for real-time Windows Event Log monitoring and audit trail management.

@@ -4,6 +4,7 @@ using Vorsight.Contracts.IPC;
 using Vorsight.Contracts.Scheduling;
 using Vorsight.Infrastructure.Scheduling;
 using Vorsight.Infrastructure.Audit;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Service;
 using Vorsight.Service.Agents;
 using Vorsight.Service.IPC;
@@ -143,7 +144,7 @@ try
     builder.Services.AddSingleton<INamedPipeServer>(sp =>
         new Vorsight.Infrastructure.IPC.NamedPipeServer(sp.GetRequiredService<ILogger<Vorsight.Infrastructure.IPC.NamedPipeServer>>(), "VorsightIPC"));
 
-    builder.Services.AddSingleton<Vorsight.Contracts.Scheduling.IScheduleManager>(sp =>
+    builder.Services.AddSingleton<IScheduleManager>(sp =>
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
         new Vorsight.Infrastructure.Scheduling.ScheduleManager(
             sp.GetRequiredService<ILogger<Vorsight.Infrastructure.Scheduling.ScheduleManager>>(),
@@ -172,7 +173,7 @@ try
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
-    builder.Services.AddSingleton<Vorsight.Contracts.Settings.ISettingsManager, Vorsight.Infrastructure.Settings.SettingsManager>();
+    builder.Services.AddSingleton<ISettingsManager, Vorsight.Infrastructure.Settings.SettingsManager>();
 
     // Agents and IPC Handlers
     builder.Services.AddSingleton<ScreenshotHandler>();
