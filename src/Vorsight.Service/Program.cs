@@ -1,7 +1,9 @@
 using Serilog;
-using Vorsight.Core.Audit;
-using Vorsight.Core.IPC;
-using Vorsight.Core.Scheduling;
+using Vorsight.Contracts.Audit;
+using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Scheduling;
+using Vorsight.Infrastructure.Scheduling;
+using Vorsight.Infrastructure.Audit;
 using Vorsight.Service;
 using Vorsight.Service.Agents;
 using Vorsight.Service.IPC;
@@ -16,7 +18,7 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Debug) // Enable Microsoft logs for debugging startup
     .WriteTo.File(
-        path: Path.Combine(Vorsight.Core.IO.PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
+        path: Path.Combine(Vorsight.Infrastructure.IO.PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 3,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
@@ -139,17 +141,17 @@ try
     // Configure core services
     builder.Services.AddCors();
     builder.Services.AddSingleton<INamedPipeServer>(sp =>
-        new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
+        new Vorsight.Infrastructure.IPC.NamedPipeServer(sp.GetRequiredService<ILogger<Vorsight.Infrastructure.IPC.NamedPipeServer>>(), "VorsightIPC"));
 
-    builder.Services.AddSingleton<IScheduleManager>(sp =>
+    builder.Services.AddSingleton<Vorsight.Contracts.Scheduling.IScheduleManager>(sp =>
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
-        new ScheduleManager(
-            sp.GetRequiredService<ILogger<ScheduleManager>>(),
+        new Vorsight.Infrastructure.Scheduling.ScheduleManager(
+            sp.GetRequiredService<ILogger<Vorsight.Infrastructure.Scheduling.ScheduleManager>>(),
             sp.GetRequiredService<IHttpClientFactory>(),
             sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
 #pragma warning restore CA1416
 
-    builder.Services.AddSingleton<IAuditManager, Vorsight.Core.Audit.AuditManager>();
+    builder.Services.AddSingleton<IAuditManager, Vorsight.Infrastructure.Audit.AuditManager>();
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();
 
     // Screenshot Upload Services (Direct to Drive with server credentials)
@@ -158,7 +160,7 @@ try
     builder.Services.AddSingleton<IUploadQueueProcessor, UploadQueueProcessor>();
     builder.Services.AddSingleton<ITempFileManager, TempFileManager>();
     builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
-    builder.Services.AddSingleton<Vorsight.Core.Uptime.UptimeMonitor>();
+    builder.Services.AddSingleton<Vorsight.Infrastructure.Uptime.UptimeMonitor>();
 
     
     // Server Connection (Node.js server)
@@ -170,7 +172,7 @@ try
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
-    builder.Services.AddSingleton<Vorsight.Core.Settings.ISettingsManager, Vorsight.Core.Settings.SettingsManager>();
+    builder.Services.AddSingleton<Vorsight.Contracts.Settings.ISettingsManager, Vorsight.Infrastructure.Settings.SettingsManager>();
 
     // Agents and IPC Handlers
     builder.Services.AddSingleton<ScreenshotHandler>();
