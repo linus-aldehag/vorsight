@@ -93,40 +93,51 @@ export function MachineSelector() {
                     <DialogHeader>
                         <DialogTitle>Switch Machine</DialogTitle>
                         <DialogDescription>
-                            Select a machine from the list to view its dashboard.
+                            Select a machine from the list to view its dashboard. Click the pencil icon to edit a machine's display name.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex flex-col gap-2 py-4 max-h-[60vh] overflow-y-auto">
                         {machines.map((machine) => (
-                            <Button
-                                key={machine.id}
-                                variant={selectedMachine?.id === machine.id ? "secondary" : "ghost"}
-                                size="lg"
-                                onClick={() => {
-                                    handleMachineClick(machine.id);
-                                    setIsOpen(false);
-                                }}
-                                className="w-full justify-between h-auto py-3"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <Monitor size={18} className="text-muted-foreground shrink-0" />
-                                    <div className="flex flex-col items-start min-w-0">
-                                        <span className="font-medium truncate w-full text-left">
-                                            {machine.displayName || machine.name}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground truncate w-full text-left">
-                                            ID: {machine.name}
-                                        </span>
+                            <div key={machine.id} className="flex items-center gap-1">
+                                <Button
+                                    variant={selectedMachine?.id === machine.id ? "secondary" : "ghost"}
+                                    size="lg"
+                                    onClick={() => {
+                                        handleMachineClick(machine.id);
+                                        setIsOpen(false);
+                                    }}
+                                    className="flex-1 justify-between h-auto py-3"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <Monitor size={18} className="text-muted-foreground shrink-0" />
+                                        <div className="flex flex-col items-start min-w-0">
+                                            <span className="font-medium truncate w-full text-left">
+                                                {machine.displayName || machine.name}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground truncate w-full text-left">
+                                                ID: {machine.name}
+                                            </span>
+                                        </div>
                                     </div>
+                                    <Circle
+                                        size={8}
+                                        className={cn(
+                                            "shrink-0",
+                                            machine.isOnline ? "fill-success text-success" : "fill-muted text-muted"
+                                        )}
+                                    />
+                                </Button>
+                                <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                                    <EditableMachineName
+                                        machineId={machine.id}
+                                        displayName={machine.displayName}
+                                        machineName={machine.name}
+                                        onUpdate={refreshMachines}
+                                        hideId={true}
+                                        className="[&>span]:hidden [&_button]:!opacity-100 [&_button]:h-9 [&_button]:w-9"
+                                    />
                                 </div>
-                                <Circle
-                                    size={8}
-                                    className={cn(
-                                        "shrink-0 ml-2",
-                                        machine.isOnline ? "fill-success text-success" : "fill-muted text-muted"
-                                    )}
-                                />
-                            </Button>
+                            </div>
                         ))}
                     </div>
                     <DialogFooter>
