@@ -178,9 +178,11 @@ model CleanupSettings {
   activityRetentionDays   Int       @default(90) @map("activity_retention_days")
   screenshotRetentionDays Int       @default(30) @map("screenshot_retention_days")
   auditRetentionDays      Int       @default(180) @map("audit_retention_days")
+  heartbeatRetentionHours Int       @default(48) @map("heartbeat_retention_hours")
   deleteDriveFiles        Boolean   @default(false) @map("delete_drive_files")
   lastCleanupRun          DateTime? @map("last_cleanup_run")
   updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("cleanup_settings")
 }
+

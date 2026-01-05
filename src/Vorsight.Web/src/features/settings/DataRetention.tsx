@@ -9,6 +9,7 @@ interface RetentionSettings {
     activity_retention_days: number;
     screenshot_retention_days: number;
     audit_retention_days: number;
+    heartbeat_retention_hours: number;
     delete_drive_files: boolean;
     last_cleanup_run?: string;
 }
@@ -23,6 +24,7 @@ export function DataRetention() {
         activity_retention_days: 90,
         screenshot_retention_days: 30,
         audit_retention_days: 180,
+        heartbeat_retention_hours: 48,
         delete_drive_files: false
     });
 
@@ -44,6 +46,7 @@ export function DataRetention() {
                 activity_retention_days: data.activity_retention_days,
                 screenshot_retention_days: data.screenshot_retention_days,
                 audit_retention_days: data.audit_retention_days,
+                heartbeat_retention_hours: data.heartbeat_retention_hours || 48,
                 delete_drive_files: Boolean(data.delete_drive_files)
             });
         } catch (error) {
@@ -67,6 +70,7 @@ export function DataRetention() {
                     activityRetentionDays: formData.activity_retention_days,
                     screenshotRetentionDays: formData.screenshot_retention_days,
                     auditRetentionDays: formData.audit_retention_days,
+                    heartbeatRetentionHours: formData.heartbeat_retention_hours,
                     deleteDriveFiles: formData.delete_drive_files
                 })
             });
@@ -204,6 +208,31 @@ export function DataRetention() {
                                 </div>
                             )}
                         </div>
+
+                        {/* Heartbeat Snapshots */}
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-background/30">
+                            <div className="flex-1">
+                                <div className="text-sm font-medium">Activity Heartbeats</div>
+                                <div className="text-xs text-muted-foreground">Raw snapshots for debugging (sessions kept permanently)</div>
+                            </div>
+                            {editMode ? (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        value={formData.heartbeat_retention_hours}
+                                        onChange={(e) => setFormData({ ...formData, heartbeat_retention_hours: parseInt(e.target.value) || 0 })}
+                                        className="w-20 px-3 py-1.5 text-sm rounded-md border border-border bg-background text-foreground"
+                                        min="1"
+                                        max="720"
+                                    />
+                                    <span className="text-sm text-muted-foreground">hours</span>
+                                </div>
+                            ) : (
+                                <div className="text-sm font-mono text-primary font-medium">
+                                    {settings?.heartbeat_retention_hours || 48} hours
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Delete Drive Files Toggle - always visible when editing */}
@@ -248,6 +277,7 @@ export function DataRetention() {
                                             activity_retention_days: settings.activity_retention_days,
                                             screenshot_retention_days: settings.screenshot_retention_days,
                                             audit_retention_days: settings.audit_retention_days,
+                                            heartbeat_retention_hours: settings.heartbeat_retention_hours || 48,
                                             delete_drive_files: Boolean(settings.delete_drive_files)
                                         });
                                     }
