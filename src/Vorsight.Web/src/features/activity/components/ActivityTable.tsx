@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import { useSettings } from "@/context/SettingsContext";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
+import { mergeSequentialActivities } from "../utils/mergeActivities";
 
 interface ActivityTableProps {
     activities: ActivityLogEntry[];
@@ -15,6 +16,8 @@ interface ActivityTableProps {
 
 export function ActivityTable({ activities }: ActivityTableProps) {
     const { formatTimestamp } = useSettings();
+
+    const mergedActivities = mergeSequentialActivities(activities);
 
     return (
         <div className="rounded-md border">
@@ -29,14 +32,14 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {activities.length === 0 ? (
+                    {mergedActivities.length === 0 ? (
                         <TableRow>
                             <TableCell colSpan={5} className="h-24 text-center">
                                 No activity recorded.
                             </TableCell>
                         </TableRow>
                     ) : (
-                        activities.map((activity) => (
+                        mergedActivities.map((activity) => (
                             <TableRow key={activity.id}>
                                 <TableCell>
                                     {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
