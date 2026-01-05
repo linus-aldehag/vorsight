@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { VorsightApi, type StatusResponse } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { Dashboard } from '../../features/dashboard/Dashboard';
 import { ScreenshotGallery } from '../../features/gallery/ScreenshotGallery';
@@ -14,7 +13,6 @@ export function MainLayout() {
     const { machineId, view } = useParams();
     const navigate = useNavigate();
     const { machines, selectedMachine, selectMachine } = useMachine();
-    const [status, setStatus] = useState<StatusResponse | null>(null);
 
     // Check if we have any machines
     const hasMachines = machines.length > 0;
@@ -32,26 +30,6 @@ export function MainLayout() {
             navigate(`/${selectedMachine.id}/${view}`, { replace: true });
         }
     }, [machineId, selectedMachine, view, navigate, selectMachine]);
-
-
-    useEffect(() => {
-        if (selectedMachine) {
-            fetchStatus();
-            const interval = setInterval(fetchStatus, 3000);
-            return () => clearInterval(interval);
-        }
-    }, [selectedMachine]);
-
-    const fetchStatus = async () => {
-        if (!selectedMachine) return;
-
-        try {
-            const data = await VorsightApi.getStatus(selectedMachine.id);
-            setStatus(data);
-        } catch (e) {
-            console.error(e);
-        }
-    };
 
     const handleNavigation = (newView: string) => {
         if (selectedMachine) {
@@ -75,7 +53,7 @@ export function MainLayout() {
 
             {/* Main Content */}
             <main className="flex-1 p-4 md:p-6 container mx-auto overflow-hidden">
-                {currentView === 'dashboard' && status && <Dashboard status={status} />}
+                {currentView === 'dashboard' && <Dashboard />}
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
                 {currentView === 'audit' && <AuditPage />}

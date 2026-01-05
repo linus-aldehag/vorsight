@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { socketService } from '../services/socket';
 
 // Helper to get authorization headers
@@ -37,7 +37,13 @@ const MachineContext = createContext<MachineContextType | undefined>(undefined);
 export function MachineProvider({ children }: { children: ReactNode }) {
     const [machines, setMachines] = useState<Machine[]>([]);
     const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
+    const selectedMachineRef = useRef<Machine | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        selectedMachineRef.current = selectedMachine;
+    }, [selectedMachine]);
 
     useEffect(() => {
         // Connect to WebSocket for real-time updates
@@ -50,13 +56,19 @@ export function MachineProvider({ children }: { children: ReactNode }) {
 
         // Handler for machines list (initial + updates)
         const handleMachinesList = (machinesList: Machine[]) => {
+            const currentSelected = selectedMachineRef.current;
+
             setMachines(machinesList);
 
             // Update selected machine if it's in the new list
-            if (selectedMachine) {
-                const updatedMachine = machinesList.find(m => m.id === selectedMachine.id);
+            if (currentSelected) {
+                const updatedMachine = machinesList.find(m => m.id === currentSelected.id);
                 if (updatedMachine) {
-                    setSelectedMachine(updatedMachine);
+                    // Only update if something actually changed to avoid breaking React.memo
+                    const hasChanged = JSON.stringify(updatedMachine) !== JSON.stringify(currentSelected);
+                    if (hasChanged) {
+                        setSelectedMachine(updatedMachine);
+                    }
                 }
             } else if (machinesList.length > 0) {
                 // Auto-select first machine if none selected

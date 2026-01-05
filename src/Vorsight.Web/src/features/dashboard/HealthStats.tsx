@@ -1,21 +1,35 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { UptimeStatus } from '@/api/client';
 import { useMachine } from '@/context/MachineContext';
 import { StatusBadge } from './components/StatusBadge';
 import { UptimeDisplay } from './components/UptimeDisplay';
 import { useHealthStats } from './hooks/useHealthStats';
+import useSWR from 'swr';
+import { memo } from 'react';
 
 interface HealthStatsProps {
-    uptime: UptimeStatus;
     version?: string | null;
 }
 
-export function HealthStats({ uptime, version }: HealthStatsProps) {
+export const HealthStats = memo(function HealthStats({ version }: HealthStatsProps) {
     const { selectedMachine } = useMachine();
     const { settings } = useHealthStats(selectedMachine?.id);
 
-    const status = selectedMachine?.connectionStatus ?? 'offline';
+    const fetcher = async (url: string) => {
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+    };
+
+    const { data: status } = useSWR(
+        selectedMachine ? `/api/status/${selectedMachine.id}` : null,
+        fetcher,
+        { refreshInterval: 10000, revalidateOnFocus: false }
+    );
+
+    const uptime = status?.uptime || { currentStart: null };
+    const machineStatus = selectedMachine?.connectionStatus ?? 'offline';
     const statusText = selectedMachine?.statusText;
 
     return (
@@ -34,7 +48,7 @@ export function HealthStats({ uptime, version }: HealthStatsProps) {
                                 </p>
                             )}
                         </div>
-                        <StatusBadge status={status} statusText={statusText} className="shrink-0" />
+                        <StatusBadge status={machineStatus} statusText={statusText} className="shrink-0" />
                     </div>
 
                     {/* Mobile: Show status text below on small screens */}
@@ -71,4 +85,4 @@ export function HealthStats({ uptime, version }: HealthStatsProps) {
             </CardContent>
         </Card>
     );
-}
+});

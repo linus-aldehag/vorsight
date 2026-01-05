@@ -2,7 +2,7 @@ import { useRecentAuditEvents } from '@/hooks/useAudit';
 import { useMachine } from '@/context/MachineContext';
 import { AlertTriangle, ShieldAlert, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 
 // Helper to get authorization headers
@@ -15,7 +15,7 @@ function getAuthHeaders(): HeadersInit {
     return headers;
 }
 
-export function AuditAlert() {
+export const AuditAlert = memo(function AuditAlert() {
     const { selectedMachine } = useMachine();
     const { auditEvents, isLoading, isError, mutate } = useRecentAuditEvents(selectedMachine?.id || '');
     const { formatTimestamp } = useSettings();
@@ -147,4 +147,4 @@ export function AuditAlert() {
             </div>
         </div>
     );
-}
+});
