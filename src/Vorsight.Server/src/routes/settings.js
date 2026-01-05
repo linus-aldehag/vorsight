@@ -19,12 +19,12 @@ router.get('/', (req, res) => {
         // Get settings from machine_state
         const state = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
 
-        // Default settings
+        // Default settings - all features disabled for new machines
         const defaults = {
-            screenshotIntervalSeconds: 300,
-            pingIntervalSeconds: 30,
-            isMonitoringEnabled: true,
-            isAuditEnabled: true
+            screenshotIntervalSeconds: 0,
+            pingIntervalSeconds: 0,
+            isMonitoringEnabled: false,
+            isAuditEnabled: false
         };
 
         // Merge stored settings with defaults

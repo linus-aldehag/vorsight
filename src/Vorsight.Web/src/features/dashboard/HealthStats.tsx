@@ -1,5 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
 import { StatusBadge } from './components/StatusBadge';
 import { UptimeDisplay } from './components/UptimeDisplay';
@@ -58,22 +57,6 @@ export const HealthStats = memo(function HealthStats({ version }: HealthStatsPro
                         </p>
                     )}
                 </div>
-
-                {/* Feature Status Badges */}
-                {settings && (
-                    <div className="flex flex-wrap gap-2">
-                        {settings.screenshotIntervalSeconds === 0 && (
-                            <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
-                                Screenshots Disabled
-                            </Badge>
-                        )}
-                        {settings.pingIntervalSeconds === 0 && (
-                            <Badge variant="outline" className="text-xs bg-warning/10 text-warning border-warning/20">
-                                Activity Disabled
-                            </Badge>
-                        )}
-                    </div>
-                )}
 
                 {/* Uptime Stats */}
                 <div className="pt-2 border-t border-border/50">

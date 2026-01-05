@@ -137,12 +137,12 @@ export const VorsightApi = {
         const url = machineId ? `${BASE_URL}/settings?machineId=${machineId}` : `${BASE_URL}/settings`;
         const res = await fetch(url, { headers: getAuthHeaders() });
         if (res.status === 404) {
-            // Return defaults if settings don't exist yet
+            // Return defaults if settings don't exist yet - all features disabled
             return {
-                screenshotIntervalSeconds: 300,
-                pingIntervalSeconds: 30,
-                isMonitoringEnabled: true,
-                isAuditEnabled: true
+                screenshotIntervalSeconds: 0,
+                pingIntervalSeconds: 0,
+                isMonitoringEnabled: false,
+                isAuditEnabled: false
             };
         }
         if (!res.ok) throw new Error(`Failed to fetch settings: ${res.statusText}`);

@@ -8,11 +8,13 @@ import { AuditPage } from '../../features/audit/AuditPage';
 import { AccessControlPage } from '../../features/schedule/AccessControlPage';
 import { AppHeader } from './AppHeader';
 import { NavigationTabs } from './NavigationTabs';
+import { useHealthStats } from '../../features/dashboard/hooks/useHealthStats';
 
 export function MainLayout() {
     const { machineId, view } = useParams();
     const navigate = useNavigate();
     const { machines, selectedMachine, selectMachine } = useMachine();
+    const { settings } = useHealthStats(selectedMachine?.id);
 
     // Check if we have any machines
     const hasMachines = machines.length > 0;
@@ -48,6 +50,7 @@ export function MainLayout() {
             <NavigationTabs
                 currentView={currentView}
                 hasMachines={hasMachines}
+                settings={settings}
                 onNavigate={handleNavigation}
             />
 
