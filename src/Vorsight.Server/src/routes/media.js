@@ -40,12 +40,12 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Screenshot not found or not uploaded to Drive' });
         }
 
-        // Use export URL to get full-size image instead of thumbnail
+        // Redirect to Google Drive thumbnail with large size to avoid cropping
         const driveFileId = screenshot.google_drive_file_id;
-        // Using export URL ensures we get the full-size image without cropping
-        const imageUrl = `https://drive.google.com/uc?export=view&id=${driveFileId}`;
+        // Using w4000 gives us high-resolution images without authentication issues
+        const thumbnailUrl = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w4000`;
 
-        res.redirect(imageUrl);
+        res.redirect(thumbnailUrl);
     } catch (error) {
         console.error('Get media error:', error);
         res.status(500).json({ error: 'Failed to retrieve media' });
