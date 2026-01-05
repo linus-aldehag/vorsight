@@ -1,4 +1,4 @@
-import { type StatusResponse, type AgentSettings, VorsightApi } from '@/api/client';
+import { type AgentSettings, VorsightApi } from '@/api/client';
 import { HealthStats } from './HealthStats';
 import { ActivityStats } from './ActivityStats';
 import { ActivityMonitor } from './ActivityMonitor';
@@ -10,11 +10,7 @@ import { useState, useEffect } from 'react';
 import { useMachine } from '@/context/MachineContext';
 import { socketService } from '@/services/socket';
 
-interface DashboardProps {
-    status: StatusResponse;
-}
-
-export function Dashboard({ status }: DashboardProps) {
+export function Dashboard() {
     const { selectedMachine } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [machineVersion, setMachineVersion] = useState<string | null>(null);
@@ -48,8 +44,8 @@ export function Dashboard({ status }: DashboardProps) {
                 <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-6">
                     {/* Row 1: Health & Current Activity - side by side on small screens and up */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                        <HealthStats uptime={status.uptime} version={machineVersion} />
-                        <ActivityMonitor activity={status.activity} isDisabled={settings?.pingIntervalSeconds === 0} />
+                        <HealthStats version={machineVersion} />
+                        <ActivityMonitor isDisabled={settings?.pingIntervalSeconds === 0} />
                     </div>
 
                     {/* Row 2: Activity Stats */}

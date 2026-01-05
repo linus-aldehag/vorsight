@@ -1,17 +1,34 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import type { ActivitySnapshot } from '@/api/client';
 import { Clock, Activity as ActivityIcon } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
+import { useMachine } from '@/context/MachineContext';
 import { cn } from '@/lib/utils';
+import { memo } from 'react';
+import useSWR from 'swr';
 
 interface ActivityMonitorProps {
-    activity: ActivitySnapshot | null;
     isDisabled?: boolean;
 }
 
-export function ActivityMonitor({ activity, isDisabled }: ActivityMonitorProps) {
+export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: ActivityMonitorProps) {
     const { formatTimestamp } = useSettings();
+    const { selectedMachine } = useMachine();
+
+    const fetcher = async (url: string) => {
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+    };
+
+    const { data: status } = useSWR(
+        selectedMachine ? `/api/status/${selectedMachine.id}` : null,
+        fetcher,
+        { refreshInterval: 10000, revalidateOnFocus: false }
+    );
+
+    const activity = status?.activity || null;
     // ActivitySnapshot has: activeWindowTitle, timeSinceLastInput, timestamp
     const windowTitle = activity?.activeWindowTitle || 'No activity';
     const timestamp = activity?.timestamp
@@ -70,4 +87,4 @@ export function ActivityMonitor({ activity, isDisabled }: ActivityMonitorProps) 
             </CardContent>
         </Card>
     );
-}
+});

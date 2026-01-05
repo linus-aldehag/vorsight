@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Progress } from '../../components/ui/progress';
 import { VorsightApi, type ActivitySummary } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from 'recharts';
 
-export function ActivityStats({ isDisabled = false }: { isDisabled?: boolean }) {
+export const ActivityStats = memo(function ActivityStats({ isDisabled = false }: { isDisabled?: boolean }) {
     const { selectedMachine } = useMachine();
     const [summary, setSummary] = useState<ActivitySummary | null>(null);
 
@@ -127,4 +127,4 @@ export function ActivityStats({ isDisabled = false }: { isDisabled?: boolean }) 
             </Card>
         </div>
     );
-}
+});

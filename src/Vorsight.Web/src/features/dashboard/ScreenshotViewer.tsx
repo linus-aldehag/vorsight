@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Image as ImageIcon, Info } from 'lucide-react';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import useSWR from 'swr';
 import { cn } from '@/lib/utils';
 
@@ -11,11 +11,12 @@ interface ScreenshotViewerProps {
     isDisabled?: boolean;
 }
 
-export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
+export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
     const { selectedMachine } = useMachine();
     const { formatTimestamp } = useSettings();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
+
 
     const fetcher = async (url: string) => {
         const token = localStorage.getItem('auth_token');
@@ -26,13 +27,17 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
         return res.json();
     };
 
-    const { data: screenshots, mutate } = useSWR(
+    const { data: screenshotData, mutate } = useSWR(
         selectedMachine ? `/api/screenshots/${selectedMachine.id}?limit=1` : null,
         fetcher,
-        { refreshInterval: isDisabled ? 0 : 5000 }
+        {
+            refreshInterval: 0, // Disable automatic polling - only update on manual capture
+            revalidateOnFocus: false, // Don't refetch when window gets focus
+            dedupingInterval: 10000, // Dedupe requests within 10 seconds
+        }
     );
 
-    const latestScreenshot = screenshots?.[0];
+    const latestScreenshot = screenshotData?.screenshots?.[0];
 
     const handleCapture = async () => {
         if (!selectedMachine) return;
@@ -116,6 +121,7 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
                 ) : (
                     <div className="relative w-full h-full flex items-center justify-center group">
                         <img
+                            key={latestScreenshot.id}
                             src={`/api/media/${latestScreenshot.id}`}
                             alt="Latest screenshot"
                             className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
@@ -148,4 +154,4 @@ export function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
             )}
         </Card>
     );
-}
+});
