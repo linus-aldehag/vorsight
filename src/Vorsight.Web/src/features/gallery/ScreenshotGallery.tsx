@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -23,7 +23,7 @@ interface ScreenshotCardProps {
 function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, formatDate }: ScreenshotCardProps) {
     return (
         <Card
-            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
+            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm h-full"
             onClick={() => onImageClick(screenshot)}
         >
             <div className="aspect-video relative bg-black">
@@ -35,7 +35,7 @@ function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, 
                 ) : (
                     <img
                         src={`/api/media/${screenshot.id}`}
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity"
                         alt={screenshot.name}
                         onError={() => onImageError(screenshot.id)}
                     />
@@ -351,16 +351,22 @@ export function ScreenshotGallery() {
                 </div>
             ) : (
                 <Virtuoso
-                    style={{ height: '70vh' }}
+                    useWindowScroll
                     data={filteredImages}
                     endReached={loadMore}
-                    overscan={200}
+                    overscan={800}
+                    increaseViewportBy={{ top: 400, bottom: 400 }}
                     components={{
-                        List: ({ children, ...props }) => (
-                            <div {...props} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        Item: ({ children, ...props }) => (
+                            <div {...props} className="p-2">
                                 {children}
                             </div>
                         ),
+                        List: React.forwardRef(({ children, ...props }, ref) => (
+                            <div ref={ref} {...props} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                                {children}
+                            </div>
+                        )),
                         Footer: () => loadingMore ? (
                             <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
                                 <Loader2 className="animate-spin" size={20} />
