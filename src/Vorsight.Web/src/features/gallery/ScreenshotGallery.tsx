@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -84,24 +84,7 @@ export function ScreenshotGallery() {
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
-    useEffect(() => {
-        if (selectedMachine) {
-            // Clear screenshots immediately when machine changes to avoid showing stale data
-            setScreenshots([]);
-            setCursor(null);
-            setHasMore(true);
-            setLoading(true);
-            loadInitialScreenshots();
-            if (!isConfigOpen) {
-                loadSettings();
-            }
-        } else {
-            setScreenshots([]);
-            setLoading(false);
-        }
-    }, [selectedMachine?.id]);
-
-    const loadSettings = async () => {
+    const loadSettings = useCallback(async () => {
         if (!selectedMachine) return;
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
@@ -118,9 +101,9 @@ export function ScreenshotGallery() {
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
-    };
+    }, [selectedMachine]);
 
-    const loadInitialScreenshots = async () => {
+    const loadInitialScreenshots = useCallback(async () => {
         if (!selectedMachine) return;
 
         setLoading(true);
@@ -135,9 +118,9 @@ export function ScreenshotGallery() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedMachine]);
 
-    const loadMore = async () => {
+    const loadMore = useCallback(async () => {
         if (!selectedMachine || !hasMore || loadingMore || !cursor) return;
 
         setLoadingMore(true);
@@ -151,7 +134,37 @@ export function ScreenshotGallery() {
         } finally {
             setLoadingMore(false);
         }
-    };
+    }, [selectedMachine, hasMore, loadingMore, cursor]);
+
+    const handleImageError = useCallback((imgId: string) => {
+        setFailedImages(prev => new Set(prev).add(imgId));
+    }, []);
+
+    const handleImageClick = useCallback((img: DriveFile) => {
+        setSelectedImage(img);
+        setIsModalOpen(true);
+    }, []);
+
+    const formatDate = useCallback((dateStr: string) => {
+        return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
+    }, [formatTimestamp]);
+
+    useEffect(() => {
+        if (selectedMachine) {
+            // Clear screenshots immediately when machine changes to avoid showing stale data
+            setScreenshots([]);
+            setCursor(null);
+            setHasMore(true);
+            setLoading(true);
+            loadInitialScreenshots();
+            loadSettings();
+        } else {
+            setScreenshots([]);
+            setLoading(false);
+        }
+    }, [selectedMachine?.id, loadInitialScreenshots, loadSettings]);
+
+
 
     const handleApply = async () => {
         if (!selectedMachine) return;
@@ -186,18 +199,7 @@ export function ScreenshotGallery() {
         setIsConfigOpen(false);
     };
 
-    const handleImageError = (imgId: string) => {
-        setFailedImages(prev => new Set(prev).add(imgId));
-    };
 
-    const handleImageClick = (img: DriveFile) => {
-        setSelectedImage(img);
-        setIsModalOpen(true);
-    };
-
-    const formatDate = (dateStr: string) => {
-        return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
-    };
 
     // Apply date range filter
     const filteredImages = useMemo(() => {
