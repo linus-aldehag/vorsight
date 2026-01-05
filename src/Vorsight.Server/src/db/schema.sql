@@ -25,7 +25,7 @@ CREATE TABLE machine_state (
     FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
 );
 
--- Activity History
+-- Activity History (raw heartbeat snapshots - 48h retention)
 CREATE TABLE activity_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     machine_id TEXT NOT NULL,
@@ -34,6 +34,22 @@ CREATE TABLE activity_history (
     process_name TEXT,
     duration INTEGER,
     username TEXT,
+    FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
+);
+
+-- Activity Sessions (processed sessions - permanent)
+CREATE TABLE activity_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    machine_id TEXT NOT NULL,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER NOT NULL,
+    duration_seconds INTEGER NOT NULL,
+    process_name TEXT,
+    active_window TEXT,
+    username TEXT,
+    heartbeat_count INTEGER DEFAULT 1,
+    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    updated_at INTEGER DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
 );
 
@@ -88,6 +104,7 @@ CREATE TABLE connection_events (
 -- Indexes for performance
 CREATE INDEX idx_machines_last_seen ON machines(last_seen);
 CREATE INDEX idx_activity_machine_time ON activity_history(machine_id, timestamp);
+CREATE INDEX idx_activity_sessions_machine_time ON activity_sessions(machine_id, start_time, end_time);
 CREATE INDEX idx_screenshots_machine_time ON screenshots(machine_id, capture_time);
 CREATE INDEX idx_audit_events_machine ON audit_events(machine_id, timestamp);
 CREATE INDEX idx_connection_events_machine ON connection_events(machine_id, timestamp);

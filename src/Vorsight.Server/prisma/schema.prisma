@@ -25,6 +25,7 @@ model Machine {
   // Relations
   state             MachineState?
   activityHistory   ActivityHistory[]
+  activitySessions  ActivitySession[]
   screenshots       Screenshot[]
   settingsQueue     SettingsQueue[]
   auditEvents       AuditEvent[]
@@ -51,7 +52,7 @@ model MachineState {
   @@map("machine_state")
 }
 
-// Activity History
+// Activity History (raw heartbeat snapshots - 48h retention)
 model ActivityHistory {
   id           Int      @id @default(autoincrement())
   machineId    String   @map("machine_id")
@@ -66,6 +67,27 @@ model ActivityHistory {
 
   @@index([machineId, timestamp])
   @@map("activity_history")
+}
+
+// Activity Sessions (processed sessions - permanent)
+model ActivitySession {
+  id              Int      @id @default(autoincrement())
+  machineId       String   @map("machine_id")
+  startTime       Int      @map("start_time")
+  endTime         Int      @map("end_time")
+  durationSeconds Int      @map("duration_seconds")
+  processName     String?  @map("process_name")
+  activeWindow    String?  @map("active_window")
+  username        String?
+  heartbeatCount  Int      @default(1) @map("heartbeat_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @map("updated_at")
+  
+  // Relations
+  machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, startTime, endTime])
+  @@map("activity_sessions")
 }
 
 // Screenshots Metadata

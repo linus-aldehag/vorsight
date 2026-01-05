@@ -82,7 +82,13 @@ function AppIcon({ name }: { name: string }) {
 }
 
 function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds} s`;
+    if (!seconds || seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
-    return `${minutes}m ${seconds % 60} s`;
+    if (minutes < 60) {
+        const remainingSeconds = seconds % 60;
+        return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
