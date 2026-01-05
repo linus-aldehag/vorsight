@@ -11,6 +11,7 @@ router.get('/', authenticateBrowser, (req, res) => {
             activity_retention_days: 90,
             screenshot_retention_days: 30,
             audit_retention_days: 180,
+            heartbeat_retention_hours: 48,
             delete_drive_files: 0
         });
     } catch (error) {
@@ -22,17 +23,18 @@ router.get('/', authenticateBrowser, (req, res) => {
 // Update cleanup settings
 router.put('/', authenticateBrowser, (req, res) => {
     try {
-        const { activityRetentionDays, screenshotRetentionDays, auditRetentionDays, deleteDriveFiles } = req.body;
+        const { activityRetentionDays, screenshotRetentionDays, auditRetentionDays, heartbeatRetentionHours, deleteDriveFiles } = req.body;
 
         db.prepare(`
             UPDATE cleanup_settings 
             SET activity_retention_days = ?,
                 screenshot_retention_days = ?,
                 audit_retention_days = ?,
+                heartbeat_retention_hours = ?,
                 delete_drive_files = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = 1
-        `).run(activityRetentionDays, screenshotRetentionDays, auditRetentionDays, deleteDriveFiles ? 1 : 0);
+        `).run(activityRetentionDays, screenshotRetentionDays, auditRetentionDays, heartbeatRetentionHours, deleteDriveFiles ? 1 : 0);
 
         res.json({ success: true });
     } catch (error) {
