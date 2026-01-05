@@ -31,7 +31,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
         selectedMachine ? `/api/screenshots/${selectedMachine.id}?limit=1` : null,
         fetcher,
         {
-            refreshInterval: 0, // Disable automatic polling - only update on manual capture
+            refreshInterval: 30000, // Poll every 30 seconds for new screenshots
             revalidateOnFocus: false, // Don't refetch when window gets focus
             dedupingInterval: 10000, // Dedupe requests within 10 seconds
         }

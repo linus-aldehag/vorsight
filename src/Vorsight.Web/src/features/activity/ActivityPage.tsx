@@ -37,6 +37,24 @@ export function ActivityPage() {
         }
     }, [selectedMachine]);
 
+    // Auto-switch to timeline view on mobile
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+        const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+            if (e.matches && activeTab === 'table') {
+                setActiveTab('timeline');
+            }
+        };
+
+        // Check initial state
+        handleChange(mediaQuery);
+
+        // Listen for changes
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+    }, [activeTab]);
+
     const loadSettings = async () => {
         if (!selectedMachine) return;
         try {
@@ -228,10 +246,10 @@ export function ActivityPage() {
 
             <Card>
                 <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-                    <CardHeader>
-                        <TabsList className="w-full grid grid-cols-2">
+                    <CardHeader className="hidden md:block">
+                        <TabsList className="w-full grid grid-cols-1 md:grid-cols-2">
                             <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-                            <TabsTrigger value="table">Table View</TabsTrigger>
+                            <TabsTrigger value="table" className="hidden md:flex">Table View</TabsTrigger>
                         </TabsList>
                     </CardHeader>
 

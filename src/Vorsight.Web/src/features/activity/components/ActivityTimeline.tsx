@@ -1,20 +1,20 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { useSettings } from "@/context/SettingsContext";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
 import { Monitor, Terminal, FileText } from "lucide-react";
+import { mergeSequentialActivities } from "../utils/mergeActivities";
 
 interface ActivityTimelineProps {
     activities: ActivityLogEntry[];
 }
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
-    const { formatTimestamp } = useSettings();
+    const mergedActivities = mergeSequentialActivities(activities);
 
-    // Group activities by hour
-    const groupedActivities = activities.reduce((acc, activity) => {
+    // Group activities by date (not hour)
+    const groupedActivities = mergedActivities.reduce((acc, activity) => {
         const date = new Date(activity.timestamp);
-        const key = format(date, "yyyy-MM-dd HH:00");
+        const key = format(date, "yyyy-MM-dd");
         if (!acc[key]) {
             acc[key] = [];
         }
@@ -27,20 +27,20 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
     return (
         <ScrollArea className="h-[600px] w-full rounded-md border p-4">
             <div className="space-y-8">
-                {activities.length === 0 ? (
+                {mergedActivities.length === 0 ? (
                     <div className="text-center text-muted-foreground p-8">No activity recorded.</div>
                 ) : (
                     sortedKeys.map((key) => (
                         <div key={key} className="relative">
                             <div className="sticky top-0 z-10 bg-background/95 pb-4 pt-2 font-semibold backdrop-blur-sm">
-                                {formatTimestamp(key, { includeDate: true, includeSeconds: false })}
+                                {format(new Date(key), "EEEE, MMMM d, yyyy")}
                             </div>
                             <div className="ml-4 space-y-4 border-l-2 pl-4">
                                 {groupedActivities[key].map((activity) => (
                                     <div key={activity.id} className="relative">
                                         <div className="absolute -left-[25px] mt-1.5 h-4 w-4 rounded-full border bg-background" />
                                         <div className="mb-1 text-sm font-medium leading-none text-muted-foreground">
-                                            {formatTimestamp(activity.timestamp, { includeSeconds: true })}
+                                            {format(new Date(activity.timestamp), "HH:mm:ss")}
                                         </div>
                                         <div className="rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md">
                                             <div className="flex items-center gap-2">
@@ -55,6 +55,11 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                             {activity.duration > 0 && (
                                                 <div className="mt-1 text-xs text-muted-foreground">
                                                     Duration: {formatDuration(activity.duration)}
+                                                </div>
+                                            )}
+                                            {activity.username && (
+                                                <div className="mt-1 text-xs text-muted-foreground">
+                                                    User: {activity.username}
                                                 </div>
                                             )}
                                         </div>
@@ -77,7 +82,7 @@ function AppIcon({ name }: { name: string }) {
 }
 
 function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 60) return `${seconds} s`;
     const minutes = Math.floor(seconds / 60);
-    return `${minutes}m ${seconds % 60}s`;
+    return `${minutes}m ${seconds % 60} s`;
 }
