@@ -122,6 +122,10 @@ scheduleCleanup();
 const { schedulePingMonitor } = require('./jobs/pingMonitor');
 schedulePingMonitor();
 
+// Start heartbeat cleanup (48h retention)
+const { scheduleHeartbeatCleanup } = require('./jobs/heartbeatCleanup');
+scheduleHeartbeatCleanup();
+
 // Serve React app for all other routes (must be last)
 app.use((req, res) => {
     const indexPath = path.join(__dirname, '../public/index.html');
