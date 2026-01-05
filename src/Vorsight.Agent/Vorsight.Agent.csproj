@@ -12,6 +12,7 @@
     <Version>1.4.136</Version>
     <AssemblyVersion>1.4.136</AssemblyVersion>
     <FileVersion>1.4.136</FileVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <!-- Release configuration: optimized, no debug symbols -->
