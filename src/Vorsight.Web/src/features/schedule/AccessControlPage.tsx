@@ -3,9 +3,10 @@ import { VorsightApi, type AccessSchedule } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
-import { Input } from '../../components/ui/input';
+import { TimeInput } from '../../components/ui/time-input';
 import { Card } from '../../components/ui/card';
 import { Clock, Settings2, AlertCircle, X } from 'lucide-react';
+import { Usage24HourChart } from './Usage24HourChart';
 
 export function AccessControlPage() {
     const { selectedMachine } = useMachine();
@@ -192,19 +193,17 @@ export function AccessControlPage() {
                                     <div className="space-y-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Start Time</label>
-                                            <Input
-                                                type="time"
+                                            <TimeInput
                                                 value={tempStartTime}
-                                                onChange={(e) => setTempStartTime(e.target.value)}
+                                                onChange={setTempStartTime}
                                                 className="font-mono"
                                             />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">End Time</label>
-                                            <Input
-                                                type="time"
+                                            <TimeInput
                                                 value={tempEndTime}
-                                                onChange={(e) => setTempEndTime(e.target.value)}
+                                                onChange={setTempEndTime}
                                                 className="font-mono"
                                             />
                                         </div>
@@ -235,12 +234,27 @@ export function AccessControlPage() {
                 </div>
             )}
 
+            {/* 24-Hour Usage Visualization */}
+            {selectedMachine && scheduleEnforcementEnabled && (
+                <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <Clock size={16} className="text-primary" />
+                        24-Hour Activity Overview
+                    </h3>
+                    <Usage24HourChart
+                        machineId={selectedMachine.id}
+                        allowedStart={startTime}
+                        allowedEnd={endTime}
+                    />
+                </Card>
+            )}
+
             {/* Usage Statistics Card */}
             {selectedMachine && (
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
                     <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <Clock size={16} className="text-primary" />
-                        Usage Statistics
+                        Current Session
                     </h3>
                     <UsageStats machineId={selectedMachine.id} />
                 </Card>

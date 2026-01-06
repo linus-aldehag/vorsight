@@ -12,13 +12,14 @@ import { useHealthStats } from '../../features/dashboard/hooks/useHealthStats';
 import { MachineOnboardingDialog } from '../../features/machines/MachineOnboardingDialog';
 import { VorsightApi } from '../../api/client';
 import { Badge } from '../ui/badge';
+import { settingsEvents } from '../../lib/settingsEvents';
 import type { Machine } from '../../context/MachineContext';
 
 export function MainLayout() {
     const { machineId, view } = useParams();
     const navigate = useNavigate();
     const { machines, pendingMachines, selectedMachine, selectMachine, refreshMachines, onMachineDiscovered } = useMachine();
-    const { settings } = useHealthStats(selectedMachine?.id);
+    const { settings, refreshSettings } = useHealthStats(selectedMachine?.id);
 
     const [discoveredMachine, setDiscoveredMachine] = useState<Machine | null>(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -52,6 +53,14 @@ export function MainLayout() {
             });
         }
     }, [onMachineDiscovered]);
+
+    // Listen for settings updates from any page
+    useEffect(() => {
+        const unsubscribe = settingsEvents.subscribe(() => {
+            refreshSettings();
+        });
+        return unsubscribe;
+    }, [refreshSettings]);
 
     const handleAdopt = async (machineId: string, options: {
         displayName: string;

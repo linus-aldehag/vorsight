@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
 import { useEffect, useState } from 'react';
 import { cn } from '../../lib/utils';
+import { useSettings } from '../../context/SettingsContext';
 
 interface RetentionSettings {
     activity_retention_days: number;
@@ -15,6 +16,7 @@ interface RetentionSettings {
 }
 
 export function DataRetention() {
+    const { formatTimestamp } = useSettings();
     const [settings, setSettings] = useState<RetentionSettings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -314,7 +316,7 @@ export function DataRetention() {
 
                 {settings?.last_cleanup_run && (
                     <div className="text-xs text-muted-foreground text-center pt-2">
-                        Last cleanup: {new Date(settings.last_cleanup_run + 'Z').toLocaleString()}
+                        Last cleanup: {formatTimestamp(new Date(settings.last_cleanup_run + 'Z'), { includeDate: true })}
                     </div>
                 )}
             </div>

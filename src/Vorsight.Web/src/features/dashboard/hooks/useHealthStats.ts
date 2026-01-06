@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { VorsightApi, type AgentSettings } from '@/api/client';
 
 export function useHealthStats(machineId?: string) {
@@ -6,24 +6,28 @@ export function useHealthStats(machineId?: string) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    useEffect(() => {
+    const fetchSettings = useCallback(async () => {
         if (!machineId) {
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
-        VorsightApi.getSettings(machineId)
-            .then((data) => {
-                setSettings(data);
-                setError(null);
-            })
-            .catch((err) => {
-                console.error('Failed to fetch settings:', err);
-                setError(err);
-            })
-            .finally(() => setIsLoading(false));
+        try {
+            const data = await VorsightApi.getSettings(machineId);
+            setSettings(data);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch settings:', err);
+            setError(err as Error);
+        } finally {
+            setIsLoading(false);
+        }
     }, [machineId]);
 
-    return { settings, isLoading, error };
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
+
+    return { settings, isLoading, error, refreshSettings: fetchSettings };
 }
