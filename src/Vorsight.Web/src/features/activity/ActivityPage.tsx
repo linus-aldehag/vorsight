@@ -80,6 +80,15 @@ export function ActivityPage() {
         setSaving(true);
         setError(null);
 
+        // Optimistically update UI immediately for instant feedback
+        const previousEnabled = enabled;
+        const previousInterval = interval;
+        const previousSettings = settings;
+
+        setEnabled(tempEnabled);
+        setInterval(tempInterval);
+        setIsConfigOpen(false);
+
         try {
             const updatedSettings = {
                 ...settings,
@@ -89,12 +98,19 @@ export function ActivityPage() {
             };
 
             const response = await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
+            // Confirm with server response
             setSettings(response);
-            setEnabled(tempEnabled);
-            setInterval(tempInterval);
-            setIsConfigOpen(false);
+
+            // Broadcast settings update to refresh navigation icons
+            const { settingsEvents } = await import('../../lib/settingsEvents');
+            settingsEvents.emit();
         } catch (err) {
+            // Revert optimistic updates on error
+            setEnabled(previousEnabled);
+            setInterval(previousInterval);
+            setSettings(previousSettings);
             setError('Failed to save settings');
+            setIsConfigOpen(true); // Reopen dialog to show error
         } finally {
             setSaving(false);
         }
