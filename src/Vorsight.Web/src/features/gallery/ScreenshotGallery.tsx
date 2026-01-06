@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -83,23 +83,6 @@ export function ScreenshotGallery() {
     const [error, setError] = useState<string | null>(null);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-    const [gridColumns, setGridColumns] = useState(6);
-
-    // Update grid columns based on screen width
-    useEffect(() => {
-        const updateColumns = () => {
-            const width = window.innerWidth;
-            if (width < 640) setGridColumns(1);
-            else if (width < 768) setGridColumns(2);
-            else if (width < 1024) setGridColumns(3);
-            else if (width < 1280) setGridColumns(4);
-            else if (width < 1536) setGridColumns(5);
-            else setGridColumns(6);
-        };
-        updateColumns();
-        window.addEventListener('resize', updateColumns);
-        return () => window.removeEventListener('resize', updateColumns);
-    }, []);
 
     const loadSettings = useCallback(async () => {
         if (!selectedMachine) return;
@@ -235,14 +218,7 @@ export function ScreenshotGallery() {
         });
     }, [screenshots, dateRangeFilter]);
 
-    // Group images into rows for virtualization
-    const gridRows = useMemo(() => {
-        const rows: DriveFile[][] = [];
-        for (let i = 0; i < filteredImages.length; i += gridColumns) {
-            rows.push(filteredImages.slice(i, i + gridColumns));
-        }
-        return rows;
-    }, [filteredImages, gridColumns]);
+
 
     if (loading && screenshots.length === 0) {
         return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
@@ -376,35 +352,38 @@ export function ScreenshotGallery() {
                     No screenshots found.
                 </div>
             ) : (
-                <div style={{ height: 'calc(100vh - 320px)' }}>
-                    <Virtuoso
-                        data={gridRows}
-                        endReached={loadMore}
-                        overscan={200}
-                        itemContent={(_index, row) => (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-2">
-                                {row.map(img => (
-                                    <ScreenshotCard
-                                        key={img.id}
-                                        screenshot={img}
-                                        onImageClick={handleImageClick}
-                                        onImageError={handleImageError}
-                                        failedImages={failedImages}
-                                        formatDate={formatDate}
-                                    />
-                                ))}
+                <Virtuoso
+                    useWindowScroll
+                    data={filteredImages}
+                    endReached={loadMore}
+                    overscan={400}
+                    components={{
+                        List: React.forwardRef<HTMLDivElement, { children?: React.ReactNode; style?: React.CSSProperties }>(({ children, ...props }, ref) => (
+                            <div
+                                ref={ref}
+                                {...props}
+                                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
+                            >
+                                {children}
                             </div>
-                        )}
-                        components={{
-                            Footer: () => loadingMore ? (
-                                <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                                    <Loader2 className="animate-spin" size={20} />
-                                    <span>Loading more screenshots...</span>
-                                </div>
-                            ) : null
-                        }}
-                    />
-                </div>
+                        )),
+                        Footer: () => loadingMore ? (
+                            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Loading more screenshots...</span>
+                            </div>
+                        ) : null
+                    }}
+                    itemContent={(_index, img) => (
+                        <ScreenshotCard
+                            screenshot={img}
+                            onImageClick={handleImageClick}
+                            onImageError={handleImageError}
+                            failedImages={failedImages}
+                            formatDate={formatDate}
+                        />
+                    )}
+                />
             )}
 
             {/* Modal */}
