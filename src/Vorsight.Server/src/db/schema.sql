@@ -7,7 +7,9 @@ CREATE TABLE machines (
     registration_date DATETIME NOT NULL,
     last_seen DATETIME,
     is_online BOOLEAN DEFAULT 0,
+    status TEXT DEFAULT 'pending',
     api_key TEXT NOT NULL UNIQUE,
+    displayName TEXT,
     metadata TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -103,6 +105,7 @@ CREATE TABLE connection_events (
 
 -- Indexes for performance
 CREATE INDEX idx_machines_last_seen ON machines(last_seen);
+CREATE INDEX idx_machines_status ON machines(status);
 CREATE INDEX idx_activity_machine_time ON activity_history(machine_id, timestamp);
 CREATE INDEX idx_activity_sessions_machine_time ON activity_sessions(machine_id, start_time, end_time);
 CREATE INDEX idx_screenshots_machine_time ON screenshots(machine_id, capture_time);

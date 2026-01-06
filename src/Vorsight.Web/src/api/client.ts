@@ -157,6 +157,21 @@ export const VorsightApi = {
         });
         if (!res.ok) throw new Error('Failed to save settings');
         return res.json();
+    },
+
+    async adoptMachine(machineId: string, options: {
+        displayName?: string;
+        enableScreenshots: boolean;
+        enableActivity: boolean;
+        enableAudit: boolean;
+    }): Promise<{ success: boolean; machineId: string; displayName?: string }> {
+        const res = await fetch(`${BASE_URL}/machines/${machineId}/adopt`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify(options)
+        });
+        if (!res.ok) throw new Error('Failed to adopt machine');
+        return res.json();
     }
 };
 
