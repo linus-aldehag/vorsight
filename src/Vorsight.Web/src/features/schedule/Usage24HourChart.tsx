@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, ReferenceArea, ReferenceLine } from 'recharts';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Usage24HourChartProps {
     machineId: string;
@@ -18,6 +19,7 @@ interface ActivitySession {
 export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage24HourChartProps) {
     const [hourlyData, setHourlyData] = useState<{ hour: number; usage: number; allowed: boolean }[]>([]);
     const [loading, setLoading] = useState(true);
+    const { theme } = useTheme();
 
     useEffect(() => {
         loadUsageData();
@@ -79,27 +81,33 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
     const [startHour] = allowedStart.split(':').map(Number);
     const [endHour] = allowedEnd.split(':').map(Number);
 
+    // Use theme colors
+    const activityColor = theme.colors.primary;
+    const allowedColor = theme.colors.accent;
+    const labelColor = theme.colors.mutedForeground;
+    const borderColor = theme.colors.border;
+
     return (
         <div className="space-y-2">
             <div className="flex items-center gap-4 text-xs text-foreground">
                 <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--primary))' }} />
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: activityColor }} />
                     <span>Activity</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--chart-2))', opacity: 0.7 }} />
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: allowedColor }} />
                     <span>Allowed Hours</span>
                 </div>
             </div>
 
-            <div className="relative bg-card border border-border rounded-lg p-3 overflow-hidden" style={{ height: 150 }}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full bg-card border border-border rounded-lg p-3" style={{ height: 150 }}>
+                <ResponsiveContainer width="100%" height={120}>
                     <BarChart data={hourlyData} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
                         <XAxis
                             dataKey="hour"
                             tickFormatter={(hour) => hour % 6 === 0 ? `${hour.toString().padStart(2, '0')}:00` : ''}
-                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                            axisLine={{ stroke: 'hsl(var(--border))' }}
+                            tick={{ fill: labelColor, fontSize: 10 }}
+                            axisLine={{ stroke: borderColor }}
                             tickLine={false}
                             interval={0}
                         />
@@ -109,8 +117,8 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                             <ReferenceArea
                                 x1={startHour}
                                 x2={endHour}
-                                fill="hsl(var(--chart-2))"
-                                fillOpacity={0.15}
+                                fill={allowedColor}
+                                fillOpacity={0.4}
                                 strokeOpacity={0}
                             />
                         ) : (
@@ -119,16 +127,16 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                                 <ReferenceArea
                                     x1={startHour}
                                     x2={23}
-                                    fill="hsl(var(--chart-2))"
-                                    fillOpacity={0.15}
+                                    fill={allowedColor}
+                                    fillOpacity={0.4}
                                     strokeOpacity={0}
                                 />
                                 {/* After midnight */}
                                 <ReferenceArea
                                     x1={0}
                                     x2={endHour}
-                                    fill="hsl(var(--chart-2))"
-                                    fillOpacity={0.15}
+                                    fill={allowedColor}
+                                    fillOpacity={0.4}
                                     strokeOpacity={0}
                                 />
                             </>
@@ -137,15 +145,17 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                         {/* Boundary lines for allowed window */}
                         <ReferenceLine
                             x={startHour}
-                            stroke="hsl(var(--chart-2))"
+                            stroke={allowedColor}
                             strokeWidth={2}
                             strokeDasharray="3 3"
+                            strokeOpacity={0.8}
                         />
                         <ReferenceLine
                             x={endHour}
-                            stroke="hsl(var(--chart-2))"
+                            stroke={allowedColor}
                             strokeWidth={2}
                             strokeDasharray="3 3"
+                            strokeOpacity={0.8}
                         />
 
                         {/* Actual usage bars */}
@@ -157,8 +167,8 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                             {hourlyData.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
-                                    fill={entry.usage > 0 ? 'hsl(var(--primary))' : 'transparent'}
-                                    opacity={0.8}
+                                    fill={entry.usage > 0 ? activityColor : 'transparent'}
+                                    opacity={0.9}
                                 />
                             ))}
                         </Bar>
