@@ -30,7 +30,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c \"\"{command}\" {arguments}\"",  // Quote the command to prevent PATH resolution
+                    Arguments = $"/c {command} {arguments}",
                     UseShellExecute = false,
                     CreateNoWindow = true // Or false if we want to see it
                 };
@@ -88,7 +88,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     if (ProcessHelper.TryCreateProcessAsUser(
                         hUserToken,
                         null!, // Application Name
-                        $"\"{command}\" {arguments}", // Command Line
+                        $"{command} {arguments}", // Command Line
                         null!, // Working Directory (default)
                         out var pid))
                     {
