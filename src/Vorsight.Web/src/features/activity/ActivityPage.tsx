@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Activity, Settings2, AlertCircle, X } from "lucide-react";
 
 export function ActivityPage() {
@@ -260,15 +260,15 @@ export function ActivityPage() {
                 onDateRangeFilterChange={setDateRangeFilter}
             />
 
-            <Card>
-                <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-                    <CardHeader className="hidden md:block">
-                        <TabsList className="w-full grid grid-cols-1 md:grid-cols-2">
-                            <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-                            <TabsTrigger value="table" className="hidden md:flex">Table View</TabsTrigger>
-                        </TabsList>
-                    </CardHeader>
+            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+                <div className="hidden md:block mb-4">
+                    <TabsList className="w-full grid grid-cols-1 md:grid-cols-2">
+                        <TabsTrigger value="timeline">Timeline View</TabsTrigger>
+                        <TabsTrigger value="table" className="hidden md:flex">Table View</TabsTrigger>
+                    </TabsList>
+                </div>
 
+                <Card>
                     <CardContent>
                         {isLoading && (
                             <div className="flex items-center justify-center p-12">
@@ -294,8 +294,8 @@ export function ActivityPage() {
                             </>
                         )}
                     </CardContent>
-                </Tabs>
-            </Card>
+                </Card>
+            </Tabs>
         </div>
     );
 }
