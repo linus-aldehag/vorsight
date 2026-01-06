@@ -66,11 +66,23 @@ app.post('/api/machines/register', machinesRouter.stack.find(layer =>
         // Generate API key
         const apiKey = crypto.randomBytes(32).toString('hex');
 
-        // Insert machine
+        // Insert machine with pending status
         db.prepare(`
-            INSERT INTO machines (id, name, hostname, api_key, registration_date, metadata)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
+            INSERT INTO machines (id, name, hostname, api_key, registration_date, status, metadata)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'pending', ?)
         `).run(machineId, name, hostname, apiKey, JSON.stringify(metadata || {}));
+
+        // Emit WebSocket event for new machine discovery
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('machine:discovered', {
+                machineId,
+                name,
+                hostname,
+                timestamp: new Date().toISOString()
+            });
+            console.log(`🔍 New machine discovered: ${name} (${machineId})`);
+        }
 
         res.json({
             success: true,

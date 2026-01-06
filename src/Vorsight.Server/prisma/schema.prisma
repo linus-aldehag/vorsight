@@ -18,6 +18,7 @@ model Machine {
   ipAddress         String?  @map("ip_address")
   registrationDate  DateTime @map("registration_date")
   lastSeen          DateTime? @map("last_seen")
+  status            String   @default("pending") // pending or active
   apiKey            String   @unique @map("api_key")
   metadata          String?  // JSON string
   createdAt         DateTime @default(now()) @map("created_at")
@@ -32,6 +33,7 @@ model Machine {
   connectionEvents  ConnectionEvent[]
 
   @@index([lastSeen], name: "machines_last_seen_idx")
+  @@index([status], name: "machines_status_idx")
   @@map("machines")
 }
 

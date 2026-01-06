@@ -22,23 +22,28 @@ export interface Machine {
     pingStatus?: string | null;
     statusText?: string;
     lastSeen: string | null;
+    status?: 'pending' | 'active';
 }
 
 interface MachineContextType {
     machines: Machine[];
+    pendingMachines: Machine[];
     selectedMachine: Machine | null;
     selectMachine: (machineId: string) => void;
     refreshMachines: () => void;
     isLoading: boolean;
+    onMachineDiscovered?: (callback: (machine: Machine) => void) => void;
 }
 
 const MachineContext = createContext<MachineContextType | undefined>(undefined);
 
 export function MachineProvider({ children }: { children: ReactNode }) {
     const [machines, setMachines] = useState<Machine[]>([]);
+    const [pendingMachines, setPendingMachines] = useState<Machine[]>([]);
     const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
     const selectedMachineRef = useRef<Machine | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const discoveryCallbackRef = useRef<((machine: Machine) => void) | null>(null);
 
     // Keep ref in sync with state
     useEffect(() => {
@@ -58,11 +63,16 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         const handleMachinesList = (machinesList: Machine[]) => {
             const currentSelected = selectedMachineRef.current;
 
-            setMachines(machinesList);
+            // Separate active and pending machines
+            const activeMachines = machinesList.filter(m => m.status !== 'pending');
+            const pending = machinesList.filter(m => m.status === 'pending');
+
+            setMachines(activeMachines);
+            setPendingMachines(pending);
 
             // Update selected machine if it's in the new list
             if (currentSelected) {
-                const updatedMachine = machinesList.find(m => m.id === currentSelected.id);
+                const updatedMachine = activeMachines.find(m => m.id === currentSelected.id);
                 if (updatedMachine) {
                     // Only update if something actually changed to avoid breaking React.memo
                     const hasChanged = JSON.stringify(updatedMachine) !== JSON.stringify(currentSelected);
@@ -70,9 +80,9 @@ export function MachineProvider({ children }: { children: ReactNode }) {
                         setSelectedMachine(updatedMachine);
                     }
                 }
-            } else if (machinesList.length > 0) {
+            } else if (activeMachines.length > 0) {
                 // Auto-select first machine if none selected
-                setSelectedMachine(machinesList[0]);
+                setSelectedMachine(activeMachines[0]);
             }
             setIsLoading(false);
         };
@@ -109,11 +119,31 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.emit('web:subscribe');
         };
 
+        // Handler for machine discovery
+        const handleMachineDiscovered = (data: { machineId: string; name: string; hostname: string }) => {
+            console.log('🔍 Machine discovered:', data);
+            // Request fresh machine list
+            socketService.emit('web:subscribe');
+            // Call discovery callback if set
+            if (discoveryCallbackRef.current) {
+                discoveryCallbackRef.current({
+                    id: data.machineId,
+                    name: data.name,
+                    hostname: data.hostname,
+                    isOnline: false,
+                    status: 'pending',
+                    lastSeen: null,
+                    connectionStatus: 'offline'
+                });
+            }
+        };
+
         // Subscribe to events
         socketService.on('connect', handleConnect);
         socketService.on('machines:list', handleMachinesList);
         socketService.on('machine:online', handleMachineOnline);
         socketService.on('machine:offline', handleMachineOffline);
+        socketService.on('machine:discovered', handleMachineDiscovered);
 
         // Don't emit here - wait for connection event
         // The handleConnect function will emit when socket connects
@@ -145,9 +175,14 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.off('machines:list', handleMachinesList);
             socketService.off('machine:online', handleMachineOnline);
             socketService.off('machine:offline', handleMachineOffline);
+            socketService.off('machine:discovered', handleMachineDiscovered);
             clearInterval(refreshInterval);
         };
     }, []); // Only run once on mount
+
+    const onMachineDiscovered = (callback: (machine: Machine) => void) => {
+        discoveryCallbackRef.current = callback;
+    };
 
     const selectMachine = (machineId: string) => {
         const machine = machines.find(m => m.id === machineId);
@@ -169,7 +204,15 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <MachineContext.Provider value={{ machines, selectedMachine, selectMachine, refreshMachines, isLoading }}>
+        <MachineContext.Provider value={{
+            machines,
+            pendingMachines,
+            selectedMachine,
+            selectMachine,
+            refreshMachines,
+            isLoading,
+            onMachineDiscovered
+        }}>
             {children}
         </MachineContext.Provider>
     );

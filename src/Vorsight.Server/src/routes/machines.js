@@ -47,7 +47,19 @@ router.post('/register', (req, res) => {
 // Get all machines
 router.get('/', (req, res) => {
     try {
-        const rows = db.prepare('SELECT * FROM machines ORDER BY last_seen DESC').all();
+        const { status } = req.query;
+        let query = 'SELECT * FROM machines';
+        let params = [];
+
+        // Filter by status if provided
+        if (status) {
+            query += ' WHERE status = ?';
+            params.push(status);
+        }
+
+        query += ' ORDER BY last_seen DESC';
+
+        const rows = db.prepare(query).all(...params);
         const machines = rows.map(row => {
             const lastSeen = row.last_seen ? new Date(row.last_seen + 'Z') : null; // Ensure UTC interpretation if needed
             // 90 seconds timeout (3x default ping interval of 30s)
@@ -60,6 +72,7 @@ router.get('/', (req, res) => {
                 hostname: row.hostname,
                 lastSeen: row.last_seen,
                 isOnline: !!isOnline,
+                status: row.status || 'active',
                 metadata: row.metadata ? JSON.parse(row.metadata) : {}
             };
         });
@@ -140,6 +153,70 @@ router.patch('/:id/display-name', (req, res) => {
     } catch (error) {
         console.error('Update display name error:', error);
         res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+// Adopt a pending machine
+router.post('/:id/adopt', (req, res) => {
+    try {
+        const { displayName, enableScreenshots, enableActivity, enableAudit } = req.body;
+        const machineId = req.params.id;
+
+        // Verify machine exists and is pending
+        const machine = db.prepare('SELECT * FROM machines WHERE id = ?').get(machineId);
+        if (!machine) {
+            return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        if (machine.status === 'active') {
+            return res.status(400).json({ error: 'Machine already adopted' });
+        }
+
+        // Update machine status to active and set display name
+        db.prepare('UPDATE machines SET status = ?, displayName = ? WHERE id = ?')
+            .run('active', displayName || null, machineId);
+
+        // Create initial settings based on selected features
+        const initialSettings = {
+            screenshotIntervalSeconds: enableScreenshots ? 300 : 0,
+            pingIntervalSeconds: enableActivity ? 30 : 0,
+            isMonitoringEnabled: enableScreenshots || enableActivity,
+            isAuditEnabled: !!enableAudit
+        };
+
+        // Store settings in machine_state
+        db.prepare(`
+            INSERT INTO machine_state (machine_id, settings, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(machine_id) DO UPDATE SET
+                settings = excluded.settings,
+                updated_at = excluded.updated_at
+        `).run(machineId, JSON.stringify(initialSettings));
+
+        // Emit WebSocket event for machine adoption
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('machine:adopted', {
+                machineId,
+                name: machine.name,
+                displayName,
+                timestamp: new Date().toISOString()
+            });
+            // Also send updated machines list
+            io.emit('web:subscribe');
+        }
+
+        console.log(`✓ Machine adopted: ${displayName || machine.name} (${machineId})`);
+
+        res.json({
+            success: true,
+            machineId,
+            displayName,
+            settings: initialSettings
+        });
+    } catch (error) {
+        console.error('Adopt machine error:', error);
+        res.status(500).json({ error: 'Adoption failed' });
     }
 });
 
