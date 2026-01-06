@@ -95,6 +95,9 @@ public class ActivityCoordinator(
                     username = !string.IsNullOrEmpty(_currentUsername) ? _currentUsername : data.Username,
                     isContinuation = true // Flag to indicate this is a continuation, not a window change
                 });
+                
+                // Reset start time to prevent accumulating overlapping durations
+                _currentActivityStart = now;
             }
         }
 
