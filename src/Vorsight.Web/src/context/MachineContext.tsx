@@ -152,9 +152,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         fetch('/api/machines', { headers: getAuthHeaders() })
             .then(res => res.json())
             .then((data: Machine[]) => {
-                if (machines.length === 0) {
-                    handleMachinesList(data);
-                }
+                handleMachinesList(data);
             })
             .catch(err => {
                 console.error('Failed to fetch machines via HTTP:', err);
