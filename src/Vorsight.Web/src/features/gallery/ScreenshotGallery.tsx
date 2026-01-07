@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -22,7 +22,7 @@ interface ScreenshotCardProps {
 function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, formatDate }: ScreenshotCardProps) {
     return (
         <Card
-            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm h-full"
+            className="overflow-hidden cursor-pointer hover:border-primary/50 transition-colors group border-border/50 bg-card/50 backdrop-blur-sm"
             onClick={() => onImageClick(screenshot)}
         >
             <div className="aspect-video relative bg-black">
@@ -34,9 +34,10 @@ function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, 
                 ) : (
                     <img
                         src={`/api/media/${screenshot.id}`}
-                        className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         alt={screenshot.name}
                         onError={() => onImageError(screenshot.id)}
+                        loading="lazy"
                     />
                 )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -82,9 +83,27 @@ export function ScreenshotGallery() {
     const [error, setError] = useState<string | null>(null);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+
+    // Intersection Observer for infinite scroll
     const loadMoreRef = useRef<HTMLDivElement>(null);
 
-    const loadSettings = useCallback(async () => {
+    useEffect(() => {
+        if (selectedMachine) {
+            setScreenshots([]);
+            setCursor(null);
+            setHasMore(true);
+            setLoading(true);
+            loadInitialScreenshots();
+            if (!isConfigOpen) {
+                loadSettings();
+            }
+        } else {
+            setScreenshots([]);
+            setLoading(false);
+        }
+    }, [selectedMachine?.id]);
+
+    const loadSettings = async () => {
         if (!selectedMachine) return;
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
@@ -101,9 +120,9 @@ export function ScreenshotGallery() {
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
-    }, [selectedMachine?.id]);
+    };
 
-    const loadInitialScreenshots = useCallback(async () => {
+    const loadInitialScreenshots = async () => {
         if (!selectedMachine) return;
 
         setLoading(true);
@@ -118,37 +137,50 @@ export function ScreenshotGallery() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMachine?.id]);
+    };
 
-    const handleImageError = useCallback((imgId: string) => {
-        setFailedImages(prev => new Set(prev).add(imgId));
-    }, []);
+    const loadMore = useCallback(async () => {
+        if (!selectedMachine || !hasMore || loadingMore || !cursor) return;
 
-    const handleImageClick = useCallback((img: DriveFile) => {
-        setSelectedImage(img);
-        setIsModalOpen(true);
-    }, []);
-
-    const formatDate = useCallback((dateStr: string) => {
-        return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
-    }, [formatTimestamp]);
-
-    useEffect(() => {
-        if (selectedMachine) {
-            // Clear screenshots immediately when machine changes to avoid showing stale data
-            setScreenshots([]);
-            setCursor(null);
-            setHasMore(true);
-            setLoading(true);
-            loadInitialScreenshots();
-            loadSettings();
-        } else {
-            setScreenshots([]);
-            setLoading(false);
+        setLoadingMore(true);
+        try {
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50, cursor);
+            setScreenshots(prev => [...prev, ...data.screenshots]);
+            setCursor(data.cursor);
+            setHasMore(data.hasMore);
+        } catch (err) {
+            console.error('Failed to load more screenshots:', err);
+        } finally {
+            setLoadingMore(false);
         }
-    }, [selectedMachine?.id, loadInitialScreenshots, loadSettings]);
+    }, [selectedMachine, hasMore, loadingMore, cursor]);
 
+    // Set up Intersection Observer for infinite scroll
+    useEffect(() => {
+        if (!loadMoreRef.current || !hasMore) return;
 
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting && !loadingMore) {
+                    loadMore();
+                }
+            },
+            {
+                root: null,
+                rootMargin: '400px', // Start loading 400px before reaching the trigger
+                threshold: 0
+            }
+        );
+
+        observer.observe(loadMoreRef.current);
+
+        return () => {
+            if (loadMoreRef.current) {
+                observer.unobserve(loadMoreRef.current);
+            }
+        };
+    }, [loadMore, hasMore, loadingMore]);
 
     const handleApply = async () => {
         if (!selectedMachine) return;
@@ -183,7 +215,18 @@ export function ScreenshotGallery() {
         setIsConfigOpen(false);
     };
 
+    const handleImageError = (imgId: string) => {
+        setFailedImages(prev => new Set(prev).add(imgId));
+    };
 
+    const handleImageClick = (img: DriveFile) => {
+        setSelectedImage(img);
+        setIsModalOpen(true);
+    };
+
+    const formatDate = (dateStr: string) => {
+        return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
+    };
 
     // Apply date range filter
     const filteredImages = useMemo(() => {
@@ -201,44 +244,6 @@ export function ScreenshotGallery() {
             return true;
         });
     }, [screenshots, dateRangeFilter]);
-
-    // Intersection Observer for infinite scroll
-    useEffect(() => {
-        if (!loadMoreRef.current || !hasMore || loadingMore) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && !loadingMore && hasMore) {
-                    // Call loadMore directly without depending on it in the effect
-                    if (!selectedMachine || !cursor) return;
-
-                    setLoadingMore(true);
-                    VorsightApi.getScreenshots(selectedMachine.id, 50, cursor)
-                        .then(data => {
-                            setScreenshots(prev => {
-                                // Deduplicate by ID to prevent React key warnings
-                                const existingIds = new Set(prev.map(s => s.id));
-                                const newScreenshots = data.screenshots.filter(s => !existingIds.has(s.id));
-                                return [...prev, ...newScreenshots];
-                            });
-                            setCursor(data.cursor);
-                            setHasMore(data.hasMore);
-                        })
-                        .catch(err => console.error('Failed to load more screenshots:', err))
-                        .finally(() => setLoadingMore(false));
-                }
-            },
-            { threshold: 0.1, rootMargin: '100px' }
-        );
-
-        observer.observe(loadMoreRef.current);
-
-        return () => {
-            observer.disconnect();
-        };
-    }, [hasMore, loadingMore, cursor, selectedMachine?.id]);
-
-
 
     if (loading && screenshots.length === 0) {
         return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
@@ -366,14 +371,14 @@ export function ScreenshotGallery() {
                 </Button>
             </div>
 
-            {/* Virtualized Gallery Grid */}
+            {/* Gallery Grid */}
             {screenshots.length === 0 ? (
                 <div className="p-20 text-center border border-dashed border-border rounded-lg text-muted-foreground">
                     No screenshots found.
                 </div>
             ) : (
-                <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {filteredImages.map((img) => (
                             <ScreenshotCard
                                 key={img.id}
@@ -386,21 +391,28 @@ export function ScreenshotGallery() {
                         ))}
                     </div>
 
-                    {/* Load more trigger */}
+                    {/* Infinite Scroll Trigger */}
                     {hasMore && (
-                        <div
-                            ref={loadMoreRef}
-                            className="flex items-center justify-center gap-2 py-8 text-muted-foreground min-h-[100px]"
-                        >
-                            {loadingMore && (
-                                <>
+                        <div ref={loadMoreRef} className="flex items-center justify-center py-8">
+                            {loadingMore ? (
+                                <div className="flex items-center gap-2 text-muted-foreground">
                                     <Loader2 className="animate-spin" size={20} />
                                     <span>Loading more screenshots...</span>
-                                </>
+                                </div>
+                            ) : (
+                                <div className="text-xs text-muted-foreground">
+                                    Scroll for more...
+                                </div>
                             )}
                         </div>
                     )}
-                </>
+
+                    {!hasMore && screenshots.length > 0 && (
+                        <div className="text-center py-8 text-xs text-muted-foreground">
+                            All screenshots loaded
+                        </div>
+                    )}
+                </div>
             )}
 
             {/* Modal */}
