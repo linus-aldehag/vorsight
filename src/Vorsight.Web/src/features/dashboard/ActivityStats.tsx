@@ -76,6 +76,16 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
                                     contentStyle={{ backgroundColor: '#0D1117', border: '1px solid #333' }}
                                     labelStyle={{ color: '#888888' }}
                                     cursor={{ fill: 'transparent' }}
+                                    formatter={(value: number | undefined) => {
+                                        if (value === undefined) return ['0 minutes', 'Active Time'];
+                                        const mins = Math.floor(value);
+                                        if (mins < 60) return [mins === 1 ? '1 minute' : `${mins} minutes`, 'Active Time'];
+                                        const hours = Math.floor(mins / 60);
+                                        const remainingMins = mins % 60;
+                                        return remainingMins > 0
+                                            ? [`${hours}h ${remainingMins}m`, 'Active Time']
+                                            : [`${hours}h`, 'Active Time'];
+                                    }}
                                 />
                                 <Bar
                                     dataKey="minutes"
