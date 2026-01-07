@@ -19,9 +19,11 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             var sessionId = ProcessHelper.GetActiveConsoleSessionId();
             if (sessionId == 0xFFFFFFFF)
             {
-                logger.LogError("No active console session found");
+                logger.LogError("No active console session found. User may not be logged in or terminal services not running.");
                 return false;
             }
+            
+            logger.LogDebug("Active console session ID: {SessionId}", sessionId);
 
             // Optimization: If we are already in the target session, just start the process directly
             if (System.Diagnostics.Process.GetCurrentProcess().SessionId == sessionId)
@@ -44,9 +46,22 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
 
             if (userProcess == null)
             {
-                logger.LogError("Could not find explorer.exe in session {SessionId}", sessionId);
+                // Log all processes in the session for diagnostics
+                var sessionProcesses = System.Diagnostics.Process.GetProcesses()
+                    .Where(p => p.SessionId == sessionId)
+                    .Select(p => p.ProcessName)
+                    .Take(10)
+                    .ToArray();
+                
+                logger.LogError(
+                    "Could not find explorer.exe in session {SessionId}. This usually means explorer.exe crashed or user is at login screen. " +
+                    "Available processes in session: {Processes}. Suggestion: Wait for user to log in fully.",
+                    sessionId,
+                    string.Join(", ", sessionProcesses));
                 return false;
             }
+            
+            logger.LogDebug("Found explorer.exe with PID {Pid} in session {SessionId}", userProcess.Id, sessionId);
 
             // 3. Open Process Token
             // 3. Open Process Token
@@ -61,7 +76,8 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             {
                 if (!ProcessHelper.TryOpenProcessToken(hProcess, ProcessInterop.TOKEN_DUPLICATE, out var hToken))
                 {
-                    logger.LogError("Failed to open process token for explorer.exe");
+                    logger.LogError("Failed to open process token for explorer.exe. This may indicate insufficient service permissions. " +
+                        "Ensure the service is running as SYSTEM or with appropriate privileges.");
                     return false;
                 }
 
@@ -78,7 +94,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     ProcessInterop.TokenPrimary,
                     out var hUserToken))
                 {
-                    logger.LogError("Failed to duplicate token");
+                    logger.LogError("Failed to duplicate token. Check service permissions and Windows security policy.");
                     return false;
                 }
 
@@ -97,7 +113,8 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     }
                     else
                     {
-                        logger.LogError("Failed to CreateProcessAsUser");
+                        logger.LogError("Failed to CreateProcessAsUser for command: {Command}. This may be due to UAC restrictions or invalid executable path.", 
+                            command);
                         return false;
                     }
                 }

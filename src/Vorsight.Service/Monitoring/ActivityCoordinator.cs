@@ -24,7 +24,8 @@ public class ActivityCoordinator(
     INamedPipeServer ipcServer,
     ICommandExecutor commandExecutor,
     ISettingsManager settingsManager,
-    IServerConnection serverConnection)
+    IServerConnection serverConnection,
+    IHealthMonitor healthMonitor)
     : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -32,6 +33,7 @@ public class ActivityCoordinator(
     private readonly ICommandExecutor _commandExecutor = commandExecutor;
     private readonly ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
+    private readonly IHealthMonitor _healthMonitor = healthMonitor;
     private string _currentWindow = string.Empty;
     private string _currentProcess = string.Empty;
     private DateTime _currentActivityStart = DateTime.MinValue;
@@ -39,10 +41,22 @@ public class ActivityCoordinator(
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
     private string _currentUsername = string.Empty;
+    
+    // Recovery tracking
+    private int _consecutiveAgentCommandFailures = 0;
+    private DateTime _lastAgentPathResolveAttempt = DateTime.MinValue;
+    private string _cachedAgentPath = string.Empty;
 
     public void UpdateActivity(Vorsight.Contracts.Models.ActivityData data)
     {
         var now = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime;
+
+        // Report successful activity reception to health monitor
+        _healthMonitor.RecordActivitySuccess();
+        _healthMonitor.UpdateLastActivityReceived(now);
+        
+        // Reset failure counter on successful activity
+        _consecutiveAgentCommandFailures = 0;
 
         // Initialize tracking if needed
         if (_currentActivityStart == DateTime.MinValue)
@@ -114,31 +128,37 @@ public class ActivityCoordinator(
     {
         var monitorLogger = _loggerFactory.CreateLogger<ActivityCoordinator>();
         
-        // Validate agent executable exists before starting monitoring
-        var agentPath = ResolveAgentPath();
-        if (string.IsNullOrEmpty(agentPath))
+        // Try to resolve agent path at startup, but don't give up if it fails
+        _cachedAgentPath = ResolveAgentPath();
+        _lastAgentPathResolveAttempt = DateTime.UtcNow;
+        
+        if (string.IsNullOrEmpty(_cachedAgentPath))
         {
-            monitorLogger.LogWarning("Agent executable not found at startup. Activity monitoring will be disabled.");
-            monitorLogger.LogWarning("Configure Agent:ExecutablePath in appsettings.json to enable activity monitoring. BaseDir: {Base}", AppContext.BaseDirectory);
-            
-            // Wait for cancellation instead of spinning with warnings
-            try
-            {
-                await Task.Delay(Timeout.Infinite, cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                monitorLogger.LogInformation("Activity monitoring stopped (agent not configured)");
-            }
-            return;
+            monitorLogger.LogWarning("Agent executable not found at startup. Will retry every 30 seconds.");
+            monitorLogger.LogWarning("Configure Agent:ExecutablePath in appsettings.json or ensure wuapihost.exe is in: {Base}", AppContext.BaseDirectory);
         }
-
-        monitorLogger.LogInformation("Activity monitoring started with agent: {AgentPath}", agentPath);
+        else
+        {
+            monitorLogger.LogInformation("Activity monitoring started with agent: {AgentPath}", _cachedAgentPath);
+        }
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
+                // Periodically retry agent path resolution if it's missing
+                if (string.IsNullOrEmpty(_cachedAgentPath) && 
+                    (DateTime.UtcNow - _lastAgentPathResolveAttempt).TotalSeconds > 30)
+                {
+                    _cachedAgentPath = ResolveAgentPath();
+                    _lastAgentPathResolveAttempt = DateTime.UtcNow;
+                    
+                    if (!string.IsNullOrEmpty(_cachedAgentPath))
+                    {
+                        monitorLogger.LogInformation("Agent executable found: {AgentPath}", _cachedAgentPath);
+                    }
+                }
+                
                 // Get current settings
                 var settings = await _settingsManager.GetSettingsAsync();
                 
@@ -148,26 +168,60 @@ public class ActivityCoordinator(
                     await Task.Delay(5000, cancellationToken);
                     continue;
                 }
+                
+                // Skip activity polling if agent is not available
+                if (string.IsNullOrEmpty(_cachedAgentPath))
+                {
+                    await Task.Delay(5000, cancellationToken);
+                    continue;
+                }
 
                 var now = DateTime.UtcNow;
                 var pollInterval = TimeSpan.FromSeconds(settings.PingIntervalSeconds);
                 var screenshotInterval = TimeSpan.FromSeconds(settings.ScreenshotIntervalSeconds);
 
-                // Log current settings every 10 iterations for diagnostics
+                // Log current settings every 5 minutes for diagnostics
                 if (_lastPollTime == DateTime.MinValue || (now - _lastPollTime).TotalMinutes > 5)
                 {
-                    monitorLogger.LogInformation("Activity monitoring settings: Screenshot={Screenshot}s, Ping={Ping}s, Monitoring={Enabled}", 
+                    var healthStatus = _healthMonitor.GetActivityHealthStatus();
+                    monitorLogger.LogInformation(
+                        "Activity monitoring: Screenshot={Screenshot}s, Ping={Ping}s, Health={Health}, ConsecutiveFailures={Failures}", 
                         settings.ScreenshotIntervalSeconds, 
-                        settings.PingIntervalSeconds, 
-                        settings.IsMonitoringEnabled);
+                        settings.PingIntervalSeconds,
+                        healthStatus,
+                        _consecutiveAgentCommandFailures);
                 }
 
                 // Poll Agent for Activity
                 if (now - _lastPollTime > pollInterval)
                 {
                     _lastPollTime = now;
-                    // Agent path already validated at startup
-                    _commandExecutor.RunCommandAsUser(agentPath, "activity");
+                    
+                    // Execute agent command and track result
+                    var commandSuccess = _commandExecutor.RunCommandAsUser(_cachedAgentPath, "activity");
+                    
+                    if (commandSuccess)
+                    {
+                        _healthMonitor.RecordAgentCommandSuccess();
+                        _consecutiveAgentCommandFailures = 0;
+                    }
+                    else
+                    {
+                        _healthMonitor.RecordAgentCommandFailure();
+                        _consecutiveAgentCommandFailures++;
+                        
+                        monitorLogger.LogWarning(
+                            "Agent command failed (attempt {Attempts}). This may indicate explorer.exe is not running or session access issues.",
+                            _consecutiveAgentCommandFailures);
+                        
+                        // After 3 consecutive failures, invalidate cached agent path to force re-resolution
+                        if (_consecutiveAgentCommandFailures >= 3)
+                        {
+                            monitorLogger.LogWarning("Multiple consecutive agent command failures. Will retry agent path resolution.");
+                            _cachedAgentPath = string.Empty;
+                            _lastAgentPathResolveAttempt = DateTime.MinValue;
+                        }
+                    }
                     
                     // Send heartbeat to server with current activity
                     if (_serverConnection.IsConnected && _latestSnapshot != null)
