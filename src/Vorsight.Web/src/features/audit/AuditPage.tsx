@@ -47,6 +47,10 @@ function AuditConfigurationModal({ machineId, onClose }: { machineId: string, on
 
             await VorsightApi.saveSettings(machineId, updatedSettings);
             onClose();
+
+            // Broadcast settings update to refresh navigation icons
+            const { settingsEvents } = await import('@/lib/settingsEvents');
+            settingsEvents.emit();
         } catch (err) {
             setError('Failed to save settings');
         } finally {

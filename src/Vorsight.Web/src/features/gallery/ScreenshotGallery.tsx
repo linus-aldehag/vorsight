@@ -128,7 +128,7 @@ export function ScreenshotGallery() {
         setLoading(true);
         setFailedImages(new Set());
         try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50);
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 20);
             setScreenshots(data.screenshots);
             setCursor(data.cursor);
             setHasMore(data.hasMore);
@@ -144,7 +144,7 @@ export function ScreenshotGallery() {
 
         setLoadingMore(true);
         try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50, cursor);
+            const data = await VorsightApi.getScreenshots(selectedMachine.id, 20, cursor);
             setScreenshots(prev => [...prev, ...data.screenshots]);
             setCursor(data.cursor);
             setHasMore(data.hasMore);
@@ -201,6 +201,10 @@ export function ScreenshotGallery() {
             setEnabled(tempEnabled);
             setInterval(tempInterval);
             setIsConfigOpen(false);
+
+            // Broadcast settings update to refresh navigation icons
+            const { settingsEvents } = await import('../../lib/settingsEvents');
+            settingsEvents.emit();
         } catch (err) {
             setError('Failed to save settings');
         } finally {
