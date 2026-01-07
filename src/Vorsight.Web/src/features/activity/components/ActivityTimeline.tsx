@@ -25,7 +25,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
     const sortedKeys = Object.keys(groupedActivities).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     return (
-        <ScrollArea className="h-[600px] w-full rounded-md border p-4">
+        <ScrollArea className="h-[600px] w-full p-4">
             <div className="space-y-8">
                 {mergedActivities.length === 0 ? (
                     <div className="text-center text-muted-foreground p-8">No activity recorded.</div>
