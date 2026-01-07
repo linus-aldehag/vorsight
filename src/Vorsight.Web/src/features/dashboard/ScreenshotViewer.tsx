@@ -4,6 +4,7 @@ import { useMachine } from '@/context/MachineContext';
 import { useSettings } from '@/context/SettingsContext';
 import { Image as ImageIcon, Info } from 'lucide-react';
 import { useState, memo } from 'react';
+import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import { cn } from '@/lib/utils';
 
@@ -135,22 +136,23 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
             </CardContent>
 
             {/* Full-size image modal */}
-            {selectedImage && (
+            {selectedImage && createPortal(
                 <div
-                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
                     onClick={() => setSelectedImage(null)}
                 >
-                    <div className="relative max-w-full max-h-full">
+                    <div className="relative w-full h-full flex items-center justify-center">
                         <img
                             src={selectedImage}
                             alt="Full size screenshot"
-                            className="max-w-screen md:max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            className="max-w-[98vw] max-h-[98vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
                         />
                         <button className="absolute -top-10 right-0 text-white/70 hover:text-white">
                             Close [Esc]
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </Card>
     );
