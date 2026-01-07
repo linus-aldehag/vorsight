@@ -18,6 +18,7 @@ import {
 export function MachineSelector() {
     const { machines, selectedMachine, selectMachine, isLoading, refreshMachines } = useMachine();
     const navigate = useNavigate();
+    const [isOpen, setIsOpen] = React.useState(false);
 
     const handleMachineClick = (machineId: string) => {
         selectMachine(machineId);
@@ -66,7 +67,6 @@ export function MachineSelector() {
     }
 
     // For multiple machines, use a Dialog-based switcher for better mobile capability
-    const [isOpen, setIsOpen] = React.useState(false);
 
     return (
         <>

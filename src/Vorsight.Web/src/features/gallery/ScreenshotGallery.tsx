@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -9,7 +9,6 @@ import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/clien
 import { useMachine } from '../../context/MachineContext';
 import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
-import { Virtuoso } from 'react-virtuoso';
 
 // Screenshot Card Component
 interface ScreenshotCardProps {
@@ -83,6 +82,7 @@ export function ScreenshotGallery() {
     const [error, setError] = useState<string | null>(null);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+    const loadMoreRef = useRef<HTMLDivElement>(null);
 
     const loadSettings = useCallback(async () => {
         if (!selectedMachine) return;
@@ -101,7 +101,7 @@ export function ScreenshotGallery() {
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
-    }, [selectedMachine]);
+    }, [selectedMachine?.id]);
 
     const loadInitialScreenshots = useCallback(async () => {
         if (!selectedMachine) return;
@@ -118,23 +118,7 @@ export function ScreenshotGallery() {
         } finally {
             setLoading(false);
         }
-    }, [selectedMachine]);
-
-    const loadMore = useCallback(async () => {
-        if (!selectedMachine || !hasMore || loadingMore || !cursor) return;
-
-        setLoadingMore(true);
-        try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 50, cursor);
-            setScreenshots(prev => [...prev, ...data.screenshots]);
-            setCursor(data.cursor);
-            setHasMore(data.hasMore);
-        } catch (err) {
-            console.error('Failed to load more screenshots:', err);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [selectedMachine, hasMore, loadingMore, cursor]);
+    }, [selectedMachine?.id]);
 
     const handleImageError = useCallback((imgId: string) => {
         setFailedImages(prev => new Set(prev).add(imgId));
@@ -217,6 +201,42 @@ export function ScreenshotGallery() {
             return true;
         });
     }, [screenshots, dateRangeFilter]);
+
+    // Intersection Observer for infinite scroll
+    useEffect(() => {
+        if (!loadMoreRef.current || !hasMore || loadingMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !loadingMore && hasMore) {
+                    // Call loadMore directly without depending on it in the effect
+                    if (!selectedMachine || !cursor) return;
+
+                    setLoadingMore(true);
+                    VorsightApi.getScreenshots(selectedMachine.id, 50, cursor)
+                        .then(data => {
+                            setScreenshots(prev => {
+                                // Deduplicate by ID to prevent React key warnings
+                                const existingIds = new Set(prev.map(s => s.id));
+                                const newScreenshots = data.screenshots.filter(s => !existingIds.has(s.id));
+                                return [...prev, ...newScreenshots];
+                            });
+                            setCursor(data.cursor);
+                            setHasMore(data.hasMore);
+                        })
+                        .catch(err => console.error('Failed to load more screenshots:', err))
+                        .finally(() => setLoadingMore(false));
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        observer.observe(loadMoreRef.current);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [hasMore, loadingMore, cursor, selectedMachine?.id]);
 
 
 
@@ -352,38 +372,35 @@ export function ScreenshotGallery() {
                     No screenshots found.
                 </div>
             ) : (
-                <Virtuoso
-                    useWindowScroll
-                    data={filteredImages}
-                    endReached={loadMore}
-                    overscan={400}
-                    components={{
-                        List: React.forwardRef<HTMLDivElement, { children?: React.ReactNode; style?: React.CSSProperties }>(({ children, ...props }, ref) => (
-                            <div
-                                ref={ref}
-                                {...props}
-                                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4"
-                            >
-                                {children}
-                            </div>
-                        )),
-                        Footer: () => loadingMore ? (
-                            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                                <Loader2 className="animate-spin" size={20} />
-                                <span>Loading more screenshots...</span>
-                            </div>
-                        ) : null
-                    }}
-                    itemContent={(_index, img) => (
-                        <ScreenshotCard
-                            screenshot={img}
-                            onImageClick={handleImageClick}
-                            onImageError={handleImageError}
-                            failedImages={failedImages}
-                            formatDate={formatDate}
-                        />
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                        {filteredImages.map((img) => (
+                            <ScreenshotCard
+                                key={img.id}
+                                screenshot={img}
+                                onImageClick={handleImageClick}
+                                onImageError={handleImageError}
+                                failedImages={failedImages}
+                                formatDate={formatDate}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Load more trigger */}
+                    {hasMore && (
+                        <div
+                            ref={loadMoreRef}
+                            className="flex items-center justify-center gap-2 py-8 text-muted-foreground min-h-[100px]"
+                        >
+                            {loadingMore && (
+                                <>
+                                    <Loader2 className="animate-spin" size={20} />
+                                    <span>Loading more screenshots...</span>
+                                </>
+                            )}
+                        </div>
                     )}
-                />
+                </>
             )}
 
             {/* Modal */}
