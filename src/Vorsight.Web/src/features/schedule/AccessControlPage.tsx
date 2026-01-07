@@ -87,6 +87,10 @@ export function AccessControlPage() {
             setStartTime(tempStartTime);
             setEndTime(tempEndTime);
             setIsConfigOpen(false);
+
+            // Broadcast settings update to refresh navigation icons
+            const { settingsEvents } = await import('../../lib/settingsEvents');
+            settingsEvents.emit();
         } catch (err) {
             setError('Failed to save access control settings');
         } finally {
@@ -149,7 +153,7 @@ export function AccessControlPage() {
                         <div className="flex flex-col h-full">
                             {/* Modal header */}
                             <div className="flex items-center justify-between p-4 border-b border-border">
-                                <h3 className="text-lg font-semibold">Time Window Enforcement</h3>
+                                <h3 className="text-lg font-semibold">Access Control</h3>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -235,7 +239,7 @@ export function AccessControlPage() {
             )}
 
             {/* 24-Hour Usage Visualization */}
-            {selectedMachine && scheduleEnforcementEnabled && (
+            {selectedMachine && (
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
                     <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <Clock size={16} className="text-primary" />
