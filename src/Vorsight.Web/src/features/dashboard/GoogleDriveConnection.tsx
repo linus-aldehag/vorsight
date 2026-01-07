@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Cloud, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
 
 interface OAuthStatus {
     connected: boolean;
@@ -11,6 +12,7 @@ interface OAuthStatus {
 }
 
 export function GoogleDriveConnection() {
+    const { formatTimestamp } = useSettings();
     const [status, setStatus] = useState<OAuthStatus | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export function GoogleDriveConnection() {
                         </div>
                         {status.connectedAt && (
                             <div className="text-xs text-muted-foreground">
-                                Connected: {new Date(status.connectedAt).toLocaleString()}
+                                Connected: {formatTimestamp(status.connectedAt, { includeDate: true, includeSeconds: true })}
                             </div>
                         )}
                         <Button
