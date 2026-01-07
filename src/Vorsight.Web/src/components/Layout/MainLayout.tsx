@@ -6,6 +6,7 @@ import { ScreenshotGallery } from '../../features/gallery/ScreenshotGallery';
 import { ActivityPage } from '../../features/activity/ActivityPage';
 import { AuditPage } from '../../features/audit/AuditPage';
 import { AccessControlPage } from '../../features/schedule/AccessControlPage';
+import { FeaturesPage } from '../../features/settings/FeaturesPage';
 import { AppHeader } from './AppHeader';
 import { NavigationTabs } from './NavigationTabs';
 import { useHealthStats } from '../../features/dashboard/hooks/useHealthStats';
@@ -41,6 +42,26 @@ export function MainLayout() {
             navigate(`/${selectedMachine.id}/${view}`, { replace: true });
         }
     }, [machineId, selectedMachine, view, navigate, selectMachine]);
+
+    // Redirect to dashboard if accessing a disabled feature
+    useEffect(() => {
+        if (!settings || !view) return;
+
+        const isFeatureDisabled = () => {
+            switch (view) {
+                case 'gallery': return !settings.isScreenshotEnabled;
+                case 'activity': return !settings.isActivityEnabled;
+                case 'audit': return !settings.isAuditEnabled;
+                case 'control': return !settings.isAccessControlEnabled;
+                default: return false;
+            }
+        };
+
+        if (isFeatureDisabled()) {
+            const targetPath = selectedMachine ? `/${selectedMachine.id}/dashboard` : '/dashboard';
+            navigate(targetPath, { replace: true });
+        }
+    }, [settings, view, navigate, selectedMachine]);
 
     // Listen for machine discoveries
     useEffect(() => {
@@ -101,6 +122,7 @@ export function MainLayout() {
                 {currentView === 'activity' && <ActivityPage />}
                 {currentView === 'audit' && <AuditPage />}
                 {currentView === 'control' && <AccessControlPage />}
+                {currentView === 'features' && <FeaturesPage />}
             </main>
 
             {/* Discovery Toast Notification */}

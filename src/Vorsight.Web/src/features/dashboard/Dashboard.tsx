@@ -5,6 +5,7 @@ import { ActivityMonitor } from './ActivityMonitor';
 import { AuditAlert } from './AuditAlert';
 import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
+import { FeaturesWidget } from './FeaturesWidget';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { useMachine } from '@/context/MachineContext';
@@ -15,11 +16,17 @@ export function Dashboard() {
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [machineVersion, setMachineVersion] = useState<string | null>(null);
 
-    useEffect(() => {
+    const loadSettings = () => {
         if (selectedMachine) {
             VorsightApi.getSettings(selectedMachine.id)
                 .then(setSettings)
                 .catch(console.error);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedMachine) {
+            loadSettings();
 
             // Listen for machine state updates to capture version
             const handleMachineState = (data: any) => {
@@ -36,6 +43,14 @@ export function Dashboard() {
         }
     }, [selectedMachine]);
 
+    // Listen for settings updates from any page
+    useEffect(() => {
+        import('@/lib/settingsEvents').then(({ settingsEvents }) => {
+            const unsubscribe = settingsEvents.subscribe(loadSettings);
+            return unsubscribe;
+        });
+    }, [selectedMachine]);
+
     return (
         <div className="flex flex-col gap-4 sm:gap-6 h-full">
             {/* Top Section: Main grid - Mobile-first */}
@@ -45,18 +60,21 @@ export function Dashboard() {
                     {/* Row 1: Health & Current Activity - side by side on small screens and up */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                         <HealthStats version={machineVersion} />
-                        <ActivityMonitor isDisabled={settings?.pingIntervalSeconds === 0} />
+                        <ActivityMonitor isDisabled={!settings?.isActivityEnabled} />
                     </div>
 
                     {/* Row 2: Activity Stats */}
-                    <ActivityStats isDisabled={settings?.pingIntervalSeconds === 0} />
+                    <ActivityStats isDisabled={!settings?.isActivityEnabled} />
+
+                    {/* Row 3: Features Widget */}
+                    <FeaturesWidget settings={settings} />
                 </div>
 
                 {/* Side Panel - full width on mobile, 4/12 cols on large */}
                 <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-6">
                     {/* Screenshot Viewer */}
                     <div className="min-h-[300px] lg:min-h-0 lg:flex-1">
-                        <ScreenshotViewer isDisabled={settings?.screenshotIntervalSeconds === 0} />
+                        <ScreenshotViewer isDisabled={!settings?.isScreenshotEnabled} />
                     </div>
 
                     {/* System Controls - hide on mobile, show on large screens */}

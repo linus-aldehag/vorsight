@@ -1,14 +1,38 @@
 import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 import { useTheme } from '../../context/ThemeContext';
 import { useSettings } from '../../context/SettingsContext';
+import { useMachine } from '../../context/MachineContext';
 import { GoogleDriveConnection } from '../dashboard/GoogleDriveConnection';
 import { DataRetention } from './DataRetention';
-import { Palette, Check, Settings } from 'lucide-react';
+import { Palette, Check, Settings, Sliders } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useState } from 'react';
+import { FeaturesPage } from './FeaturesPage';
 
 export function SettingsPage() {
     const { currentTheme, setTheme, availableThemes } = useTheme();
     const { timeFormat, setTimeFormat } = useSettings();
+    const { selectedMachine } = useMachine();
+    const [showFeatures, setShowFeatures] = useState(false);
+
+    // If showing features page, render that instead
+    if (showFeatures) {
+        return (
+            <div className="space-y-6 max-w-4xl mx-auto">
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowFeatures(false)}
+                    >
+                        ← Back to Settings
+                    </Button>
+                </div>
+                <FeaturesPage />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
@@ -17,6 +41,28 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-6">
+                {/* Features Management - Only show if machine is selected */}
+                {selectedMachine && (
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-1">
+                                <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
+                                    <Sliders size={16} className="text-primary" />
+                                    Features & Modules
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Manage monitoring features for {selectedMachine.name}</p>
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                className="w-full sm:w-auto"
+                                onClick={() => setShowFeatures(true)}
+                            >
+                                Manage Features
+                            </Button>
+                        </div>
+                    </Card>
+                )}
                 {/* Preferences */}
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
                     <div className="p-6 space-y-4">

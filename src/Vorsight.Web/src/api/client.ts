@@ -46,6 +46,9 @@ export interface AgentSettings {
     pingIntervalSeconds: number;
     isMonitoringEnabled: boolean;
     isAuditEnabled: boolean;
+    isScreenshotEnabled: boolean; // Separate from interval - feature on/off
+    isActivityEnabled: boolean;   // Separate from interval - feature on/off
+    isAccessControlEnabled: boolean; // Schedule-based access control
     screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     // Ping monitor data
@@ -139,10 +142,13 @@ export const VorsightApi = {
         if (res.status === 404) {
             // Return defaults if settings don't exist yet - all features disabled
             return {
-                screenshotIntervalSeconds: 0,
-                pingIntervalSeconds: 0,
+                screenshotIntervalSeconds: 300,
+                pingIntervalSeconds: 30,
                 isMonitoringEnabled: false,
-                isAuditEnabled: false
+                isAuditEnabled: false,
+                isScreenshotEnabled: false,
+                isActivityEnabled: false,
+                isAccessControlEnabled: false
             };
         }
         if (!res.ok) throw new Error(`Failed to fetch settings: ${res.statusText}`);

@@ -1,9 +1,22 @@
+import { LayoutDashboard, Activity, ImageIcon, Shield, Lock, Settings } from 'lucide-react';
+
+export type NavigationIcon = 'dashboard' | 'activity' | 'gallery' | 'audit' | 'control' | 'settings';
+
 export interface NavigationTab {
     id: string;
     label: string;
-    icon: 'dashboard' | 'activity' | 'gallery' | 'audit' | 'control';
+    icon: NavigationIcon;
     title: string;
 }
+
+export const iconMap: Record<NavigationIcon, any> = {
+    dashboard: LayoutDashboard,
+    activity: Activity,
+    gallery: ImageIcon,
+    audit: Shield,
+    control: Lock,
+    settings: Settings
+};
 
 export const navigationTabs: NavigationTab[] = [
     {
@@ -35,5 +48,11 @@ export const navigationTabs: NavigationTab[] = [
         label: 'ACCESS CONTROL',
         icon: 'control',
         title: 'Access Control'
+    },
+    {
+        id: 'features',
+        label: 'FEATURES',
+        icon: 'settings',
+        title: 'Features'
     }
 ];

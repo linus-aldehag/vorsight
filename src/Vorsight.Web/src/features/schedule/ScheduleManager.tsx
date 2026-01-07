@@ -15,7 +15,10 @@ export function ScheduleManager() {
         screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
         isMonitoringEnabled: true,
-        isAuditEnabled: true
+        isAuditEnabled: true,
+        isScreenshotEnabled: false,
+        isActivityEnabled: false,
+        isAccessControlEnabled: false
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
