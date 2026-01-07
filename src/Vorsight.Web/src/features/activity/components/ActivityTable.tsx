@@ -20,7 +20,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
     const mergedActivities = mergeSequentialActivities(activities);
 
     return (
-        <div className="rounded-md border">
+        <div>
             <Table>
                 <TableHeader>
                     <TableRow>
