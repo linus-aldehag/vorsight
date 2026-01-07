@@ -9,12 +9,12 @@ router.get('/summary/:machineId', (req, res) => {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Get activity data from last 24 hours
+        // Get activity sessions from last 24 hours (merged, non-overlapping)
         const activities = db.prepare(`
-            SELECT * FROM activity_history 
-            WHERE machine_id = ? AND timestamp >= ?
-            ORDER BY timestamp DESC
-        `).all(machineId, oneDayAgo.toISOString());
+            SELECT * FROM activity_sessions 
+            WHERE machine_id = ? AND start_time >= ?
+            ORDER BY start_time DESC
+        `).all(machineId, Math.floor(oneDayAgo.getTime() / 1000));
 
         // Calculate timeline (activity by hour)
         const timeline = Array.from({ length: 24 }, (_, i) => ({
@@ -27,9 +27,9 @@ router.get('/summary/:machineId', (req, res) => {
         let totalDuration = 0;
 
         activities.forEach(activity => {
-            const activityDate = new Date(activity.timestamp);
+            const activityDate = new Date(activity.start_time * 1000); // Unix timestamp to milliseconds
             const hour = activityDate.getHours();
-            const duration = activity.duration || 0;
+            const duration = activity.duration_seconds || 0;
 
             // Add to timeline
             timeline[hour].activeMinutes += Math.floor(duration / 60);
@@ -56,7 +56,7 @@ router.get('/summary/:machineId', (req, res) => {
             totalActiveHours,
             timeline,
             topApps,
-            lastActive: activities.length > 0 ? activities[0].timestamp : null
+            lastActive: activities.length > 0 ? new Date(activities[0].start_time * 1000).toISOString() : null
         });
     } catch (error) {
         console.error('Analytics summary error:', error);
