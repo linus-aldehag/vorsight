@@ -21,7 +21,10 @@ export function ActivityPage() {
         screenshotIntervalSeconds: 300,
         pingIntervalSeconds: 30,
         isMonitoringEnabled: true,
-        isAuditEnabled: true
+        isAuditEnabled: true,
+        isScreenshotEnabled: false,
+        isActivityEnabled: false,
+        isAccessControlEnabled: false
     });
     const [enabled, setEnabled] = useState(true);
     const [interval, setInterval] = useState(30);
