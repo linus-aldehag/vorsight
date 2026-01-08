@@ -77,7 +77,7 @@ public class ActivityCoordinator(
             {
                 _ = _serverConnection.SendActivityAsync(new
                 {
-                    timestamp = _currentActivityStart,
+                    timestamp = _currentActivityStart.ToString("O"),  // ISO 8601 format for SQLite
                     activeWindow = _currentWindow,
                     processName = _currentProcess,
                     duration = duration,
@@ -102,7 +102,7 @@ public class ActivityCoordinator(
             {
                 _ = _serverConnection.SendActivityAsync(new
                 {
-                    timestamp = _currentActivityStart,
+                    timestamp = _currentActivityStart.ToString("O"),  // ISO 8601 format for SQLite
                     activeWindow = _currentWindow,
                     processName = _currentProcess,
                     duration = duration,
