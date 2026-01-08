@@ -113,17 +113,17 @@ public class SessionSummaryManager : ISessionSummaryManager
             
             await File.WriteAllTextAsync(tempPath, json);
             
-            // Use smart upload which infers folder structure from path
-             await _driveService.UploadFileAsync(tempPath, CancellationToken.None);
-             
-             // File deletion is handled by UploadFileAsync if successful? 
-             // GoogleDriveService.InternalUploadFileAsync deletes it. Line 183.
-             // Wait. UploadFileAsync -> InternalUploadFileAsync.
-             // InternalUploadFileAsync does NOT delete it?
-             // Line 181 in UploadQueueProcessor deletes it.
-             // GoogleDriveService.InternalUploadFileAsync does NOT delete.
-             // UploadFileAsync (public) calls Internal.
-             // Let's check GoogleDriveService again.
+            // Upload to Google Drive with custom folder path
+            var machineName = Environment.MachineName;
+            var targetFolder = $"Vorsight/{machineName}/Sessions";
+            await _driveService.UploadFileAsync(tempPath, CancellationToken.None, targetFolder);
+            
+            // Delete the local file after successful upload
+            if (File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+                _logger.LogDebug("Deleted session summary file after upload: {FilePath}", tempPath);
+            }
         }
         catch (Exception ex)
         {

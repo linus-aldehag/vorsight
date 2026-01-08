@@ -191,6 +191,24 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                     if (!cancellationToken.IsCancellationRequested && File.Exists(filePath))
                     {
                         File.Delete(filePath);
+                        
+                        // Clean up empty parent directory if possible
+                        try
+                        {
+                            var parentDir = Path.GetDirectoryName(filePath);
+                            if (!string.IsNullOrEmpty(parentDir) && Directory.Exists(parentDir))
+                            {
+                                if (!Directory.EnumerateFileSystemEntries(parentDir).Any())
+                                {
+                                    Directory.Delete(parentDir);
+                                    _logger.LogDebug("Cleaned up empty directory: {Directory}", parentDir);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "Could not clean up parent directory for: {FilePath}", filePath);
+                        }
                     }
                     
                     // Remove from queued files tracking after successful processing
