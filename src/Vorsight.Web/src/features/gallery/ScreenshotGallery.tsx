@@ -2,13 +2,13 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Switch } from '../../components/ui/switch';
-import { RefreshCw, X, Maximize2, Eye, Settings2, AlertCircle, ImageOff, Loader2 } from 'lucide-react';
+import { RefreshCw, X, Maximize2, Eye, ImageOff, Loader2 } from 'lucide-react';
 import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
+import { ConfigSection } from '../../components/features/ConfigSection';
+import { ScreenshotConfig } from '../../components/features/ScreenshotConfig';
 
 // Screenshot Card Component
 interface ScreenshotCardProps {
@@ -68,22 +68,8 @@ export function ScreenshotGallery() {
     const [hasMore, setHasMore] = useState(true);
     const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isConfigOpen, setIsConfigOpen] = useState(false);
-    const [settings, setSettings] = useState<AgentSettings>({
-        screenshotIntervalSeconds: 300,
-        pingIntervalSeconds: 30,
-        isMonitoringEnabled: true,
-        isAuditEnabled: true,
-        isScreenshotEnabled: false,
-        isActivityEnabled: false,
-        isAccessControlEnabled: false
-    });
-    const [enabled, setEnabled] = useState(true);
-    const [interval, setInterval] = useState(5);
-    const [tempEnabled, setTempEnabled] = useState(true);
-    const [tempInterval, setTempInterval] = useState(5);
+    const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
@@ -97,9 +83,7 @@ export function ScreenshotGallery() {
             setHasMore(true);
             setLoading(true);
             loadInitialScreenshots();
-            if (!isConfigOpen) {
-                loadSettings();
-            }
+            loadSettings();
         } else {
             setScreenshots([]);
             setLoading(false);
@@ -111,15 +95,6 @@ export function ScreenshotGallery() {
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
-            const isEnabled = data.screenshotIntervalSeconds > 0;
-            const intervalToUse = isEnabled
-                ? data.screenshotIntervalSeconds
-                : (data.screenshotIntervalSecondsWhenEnabled || 300);
-            const screenshotInterval = Math.round(intervalToUse / 60);
-            setEnabled(isEnabled);
-            setInterval(screenshotInterval);
-            setTempEnabled(isEnabled);
-            setTempInterval(screenshotInterval);
         } catch (err) {
             console.error('Failed to load settings:', err);
         }
@@ -185,41 +160,20 @@ export function ScreenshotGallery() {
         };
     }, [loadMore, hasMore, loadingMore]);
 
-    const handleApply = async () => {
-        if (!selectedMachine) return;
-
+    const handleScreenshotSave = async (updates: Partial<AgentSettings>) => {
+        if (!selectedMachine || !settings) return;
         setSaving(true);
-        setError(null);
-
         try {
-            const updatedSettings = {
-                ...settings,
-                screenshotIntervalSeconds: tempEnabled ? tempInterval * 60 : 0,
-                screenshotIntervalSecondsWhenEnabled: tempInterval * 60,
-                isMonitoringEnabled: tempEnabled || settings.pingIntervalSeconds > 0
-            };
-
+            const updatedSettings = { ...settings, ...updates };
             const response = await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
             setSettings(response);
-            setEnabled(tempEnabled);
-            setInterval(tempInterval);
-            setIsConfigOpen(false);
-
-            // Broadcast settings update to refresh navigation icons
             const { settingsEvents } = await import('../../lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
-            setError('Failed to save settings');
+            console.error('Failed to save settings:', err);
         } finally {
             setSaving(false);
         }
-    };
-
-    const handleCancel = () => {
-        setTempEnabled(enabled);
-        setTempInterval(interval);
-        setError(null);
-        setIsConfigOpen(false);
     };
 
     const handleImageError = (imgId: string) => {
@@ -258,108 +212,26 @@ export function ScreenshotGallery() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <Eye size={24} className="text-primary" />
-                    <h3 className="text-2xl font-bold tracking-tight">Screenshot Gallery</h3>
-                    {!enabled && (
+            {/* Configuration Section with Header */}
+            {settings && (
+                <ConfigSection
+                    icon={<Eye size={24} />}
+                    title="Screenshot Gallery"
+                    badge={!settings.isScreenshotEnabled && (
                         <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
                             Capture Disabled
                         </span>
                     )}
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        setTempEnabled(enabled);
-                        setTempInterval(interval);
-                        setIsConfigOpen(true);
-                    }}
-                    className="gap-1.5 self-start sm:self-auto"
                 >
-                    <Settings2 size={16} />
-                    Configure
-                </Button>
-            </div>
-
-            {/* Configuration Modal */}
-            {isConfigOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
-                    <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col h-full">
-                            <div className="flex items-center justify-between p-4 border-b border-border">
-                                <h3 className="text-lg font-semibold">Screenshot Capture</h3>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCancel}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X size={16} />
-                                </Button>
-                            </div>
-
-                            <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-                                {error && (
-                                    <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                        <AlertCircle size={12} className="shrink-0" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Status</label>
-                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                                        <Switch
-                                            checked={tempEnabled}
-                                            onCheckedChange={setTempEnabled}
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium">
-                                                {tempEnabled ? 'Enabled' : 'Disabled'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {tempEnabled ? 'Screenshot capture is active' : 'Screenshot capture is paused'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {tempEnabled && (
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">Capture Interval</label>
-                                        <div className="flex items-center gap-2">
-                                            <Input
-                                                type="number"
-                                                value={tempInterval}
-                                                onChange={(e) => setTempInterval(Number(e.target.value))}
-                                                min={1}
-                                                max={60}
-                                                className="w-20"
-                                            />
-                                            <span className="text-sm text-muted-foreground">minutes</span>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground">
-                                            How often to capture screenshots (1-60 minutes)
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-                                <Button variant="outline" onClick={handleCancel}>
-                                    Cancel
-                                </Button>
-                                <Button onClick={handleApply} disabled={saving}>
-                                    {saving ? 'Applying...' : 'Apply'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <ScreenshotConfig
+                        settings={settings}
+                        onSave={handleScreenshotSave}
+                        saving={saving}
+                    />
+                </ConfigSection>
             )}
+
+
 
             {/* Filters */}
             <ScreenshotFilters
