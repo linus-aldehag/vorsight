@@ -35,8 +35,6 @@ public class CommandDispatcher(
                 case "activity":
                     return await HandleActivityAsync(sessionId, options);
                 
-
-
                 default:
                     Log.Error("Unknown command: {Command}", command);
                     ShowUsage();
