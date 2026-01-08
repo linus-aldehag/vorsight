@@ -45,9 +45,9 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
     });
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
             {/* Activity Timeline */}
-            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
+            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm flex flex-col ${isDisabled ? 'opacity-40' : ''}`}>
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
@@ -60,9 +60,9 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="pb-4">
-                    <div className="w-full min-h-[200px]">
-                        <ResponsiveContainer width="100%" height={200} minHeight={200}>
+                <CardContent className="pb-4 flex-1 min-h-0">
+                    <div className="w-full h-full">
+                        <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData}>
                                 <XAxis
                                     dataKey="label"
@@ -114,12 +114,12 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
             </Card>
 
             {/* Top Applications */}
-            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm ${isDisabled ? 'opacity-40' : ''}`}>
+            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm flex flex-col ${isDisabled ? 'opacity-40' : ''}`}>
                 <CardHeader>
                     <CardTitle className="text-lg tracking-wide text-primary">TOP PROCESSES</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1">Focus Distribution</p>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1 overflow-auto">
                     <div className="space-y-4">
                         {summary.topApps.length > 0 ? summary.topApps.map((app, index) => (
                             <div key={index} className="space-y-1">

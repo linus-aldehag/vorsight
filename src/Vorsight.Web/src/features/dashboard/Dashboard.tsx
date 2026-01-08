@@ -63,11 +63,10 @@ export function Dashboard() {
                         <ActivityMonitor isDisabled={!settings?.isActivityEnabled} />
                     </div>
 
-                    {/* Row 2: Activity Stats */}
-                    <ActivityStats isDisabled={!settings?.isActivityEnabled} />
-
-                    {/* Row 3: Features Widget */}
-                    <FeaturesWidget settings={settings} />
+                    {/* Row 2: Activity Stats - Expand to fill space */}
+                    <div className="flex-1 min-h-0">
+                        <ActivityStats isDisabled={!settings?.isActivityEnabled} />
+                    </div>
                 </div>
 
                 {/* Side Panel - full width on mobile, 4/12 cols on large */}
@@ -76,6 +75,9 @@ export function Dashboard() {
                     <div className="min-h-[300px] lg:min-h-0 lg:flex-1">
                         <ScreenshotViewer isDisabled={!settings?.isScreenshotEnabled} />
                     </div>
+
+                    {/* Features Widget */}
+                    <FeaturesWidget settings={settings} />
 
                     {/* System Controls - hide on mobile, show on large screens */}
                     <Card className="hidden lg:block border-border/50 bg-card/50 backdrop-blur-sm">
