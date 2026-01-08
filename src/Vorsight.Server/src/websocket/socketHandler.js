@@ -8,7 +8,7 @@ module.exports = (io) => {
         socket.on('web:subscribe', () => {
             try {
                 const machines = db.prepare(`
-                    SELECT m.id, m.name, m.displayName, m.hostname, m.ip_address, m.last_seen,
+                    SELECT m.id, m.name, m.displayName, m.hostname, m.ip_address, m.last_seen, m.status,
                            ms.health_status as ping_status, ms.settings
                     FROM machines m
                     LEFT JOIN machine_state ms ON m.id = ms.machine_id
@@ -43,7 +43,8 @@ module.exports = (io) => {
                         connectionStatus,
                         pingStatus: m.ping_status,
                         settings: m.settings,
-                        lastSeen: m.last_seen
+                        lastSeen: m.last_seen,
+                        status: m.status || 'active'  // Include status field
                     };
 
                     // Add rich status text

@@ -67,7 +67,13 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             const currentSelected = selectedMachineRef.current;
 
             // Separate active, archived, and pending machines
-            const activeMachines = machinesList.filter(m => m.status !== 'pending' && m.status !== 'archived');
+            let activeMachines = machinesList.filter(m => m.status !== 'pending');
+
+            // Filter out archived machines unless showArchived is true
+            if (!showArchived) {
+                activeMachines = activeMachines.filter(m => m.status !== 'archived');
+            }
+
             const pending = machinesList.filter(m => m.status === 'pending');
 
             setMachines(activeMachines);
@@ -180,7 +186,12 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.off('machine:discovered', handleMachineDiscovered);
             clearInterval(refreshInterval);
         };
-    }, []); // Only run once on mount
+    }, [showArchived]); // Re-run when showArchived changes
+
+    // Trigger refresh when showArchived changes
+    useEffect(() => {
+        refreshMachines();
+    }, [showArchived]);
 
     const onMachineDiscovered = (callback: (machine: Machine) => void) => {
         discoveryCallbackRef.current = callback;
