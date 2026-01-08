@@ -178,6 +178,24 @@ export const VorsightApi = {
         });
         if (!res.ok) throw new Error('Failed to adopt machine');
         return res.json();
+    },
+
+    async archiveMachine(machineId: string): Promise<{ success: boolean; machineId: string; status: string }> {
+        const res = await fetch(`${BASE_URL}/machines/${machineId}/archive`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
+        });
+        if (!res.ok) throw new Error('Failed to archive machine');
+        return res.json();
+    },
+
+    async unarchiveMachine(machineId: string): Promise<{ success: boolean; machineId: string; status: string }> {
+        const res = await fetch(`${BASE_URL}/machines/${machineId}/unarchive`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
+        });
+        if (!res.ok) throw new Error('Failed to unarchive machine');
+        return res.json();
     }
 };
 

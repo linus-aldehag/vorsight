@@ -210,6 +210,31 @@ public class ServerConnection : IServerConnection
                     _logger.LogError(ex, "Failed to parse schedule update");
                 }
             });
+
+            _socket.On("machine:archived", response =>
+            {
+                try
+                {
+                    _logger.LogWarning("⚠ Machine has been archived - data collection stopped");
+                    _logger.LogWarning("This machine will not send any monitoring data until it is un-archived");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse machine:archived event");
+                }
+            });
+
+            _socket.On("machine:unarchived", response =>
+            {
+                try
+                {
+                    _logger.LogInformation("✓ Machine has been un-archived - data collection resumed");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to parse machine:unarchived event");
+                }
+            });
             
             _socket.OnDisconnected += (sender, e) =>
             {
@@ -319,6 +344,13 @@ public class ServerConnection : IServerConnection
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning("Machine is archived - schedule fetch rejected");
+                return null;
+            }
+            
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to fetch schedule: {Status}", response.StatusCode);
@@ -345,6 +377,13 @@ public class ServerConnection : IServerConnection
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogWarning("Machine is archived - settings fetch rejected");
+                return null;
+            }
+            
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to fetch settings: {Status}", response.StatusCode);
