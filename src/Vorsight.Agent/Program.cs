@@ -1,8 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Vorsight.Agent.Cli;
+using Vorsight.Agent.Contracts;
 using Vorsight.Agent.Services;
 using Vorsight.Interop;
+using Vorsight.Infrastructure.IO;
 using Vorsight.Infrastructure.Monitoring;
 
 namespace Vorsight.Agent;
@@ -22,13 +24,13 @@ static class Program
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.AddSerilog(); 
-                builder.SetMinimumLevel(LogLevel.Information);
+                builder.SetMinimumLevel(LogLevel.Warning);
             });
 
             var ipcService = new IpcService();
             
             // Create typed logger for ScreenshotService
-            var screenshotLogger = loggerFactory.CreateLogger<Vorsight.Agent.Contracts.IScreenshotService>();
+            var screenshotLogger = loggerFactory.CreateLogger<IScreenshotService>();
             var screenshotService = new ScreenshotService(screenshotLogger);
             
             var userActivityMonitor = new UserActivityMonitor();
@@ -54,11 +56,11 @@ static class Program
 
     private static void SetupLogging()
     {
-        var logDir = Vorsight.Infrastructure.IO.PathConfiguration.GetAgentLogPath();
+        var logDir = PathConfiguration.GetAgentLogPath();
         var logPath = Path.Combine(logDir, "agent-.log");
 
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Information()
+            .MinimumLevel.Warning()
             .WriteTo.Console()
             .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 3)
             .CreateLogger();

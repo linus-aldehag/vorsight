@@ -1,4 +1,5 @@
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Vorsight.Agent.Contracts;
@@ -123,7 +124,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
                 try
                 {
                     bitmap = CaptureScreenInternal();
-                    using var memoryStream = new System.IO.MemoryStream();
+                    using var memoryStream = new MemoryStream();
                     bitmap.Save(memoryStream, ImageFormat.Png);
                     return memoryStream.ToArray();
                 }
@@ -143,7 +144,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
         var placeholderBitmap = CreatePlaceholderImage();
         try
         {
-            using var memoryStream = new System.IO.MemoryStream();
+            using var memoryStream = new MemoryStream();
             placeholderBitmap.Save(memoryStream, ImageFormat.Png);
             return memoryStream.ToArray();
         }
