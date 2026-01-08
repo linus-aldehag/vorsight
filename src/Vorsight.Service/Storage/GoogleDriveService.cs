@@ -10,7 +10,7 @@ namespace Vorsight.Service.Storage;
 
 public interface IGoogleDriveService
 {
-    Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken);
+    Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken, string? targetFolder = null);
     Task InitializeAsync();
     void BeginShutdown();
     Task WaitForPendingUploadsAsync(TimeSpan? timeout = null);
@@ -93,7 +93,7 @@ public class GoogleDriveService : IGoogleDriveService
         }
     }
 
-    public async Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken)
+    public async Task<string> UploadFileAsync(string filePath, CancellationToken cancellationToken, string? targetFolder = null)
     {
         if (_isShuttingDown)
         {
@@ -121,7 +121,7 @@ public class GoogleDriveService : IGoogleDriveService
                 await _uploadSemaphore.WaitAsync(uploadCts.Token);
             }
 
-            var uploadFileTask = InternalUploadFileAsync(filePath, uploadCts.Token);
+            var uploadFileTask = InternalUploadFileAsync(filePath, uploadCts.Token, targetFolder);
             uploadTask = uploadFileTask;
             lock (_uploadsLock)
             {
@@ -156,7 +156,7 @@ public class GoogleDriveService : IGoogleDriveService
         }
     }
 
-    private async Task<string> InternalUploadFileAsync(string filePath, CancellationToken cancellationToken)
+    private async Task<string> InternalUploadFileAsync(string filePath, CancellationToken cancellationToken, string? targetFolder = null)
     {
         return await ExecuteWithRetryAsync(async (accessToken) =>
         {
@@ -168,10 +168,9 @@ public class GoogleDriveService : IGoogleDriveService
                 ApplicationName = "Vorsight"
             });
 
-            // Use /Vorsight/MachineName/YYYY-MM-DD structure
+            // Use custom folder or default to /Vorsight/MachineName/YYYY-MM-DD structure
             var machineName = Environment.MachineName;
-            var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-            var folderPath = $"Vorsight/{machineName}/{dateFolder}";
+            var folderPath = targetFolder ?? $"Vorsight/{machineName}/{DateTime.Now:yyyy-MM-dd}";
 
             // Create all necessary folders
             var folderId = await GetOrCreateFolderAsync(driveService, folderPath, cancellationToken);
