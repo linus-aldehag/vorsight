@@ -181,6 +181,7 @@ try
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
     builder.Services.AddSingleton<ISettingsManager, Vorsight.Infrastructure.Settings.SettingsManager>();
+    builder.Services.AddSingleton<Vorsight.Service.Utilities.IPerceptualHashService, Vorsight.Service.Utilities.PerceptualHashService>();
 
     // Agents and IPC Handlers
     builder.Services.AddSingleton<ScreenshotHandler>();

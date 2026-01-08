@@ -19,6 +19,7 @@ public interface IServerConnection
     Task<string?> FetchSettingsJsonAsync();
     bool IsConnected { get; }
     string? ApiKey { get; }
+    string? MachineId { get; }
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     event EventHandler? ScheduleUpdateReceived;
     event EventHandler? SettingsUpdateReceived;
@@ -37,6 +38,7 @@ public class ServerConnection : IServerConnection
     
     public bool IsConnected => _isConnected;
     public string? ApiKey => _apiKey;
+    public string? MachineId => _machineId;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     public event EventHandler? ScheduleUpdateReceived;
     public event EventHandler? SettingsUpdateReceived;

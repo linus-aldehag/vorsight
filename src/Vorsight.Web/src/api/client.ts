@@ -49,6 +49,7 @@ export interface AgentSettings {
     isScreenshotEnabled: boolean; // Separate from interval - feature on/off
     isActivityEnabled: boolean;   // Separate from interval - feature on/off
     isAccessControlEnabled: boolean; // Schedule-based access control
+    filterDuplicateScreenshots?: boolean; // Screenshot deduplication
     screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
     // Ping monitor data
