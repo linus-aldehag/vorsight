@@ -1,79 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Input } from '@/components/ui/input';
-import { TimeInput } from '@/components/ui/time-input';
 import { VorsightApi, type AgentSettings, type AccessSchedule } from '@/api/client';
 import { useMachine } from '@/context/MachineContext';
-import { Eye, Activity, Shield, Sliders, Loader2, AlertCircle, ChevronDown, ChevronUp, Settings2, CheckCircle2, Circle } from 'lucide-react';
-
-interface ExpandableFeatureCardProps {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-    enabled: boolean;
-    onToggle: (enabled: boolean) => void;
-    saving: boolean;
-    children?: React.ReactNode;
-}
-
-function ExpandableFeatureCard({ icon, title, description, enabled, onToggle, saving, children }: ExpandableFeatureCardProps) {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    const hasConfig = !!children;
-
-    return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardContent className="p-0">
-                {/* Header */}
-                <div className="p-6">
-                    <div className="flex items-center gap-4">
-                        <div className="text-primary">{icon}</div>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                                <h4 className="font-semibold">{title}</h4>
-                                {enabled ? (
-                                    <CheckCircle2 size={16} className="text-green-500" />
-                                ) : (
-                                    <Circle size={16} className="text-muted-foreground" />
-                                )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                            <Switch
-                                checked={enabled}
-                                onCheckedChange={onToggle}
-                                disabled={saving}
-                            />
-                            {hasConfig && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setIsExpanded(!isExpanded)}
-                                    className="gap-1.5"
-                                    disabled={!enabled}
-                                    title={!enabled ? "Enable feature to configure" : isExpanded ? "Hide configuration" : "Show configuration"}
-                                >
-                                    <Settings2 size={14} />
-                                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Expandable Configuration */}
-                {children && isExpanded && (
-                    <div className="border-t border-border/50 p-6 pt-4 bg-muted/20 animate-in slide-in-from-top-2 duration-200">
-                        {children}
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
+import { Eye, Activity, Shield, Sliders, Loader2, AlertCircle } from 'lucide-react';
+import { ExpandableFeatureCard } from '@/components/features/ExpandableFeatureCard';
+import { ScreenshotConfig } from '@/components/features/ScreenshotConfig';
+import { ActivityConfig } from '@/components/features/ActivityConfig';
+import { AuditConfig } from '@/components/features/AuditConfig';
+import { AccessControlConfig } from '@/components/features/AccessControlConfig';
 
 export function FeaturesPage() {
     const { selectedMachine } = useMachine();
@@ -82,12 +15,6 @@ export function FeaturesPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-
-    // Local state for interval inputs
-    const [screenshotInterval, setScreenshotInterval] = useState(5);
-    const [activityInterval, setActivityInterval] = useState(30);
-    const [startTime, setStartTime] = useState('08:00');
-    const [endTime, setEndTime] = useState('22:00');
 
     useEffect(() => {
         if (selectedMachine) {
@@ -103,9 +30,6 @@ export function FeaturesPage() {
         try {
             const data = await VorsightApi.getSettings(selectedMachine.id);
             setSettings(data);
-            // Initialize local interval state
-            setScreenshotInterval(Math.round(data.screenshotIntervalSeconds / 60));
-            setActivityInterval(data.pingIntervalSeconds);
         } catch (err) {
             console.error('Failed to load settings:', err);
             setError('Failed to load feature settings');
@@ -119,10 +43,6 @@ export function FeaturesPage() {
         try {
             const data = await VorsightApi.getSchedule(selectedMachine.id);
             setSchedule(data);
-            if (data?.allowedTimeWindows && data.allowedTimeWindows.length > 0) {
-                setStartTime(data.allowedTimeWindows[0].startTime || '08:00');
-                setEndTime(data.allowedTimeWindows[0].endTime || '22:00');
-            }
         } catch (err) {
             console.warn('No schedule found, using defaults');
         }
@@ -156,12 +76,8 @@ export function FeaturesPage() {
         });
     };
 
-    const handleScreenshotIntervalSave = async () => {
-        if (!settings) return;
-        await updateFeature('Screenshot Capture', {
-            screenshotIntervalSeconds: screenshotInterval * 60,
-            screenshotIntervalSecondsWhenEnabled: screenshotInterval * 60
-        });
+    const handleScreenshotSave = async (updates: Partial<AgentSettings>) => {
+        await updateFeature('Screenshot Capture', updates);
     };
 
     const handleActivityToggle = async (enabled: boolean) => {
@@ -170,12 +86,8 @@ export function FeaturesPage() {
         });
     };
 
-    const handleActivityIntervalSave = async () => {
-        if (!settings) return;
-        await updateFeature('Activity Tracking', {
-            pingIntervalSeconds: activityInterval,
-            pingIntervalSecondsWhenEnabled: activityInterval
-        });
+    const handleActivitySave = async (updates: Partial<AgentSettings>) => {
+        await updateFeature('Activity Tracking', updates);
     };
 
     const handleAuditToggle = async (enabled: boolean) => {
@@ -190,21 +102,13 @@ export function FeaturesPage() {
         });
     };
 
-    const handleScheduleSave = async () => {
-        if (!selectedMachine || !schedule) return;
+    const handleScheduleSave = async (updatedSchedule: AccessSchedule) => {
+        if (!selectedMachine) return;
 
         setSaving('Access Control Schedule');
         setError(null);
 
         try {
-            const updatedSchedule = {
-                ...schedule,
-                allowedTimeWindows: [{
-                    dayOfWeek: 0,
-                    startTime,
-                    endTime
-                }]
-            };
             await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
             setSchedule(updatedSchedule);
         } catch (err) {
@@ -259,29 +163,11 @@ export function FeaturesPage() {
                     onToggle={handleScreenshotsToggle}
                     saving={saving === 'Screenshot Capture'}
                 >
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Capture Interval (minutes)</label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="number"
-                                    value={screenshotInterval}
-                                    onChange={(e) => setScreenshotInterval(parseInt(e.target.value) || 1)}
-                                    min={1}
-                                    max={60}
-                                    className="font-mono bg-background/50 max-w-[120px]"
-                                />
-                                <Button
-                                    onClick={handleScreenshotIntervalSave}
-                                    disabled={saving === 'Screenshot Capture'}
-                                    size="sm"
-                                >
-                                    {saving === 'Screenshot Capture' ? 'Saving...' : 'Save'}
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">Range: 1 - 60 minutes</p>
-                        </div>
-                    </div>
+                    <ScreenshotConfig
+                        settings={settings}
+                        onSave={handleScreenshotSave}
+                        saving={saving === 'Screenshot Capture'}
+                    />
                 </ExpandableFeatureCard>
 
                 {/* Activity Tracking */}
@@ -293,29 +179,11 @@ export function FeaturesPage() {
                     onToggle={handleActivityToggle}
                     saving={saving === 'Activity Tracking'}
                 >
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Heartbeat Interval (seconds)</label>
-                            <div className="flex gap-2">
-                                <Input
-                                    type="number"
-                                    value={activityInterval}
-                                    onChange={(e) => setActivityInterval(parseInt(e.target.value) || 5)}
-                                    min={5}
-                                    max={300}
-                                    className="font-mono bg-background/50 max-w-[120px]"
-                                />
-                                <Button
-                                    onClick={handleActivityIntervalSave}
-                                    disabled={saving === 'Activity Tracking'}
-                                    size="sm"
-                                >
-                                    {saving === 'Activity Tracking' ? 'Saving...' : 'Save'}
-                                </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">Range: 5 - 300 seconds</p>
-                        </div>
-                    </div>
+                    <ActivityConfig
+                        settings={settings}
+                        onSave={handleActivitySave}
+                        saving={saving === 'Activity Tracking'}
+                    />
                 </ExpandableFeatureCard>
 
                 {/* Audit Logging */}
@@ -327,9 +195,7 @@ export function FeaturesPage() {
                     onToggle={handleAuditToggle}
                     saving={saving === 'Audit Logging'}
                 >
-                    <p className="text-sm text-muted-foreground">
-                        Monitors user logons, policy changes, process events, and file access. No additional configuration required.
-                    </p>
+                    <AuditConfig />
                 </ExpandableFeatureCard>
 
                 {/* Access Control */}
@@ -341,36 +207,11 @@ export function FeaturesPage() {
                     onToggle={handleAccessControlToggle}
                     saving={saving === 'Access Control'}
                 >
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Start Time</label>
-                                <TimeInput
-                                    value={startTime}
-                                    onChange={setStartTime}
-                                    className="font-mono bg-background/50"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">End Time</label>
-                                <TimeInput
-                                    value={endTime}
-                                    onChange={setEndTime}
-                                    className="font-mono bg-background/50"
-                                />
-                            </div>
-                        </div>
-                        <Button
-                            onClick={handleScheduleSave}
-                            disabled={saving === 'Access Control Schedule'}
-                            size="sm"
-                        >
-                            {saving === 'Access Control Schedule' ? 'Saving...' : 'Save Schedule'}
-                        </Button>
-                        <p className="text-xs text-muted-foreground">
-                            Monitoring active during these hours. Outside this window, logout policies may be enforced.
-                        </p>
-                    </div>
+                    <AccessControlConfig
+                        schedule={schedule}
+                        onSave={handleScheduleSave}
+                        saving={saving === 'Access Control Schedule'}
+                    />
                 </ExpandableFeatureCard>
             </div>
         </div>

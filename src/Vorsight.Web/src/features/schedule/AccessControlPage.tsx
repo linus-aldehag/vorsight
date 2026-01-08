@@ -1,36 +1,37 @@
 import { useEffect, useState } from 'react';
-import { VorsightApi, type AccessSchedule } from '../../api/client';
+import { VorsightApi, type AccessSchedule, type AgentSettings } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
-import { Button } from '../../components/ui/button';
-import { Switch } from '../../components/ui/switch';
-import { TimeInput } from '../../components/ui/time-input';
 import { Card } from '../../components/ui/card';
-import { Clock, Settings2, AlertCircle, X } from 'lucide-react';
+import { Clock, Sliders } from 'lucide-react';
 import { Usage24HourChart } from './Usage24HourChart';
+import { ConfigSection } from '../../components/features/ConfigSection';
+import { AccessControlConfig } from '../../components/features/AccessControlConfig';
 
 export function AccessControlPage() {
     const { selectedMachine } = useMachine();
+    const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [schedule, setSchedule] = useState<AccessSchedule | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [isConfigOpen, setIsConfigOpen] = useState(false);
-
-    // Current applied state
-    const [scheduleEnforcementEnabled, setScheduleEnforcementEnabled] = useState(true);
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('22:00');
 
-    // Temporary state for config panel
-    const [tempEnabled, setTempEnabled] = useState(true);
-    const [tempStartTime, setTempStartTime] = useState('08:00');
-    const [tempEndTime, setTempEndTime] = useState('22:00');
-
     useEffect(() => {
-        if (selectedMachine && !isConfigOpen) {
+        if (selectedMachine) {
+            loadSettings();
             loadSchedule();
         }
     }, [selectedMachine]);
+
+    const loadSettings = async () => {
+        if (!selectedMachine) return;
+        try {
+            const data = await VorsightApi.getSettings(selectedMachine.id);
+            setSettings(data);
+        } catch (err) {
+            console.error('Failed to load settings:', err);
+        }
+    };
 
     const loadSchedule = async () => {
         try {
@@ -38,16 +39,10 @@ export function AccessControlPage() {
             const loadedSchedule = scheduleData || createDefaultSchedule();
             setSchedule(loadedSchedule);
 
-            const enabled = loadedSchedule.isActive;
             const start = getStartTime(loadedSchedule);
             const end = getEndTime(loadedSchedule);
-
-            setScheduleEnforcementEnabled(enabled);
             setStartTime(start);
             setEndTime(end);
-            setTempEnabled(enabled);
-            setTempStartTime(start);
-            setTempEndTime(end);
         } catch (err) {
             console.warn('No schedule found, using defaults', err);
             setSchedule(createDefaultSchedule());
@@ -67,43 +62,21 @@ export function AccessControlPage() {
         modifiedUtc: new Date().toISOString()
     });
 
-    const handleApply = async () => {
-        if (!schedule || !selectedMachine) return;
+    const handleScheduleSave = async (updatedSchedule: AccessSchedule) => {
+        if (!selectedMachine) return;
         setSaving(true);
-        setError(null);
         try {
-            const updatedSchedule = {
-                ...schedule,
-                isActive: tempEnabled,
-                allowedTimeWindows: [{
-                    dayOfWeek: 0,
-                    startTime: tempStartTime,
-                    endTime: tempEndTime
-                }]
-            };
             await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
             setSchedule(updatedSchedule);
-            setScheduleEnforcementEnabled(tempEnabled);
-            setStartTime(tempStartTime);
-            setEndTime(tempEndTime);
-            setIsConfigOpen(false);
-
-            // Broadcast settings update to refresh navigation icons
+            setStartTime(getStartTime(updatedSchedule));
+            setEndTime(getEndTime(updatedSchedule));
             const { settingsEvents } = await import('../../lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
-            setError('Failed to save access control settings');
+            console.error('Failed to save schedule:', err);
         } finally {
             setSaving(false);
         }
-    };
-
-    const handleCancel = () => {
-        setTempEnabled(scheduleEnforcementEnabled);
-        setTempStartTime(startTime);
-        setTempEndTime(endTime);
-        setError(null);
-        setIsConfigOpen(false);
     };
 
     const getStartTime = (sched: AccessSchedule): string => {
@@ -124,119 +97,26 @@ export function AccessControlPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header matching Activity/Screenshot pattern */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <Clock size={24} className="text-primary" />
-                    <h2 className="text-3xl font-bold tracking-tight">Access Control</h2>
-                    {!scheduleEnforcementEnabled && (
+            {/* Configuration Section with Header */}
+            {settings && schedule && (
+                <ConfigSection
+                    icon={<Sliders size={24} />}
+                    title="Access Control"
+                    badge={!settings.isAccessControlEnabled && (
                         <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
                             Enforcement Disabled
                         </span>
                     )}
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsConfigOpen(true)}
-                    className="gap-1.5 self-start sm:self-auto"
                 >
-                    <Settings2 size={16} />
-                    Configure
-                </Button>
-            </div>
-
-            {/* Configuration Modal */}
-            {isConfigOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50" onClick={handleCancel}>
-                    <div className="w-full sm:w-[400px] md:w-[450px] lg:w-[500px] max-w-full h-full bg-background border-l border-border shadow-2xl animate-in slide-in-from-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col h-full">
-                            {/* Modal header */}
-                            <div className="flex items-center justify-between p-4 border-b border-border">
-                                <h3 className="text-lg font-semibold">Access Control</h3>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={handleCancel}
-                                    className="h-8 w-8 p-0"
-                                >
-                                    <X size={16} />
-                                </Button>
-                            </div>
-
-                            {/* Modal content */}
-                            <div className="flex-1 p-4 space-y-6 overflow-y-auto">
-                                {error && (
-                                    <div className="bg-destructive/10 text-destructive border border-destructive/50 p-2.5 rounded-md flex items-center gap-2 text-xs">
-                                        <AlertCircle size={12} className="shrink-0" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                {/* Enable/Disable Toggle */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Status</label>
-                                    <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-card">
-                                        <Switch
-                                            checked={tempEnabled}
-                                            onCheckedChange={setTempEnabled}
-                                        />
-                                        <div>
-                                            <div className="text-sm font-medium">
-                                                {tempEnabled ? 'Enabled' : 'Disabled'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {tempEnabled ? 'Time restrictions are active' : 'Time restrictions are paused'}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Time Window Settings */}
-                                {tempEnabled && (
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Start Time</label>
-                                            <TimeInput
-                                                value={tempStartTime}
-                                                onChange={setTempStartTime}
-                                                className="font-mono"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">End Time</label>
-                                            <TimeInput
-                                                value={tempEndTime}
-                                                onChange={setTempEndTime}
-                                                className="font-mono"
-                                            />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-3">
-                                            Outside of these hours, the system will enforce logout policies.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Modal footer */}
-                            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
-                                <Button
-                                    variant="outline"
-                                    onClick={handleCancel}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleApply}
-                                    disabled={saving}
-                                >
-                                    {saving ? 'Applying...' : 'Apply'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <AccessControlConfig
+                        schedule={schedule}
+                        onSave={handleScheduleSave}
+                        saving={saving}
+                    />
+                </ConfigSection>
             )}
+
+
 
             {/* 24-Hour Usage Visualization */}
             {selectedMachine && (

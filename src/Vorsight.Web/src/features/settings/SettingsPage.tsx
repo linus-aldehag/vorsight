@@ -17,55 +17,7 @@ export function SettingsPage() {
             </div>
 
             <div className="space-y-6">
-                {/* Preferences */}
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-                    <div className="p-6 space-y-4">
-                        <div className="space-y-1">
-                            <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
-                                <Settings size={16} className="text-primary" />
-                                Preferences
-                            </h3>
-                            <p className="text-sm text-muted-foreground">Customize your interface experience</p>
-                        </div>
-
-                        <div className="grid gap-6">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <h4 className="font-medium text-sm">Time Format</h4>
-                                    <p className="text-xs text-muted-foreground">
-                                        Choose how times are displayed across the application
-                                    </p>
-                                </div>
-                                <div className="flex bg-muted p-1 rounded-lg">
-                                    <button
-                                        onClick={() => setTimeFormat('12h')}
-                                        className={cn(
-                                            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                            timeFormat === '12h'
-                                                ? "bg-background text-foreground shadow-sm"
-                                                : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        12-hour
-                                    </button>
-                                    <button
-                                        onClick={() => setTimeFormat('24h')}
-                                        className={cn(
-                                            "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                            timeFormat === '24h'
-                                                ? "bg-background text-foreground shadow-sm"
-                                                : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        24-hour
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-
-                {/* Theme Selector */}
+                {/* Theme Selector - Full Width */}
                 <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
                     <div className="p-6 space-y-4">
                         <div className="space-y-1">
@@ -123,12 +75,63 @@ export function SettingsPage() {
                     </div>
                 </Card>
 
-                {/* Google Drive Connection */}
-                <div className="max-w-md">
-                    <GoogleDriveConnection />
+                {/* Grid: Google Drive + Preferences */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Preferences */}
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-1">
+                                <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
+                                    <Settings size={16} className="text-primary" />
+                                    Preferences
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Customize your interface experience</p>
+                            </div>
+
+                            <div className="grid gap-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <h4 className="font-medium text-sm">Time Format</h4>
+                                        <p className="text-xs text-muted-foreground">
+                                            Choose how times are displayed across the application
+                                        </p>
+                                    </div>
+                                    <div className="flex bg-muted p-1 rounded-lg">
+                                        <button
+                                            onClick={() => setTimeFormat('12h')}
+                                            className={cn(
+                                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                                timeFormat === '12h'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            12-hour
+                                        </button>
+                                        <button
+                                            onClick={() => setTimeFormat('24h')}
+                                            className={cn(
+                                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                                timeFormat === '24h'
+                                                    ? "bg-background text-foreground shadow-sm"
+                                                    : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            24-hour
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Google Drive Connection */}
+                    <div className="flex flex-col">
+                        <GoogleDriveConnection />
+                    </div>
                 </div>
 
-                {/* Data Retention */}
+                {/* Data Retention - Full Width */}
                 <DataRetention />
             </div>
 
