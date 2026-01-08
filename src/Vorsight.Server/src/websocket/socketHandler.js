@@ -85,6 +85,17 @@ module.exports = (io) => {
                     db.prepare('INSERT INTO connection_events (machine_id, event_type) VALUES (?, ?)')
                         .run(machineId, 'Connected');
 
+                    // Check if machine is archived
+                    if (machine.status === 'archived') {
+                        console.log(`⚠ Archived machine connected: ${machine.displayName || machine.name} (${machineId})`);
+                        socket.emit('machine:connected', { success: true });
+                        socket.emit('machine:archived', {
+                            machineId,
+                            timestamp: new Date().toISOString()
+                        });
+                        return;
+                    }
+
                     // Notify web clients
                     io.emit('machine:online', { machineId, timestamp: new Date().toISOString() });
 
@@ -148,6 +159,13 @@ module.exports = (io) => {
             try {
                 const { machineId, state } = data;
 
+                // Check if machine is archived
+                const machine = db.prepare('SELECT status FROM machines WHERE id = ?').get(machineId);
+                if (machine?.status === 'archived') {
+                    console.log(`⚠ Heartbeat rejected from archived machine: ${machineId}`);
+                    return;
+                }
+
                 // Get existing settings to preserve them
                 const existing = db.prepare('SELECT settings FROM machine_state WHERE machine_id = ?').get(machineId);
                 const existingSettings = existing?.settings || null;
@@ -196,6 +214,13 @@ module.exports = (io) => {
             try {
                 const { machineId, activity } = data;
 
+                // Check if machine is archived
+                const machine = db.prepare('SELECT status FROM machines WHERE id = ?').get(machineId);
+                if (machine?.status === 'archived') {
+                    console.log(`⚠ Activity rejected from archived machine: ${machineId}`);
+                    return;
+                }
+
                 // Store activity
                 db.prepare(`
           INSERT INTO activity_history (machine_id, timestamp, active_window, process_name, duration, username)
@@ -226,6 +251,13 @@ module.exports = (io) => {
                     return;
                 }
 
+                // Check if machine is archived
+                const machine = db.prepare('SELECT status FROM machines WHERE id = ?').get(machineId);
+                if (machine?.status === 'archived') {
+                    console.log(`⚠ Audit event rejected from archived machine: ${machineId}`);
+                    return;
+                }
+
                 // Store audit event
                 db.prepare(`
           INSERT INTO audit_events (machine_id, event_id, event_type, username, timestamp, details, source_log_name, is_flagged)
@@ -253,6 +285,13 @@ module.exports = (io) => {
         socket.on('machine:screenshot', (data) => {
             try {
                 const { machineId, screenshot } = data;
+
+                // Check if machine is archived
+                const machine = db.prepare('SELECT status FROM machines WHERE id = ?').get(machineId);
+                if (machine?.status === 'archived') {
+                    console.log(`⚠ Screenshot rejected from archived machine: ${machineId}`);
+                    return;
+                }
 
                 // Store screenshot metadata
                 db.prepare(`

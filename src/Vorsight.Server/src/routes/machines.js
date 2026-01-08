@@ -47,14 +47,23 @@ router.post('/register', (req, res) => {
 // Get all machines
 router.get('/', (req, res) => {
     try {
-        const { status } = req.query;
+        const { status, includeArchived } = req.query;
         let query = 'SELECT * FROM machines';
         let params = [];
+        let conditions = [];
 
         // Filter by status if provided
         if (status) {
-            query += ' WHERE status = ?';
+            conditions.push('status = ?');
             params.push(status);
+        } else if (includeArchived !== 'true') {
+            // By default, exclude archived machines
+            conditions.push('status != ?');
+            params.push('archived');
+        }
+
+        if (conditions.length > 0) {
+            query += ' WHERE ' + conditions.join(' AND ');
         }
 
         query += ' ORDER BY last_seen DESC';
@@ -217,6 +226,102 @@ router.post('/:id/adopt', (req, res) => {
     } catch (error) {
         console.error('Adopt machine error:', error);
         res.status(500).json({ error: 'Adoption failed' });
+    }
+});
+
+// Archive a machine
+router.patch('/:id/archive', (req, res) => {
+    try {
+        const machineId = req.params.id;
+
+        // Verify machine exists
+        const machine = db.prepare('SELECT * FROM machines WHERE id = ?').get(machineId);
+        if (!machine) {
+            return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        if (machine.status === 'archived') {
+            return res.status(400).json({ error: 'Machine already archived' });
+        }
+
+        // Update machine status to archived
+        db.prepare('UPDATE machines SET status = ? WHERE id = ?')
+            .run('archived', machineId);
+
+        // Log connection event
+        db.prepare('INSERT INTO connection_events (machine_id, event_type, metadata) VALUES (?, ?, ?)')
+            .run(machineId, 'Archived', JSON.stringify({ archivedAt: new Date().toISOString() }));
+
+        // Emit WebSocket event to notify the Service if it's connected
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`machine:${machineId}`).emit('machine:archived', {
+                machineId,
+                timestamp: new Date().toISOString()
+            });
+
+            // Also broadcast updated machines list to all web clients
+            io.emit('web:subscribe');
+        }
+
+        console.log(`✓ Machine archived: ${machine.displayName || machine.name} (${machineId})`);
+
+        res.json({
+            success: true,
+            machineId,
+            status: 'archived'
+        });
+    } catch (error) {
+        console.error('Archive machine error:', error);
+        res.status(500).json({ error: 'Archive failed' });
+    }
+});
+
+// Un-archive a machine
+router.patch('/:id/unarchive', (req, res) => {
+    try {
+        const machineId = req.params.id;
+
+        // Verify machine exists
+        const machine = db.prepare('SELECT * FROM machines WHERE id = ?').get(machineId);
+        if (!machine) {
+            return res.status(404).json({ error: 'Machine not found' });
+        }
+
+        if (machine.status !== 'archived') {
+            return res.status(400).json({ error: 'Machine is not archived' });
+        }
+
+        // Update machine status back to active
+        db.prepare('UPDATE machines SET status = ? WHERE id = ?')
+            .run('active', machineId);
+
+        // Log connection event
+        db.prepare('INSERT INTO connection_events (machine_id, event_type, metadata) VALUES (?, ?, ?)')
+            .run(machineId, 'Unarchived', JSON.stringify({ unarchivedAt: new Date().toISOString() }));
+
+        // Emit WebSocket event to notify the Service if it's connected
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`machine:${machineId}`).emit('machine:unarchived', {
+                machineId,
+                timestamp: new Date().toISOString()
+            });
+
+            // Also broadcast updated machines list to all web clients
+            io.emit('web:subscribe');
+        }
+
+        console.log(`✓ Machine un-archived: ${machine.displayName || machine.name} (${machineId})`);
+
+        res.json({
+            success: true,
+            machineId,
+            status: 'active'
+        });
+    } catch (error) {
+        console.error('Un-archive machine error:', error);
+        res.status(500).json({ error: 'Un-archive failed' });
     }
 });
 

@@ -22,7 +22,7 @@ export interface Machine {
     pingStatus?: string | null;
     statusText?: string;
     lastSeen: string | null;
-    status?: 'pending' | 'active';
+    status?: 'pending' | 'active' | 'archived';
 }
 
 interface MachineContextType {
@@ -33,6 +33,8 @@ interface MachineContextType {
     refreshMachines: () => void;
     isLoading: boolean;
     onMachineDiscovered?: (callback: (machine: Machine) => void) => void;
+    showArchived: boolean;
+    setShowArchived: (show: boolean) => void;
 }
 
 const MachineContext = createContext<MachineContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
     const selectedMachineRef = useRef<Machine | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showArchived, setShowArchived] = useState(false);
     const discoveryCallbackRef = useRef<((machine: Machine) => void) | null>(null);
 
     // Keep ref in sync with state
@@ -63,8 +66,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         const handleMachinesList = (machinesList: Machine[]) => {
             const currentSelected = selectedMachineRef.current;
 
-            // Separate active and pending machines
-            const activeMachines = machinesList.filter(m => m.status !== 'pending');
+            // Separate active, archived, and pending machines
+            const activeMachines = machinesList.filter(m => m.status !== 'pending' && m.status !== 'archived');
             const pending = machinesList.filter(m => m.status === 'pending');
 
             setMachines(activeMachines);
@@ -149,7 +152,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         // The handleConnect function will emit when socket connects
 
         // Fallback: also do initial HTTP fetch in case socket isn't ready
-        fetch('/api/machines', { headers: getAuthHeaders() })
+        const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
+        fetch(`/api/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
             .then(res => res.json())
             .then((data: Machine[]) => {
                 handleMachinesList(data);
@@ -194,7 +198,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.emit('web:subscribe');
         } else {
             // Fallback to HTTP if socket not connected
-            fetch('/api/machines', { headers: getAuthHeaders() })
+            const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
+            fetch(`/api/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
                 .then(res => res.json())
                 .then((data: Machine[]) => setMachines(data))
                 .catch(err => console.error('Failed to refresh machines:', err));
@@ -209,7 +214,9 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             selectMachine,
             refreshMachines,
             isLoading,
-            onMachineDiscovered
+            onMachineDiscovered,
+            showArchived,
+            setShowArchived
         }}>
             {children}
         </MachineContext.Provider>
