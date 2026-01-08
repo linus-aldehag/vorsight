@@ -11,6 +11,7 @@ public class AgentSettings
     public bool IsScreenshotEnabled { get; set; } = false;
     public bool IsActivityEnabled { get; set; } = false;
     public bool IsAccessControlEnabled { get; set; } = false;
+    public bool FilterDuplicateScreenshots { get; set; } = true;
     
     // Preserve interval values when features are disabled
     public int? ScreenshotIntervalSecondsWhenEnabled { get; set; }

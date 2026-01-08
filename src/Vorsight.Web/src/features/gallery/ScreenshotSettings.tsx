@@ -25,6 +25,7 @@ export function ScreenshotSettings({ settings, onSettingsChange }: ScreenshotSet
     const [open, setOpen] = useState(false);
     const [enabled, setEnabled] = useState(settings.screenshotIntervalSeconds > 0);
     const [interval, setInterval] = useState(settings.screenshotIntervalSeconds || 60);
+    const [filterDuplicates, setFilterDuplicates] = useState(settings.filterDuplicateScreenshots ?? true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +39,7 @@ export function ScreenshotSettings({ settings, onSettingsChange }: ScreenshotSet
             const updatedSettings = {
                 ...settings,
                 screenshotIntervalSeconds: enabled ? interval : 0,
+                filterDuplicateScreenshots: filterDuplicates,
                 isMonitoringEnabled: enabled || settings.pingIntervalSeconds > 0
             };
 
@@ -89,20 +91,32 @@ export function ScreenshotSettings({ settings, onSettingsChange }: ScreenshotSet
                     </div>
 
                     {enabled && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <label className="text-sm font-medium">Capture Interval (seconds)</label>
-                            <Input
-                                type="number"
-                                value={interval}
-                                onChange={(e) => setInterval(parseInt(e.target.value) || 60)}
-                                min={10}
-                                max={600}
-                                className="font-mono"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Range: 10 - 600 seconds (recommended: 60-300)
-                            </p>
-                        </div>
+                        <>
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label className="text-sm font-medium">Capture Interval (seconds)</label>
+                                <Input
+                                    type="number"
+                                    value={interval}
+                                    onChange={(e) => setInterval(parseInt(e.target.value) || 60)}
+                                    min={10}
+                                    max={600}
+                                    className="font-mono"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Range: 10 - 600 seconds (recommended: 60-300)
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-between border-t pt-4">
+                                <div className="space-y-0.5">
+                                    <div className="font-medium">Filter Duplicate Screenshots</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Skip uploading screenshots that are visually similar to the previous one
+                                    </div>
+                                </div>
+                                <Switch checked={filterDuplicates} onCheckedChange={setFilterDuplicates} />
+                            </div>
+                        </>
                     )}
                 </div>
 

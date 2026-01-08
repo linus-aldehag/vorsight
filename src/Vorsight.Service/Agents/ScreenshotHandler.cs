@@ -3,7 +3,10 @@ using Vorsight.Contracts.IPC;
 using Vorsight.Service.Server;
 using Vorsight.Service.Storage;
 using Vorsight.Service.Monitoring;
+using Vorsight.Service.Utilities;
+using Vorsight.Infrastructure.Contracts;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace Vorsight.Service.Agents;
 
@@ -13,19 +16,28 @@ public class ScreenshotHandler
     private readonly IUploadQueueProcessor _uploadQueueProcessor;
     private readonly IHealthMonitor _healthMonitor;
     private readonly IGoogleDriveService _driveService;
+    private readonly IPerceptualHashService _hashService;
+    private readonly ISettingsManager _settingsManager;
     private readonly ILogger<ScreenshotHandler> _logger;
+    
+    // Track last hash per machine ID for duplicate detection
+    private readonly ConcurrentDictionary<string, string> _lastHashPerMachine = new();
 
     public ScreenshotHandler(
         IServerConnection serverConnection,
         IUploadQueueProcessor uploadQueueProcessor,
         IHealthMonitor healthMonitor,
         IGoogleDriveService driveService,
+        IPerceptualHashService hashService,
+        ISettingsManager settingsManager,
         ILogger<ScreenshotHandler> logger)
     {
         _serverConnection = serverConnection;
         _uploadQueueProcessor = uploadQueueProcessor;
         _healthMonitor = healthMonitor;
         _driveService = driveService;
+        _hashService = hashService;
+        _settingsManager = settingsManager;
         _logger = logger;
     }
 
@@ -42,6 +54,53 @@ public class ScreenshotHandler
         {
             if (message.Payload != null && message.Payload.Length > 0)
             {
+                // Check if duplicate filtering is enabled
+                var settings = await _settingsManager.GetSettingsAsync();
+                var machineId = _serverConnection.MachineId ?? "unknown";
+                
+                if (settings.FilterDuplicateScreenshots)
+                {
+                    // Calculate perceptual hash
+                    string currentHash;
+                    try
+                    {
+                        currentHash = _hashService.ComputeHash(message.Payload);
+                    }
+                    catch (Exception hashEx)
+                    {
+                        _logger.LogWarning(hashEx, "Failed to compute perceptual hash, proceeding with upload");
+                        currentHash = string.Empty;
+                    }
+                    
+                    // Compare with last hash if available
+                    if (!string.IsNullOrEmpty(currentHash) && _lastHashPerMachine.TryGetValue(machineId, out var lastHash))
+                    {
+                        var similarity = _hashService.GetSimilarityPercentage(currentHash, lastHash);
+                        
+                        if (_hashService.IsSimilar(currentHash, lastHash))
+                        {
+                            _logger.LogInformation(
+                                "Screenshot skipped - too similar to previous ({Similarity:F2}% difference, threshold: 5%). Machine: {MachineId}",
+                                similarity,
+                                machineId);
+                            _healthMonitor.RecordScreenshotSuccess(); // Still count as success (system working correctly)
+                            return;
+                        }
+                        else
+                        {
+                            _logger.LogDebug(
+                                "Screenshot different enough to upload ({Similarity:F2}% difference). Machine: {MachineId}",
+                                similarity,
+                                machineId);
+                        }
+                    }
+                    
+                    // Update last hash for this machine
+                    if (!string.IsNullOrEmpty(currentHash))
+                    {
+                        _lastHashPerMachine[machineId] = currentHash;
+                    }
+                }
                 // Parse metadata for Title
                 string windowTitle = "Unknown";
                 if (!string.IsNullOrEmpty(message.Metadata))
