@@ -39,8 +39,11 @@ export function MachineSelector() {
     };
 
     const handleArchiveClick = (machineId: string, displayName: string | null | undefined, machineName: string, isArchived: boolean) => {
+        console.log('handleArchiveClick called:', { machineId, displayName, machineName, isArchived });
         setMachineToArchive({ id: machineId, name: displayName || machineName, isArchived });
+        console.log('Setting archiveDialogOpen to true');
         setArchiveDialogOpen(true);
+        console.log('archiveDialogOpen state should be true now');
     };
 
     const handleArchiveConfirm = async () => {
@@ -67,42 +70,107 @@ export function MachineSelector() {
 
     if (machines.length === 0) {
         return (
-            <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">
-                No signals detected
-            </Badge>
-        );
-    }
-
-    // For single machine, show with editable display name
-    if (machines.length === 1) {
-        const m = machines[0];
-        return (
-            <div
-                className="flex items-center gap-2 border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-primary/10 transition-colors max-w-full"
-                onClick={() => handleMachineClick(m.id)}
-            >
-                <Monitor size={16} className="text-primary shrink-0" />
-                <div className="min-w-0 flex-1">
-                    <EditableMachineName
-                        machineId={m.id}
-                        displayName={m.displayName}
-                        machineName={m.name}
-                        onUpdate={refreshMachines}
-                        hideId={true}
-                    />
-                </div>
-                <Circle
-                    size={8}
-                    className={cn(
-                        "shrink-0",
-                        m.isOnline ? "fill-success text-success" : "fill-muted text-muted"
-                    )}
-                />
+            <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-yellow-500 border-yellow-500/50">
+                    No active machines
+                </Badge>
+                {!showArchived && (
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowArchived(true)}
+                        className="gap-1"
+                    >
+                        <Eye size={14} />
+                        Show Archived
+                    </Button>
+                )}
             </div>
         );
     }
 
-    // For multiple machines, use a Dialog-based switcher for better mobile capability
+    // For single machine, show inline with dropdown menu for actions
+    if (machines.length === 1 && !showArchived) {
+        const m = machines[0];
+        const isArchived = m.status === 'archived';
+
+        return (
+            <>
+                <div className="flex items-center gap-1">
+                    <div
+                        className="flex items-center gap-2 border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-primary/10 transition-colors"
+                        onClick={() => handleMachineClick(m.id)}
+                    >
+                        <Monitor size={16} className="text-primary shrink-0" />
+                        <div className="min-w-0 flex-1">
+                            <EditableMachineName
+                                machineId={m.id}
+                                displayName={m.displayName}
+                                machineName={m.name}
+                                onUpdate={refreshMachines}
+                                hideId={true}
+                            />
+                        </div>
+                        <Circle
+                            size={8}
+                            className={cn(
+                                "shrink-0",
+                                m.isOnline ? "fill-success text-success" : "fill-muted text-muted"
+                            )}
+                        />
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Archive button clicked for machine:', m.id, 'isArchived:', isArchived);
+                            handleArchiveClick(m.id, m.displayName, m.name, isArchived);
+                        }}
+                        className="h-9 w-9 shrink-0"
+                        title={isArchived ? 'Un-archive machine' : 'Archive machine'}
+                    >
+                        {isArchived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                    </Button>
+                </div>
+
+                {/* AlertDialog for archive confirmation */}
+                <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                {machineToArchive?.isArchived ? 'Unarchive' : 'Archive'} Machine
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {machineToArchive?.isArchived ? (
+                                    <>
+                                        Are you sure you want to un-archive <strong>{machineToArchive?.name}</strong>?
+                                        <br /><br />
+                                        This will resume data collection and make the machine visible in the main list.
+                                    </>
+                                ) : (
+                                    <>
+                                        Are you sure you want to archive <strong>{machineToArchive?.name}</strong>?
+                                        <br /><br />
+                                        This will stop all data collection but preserve historical data. The machine can be un-archived later.
+                                    </>
+                                )}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleArchiveConfirm}>
+                                {machineToArchive?.isArchived ? 'Un-archive' : 'Archive'}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </>
+        );
+    }
+
+    // For multiple machines or when showing archived, use Dialog-based switcher
 
     return (
         <>

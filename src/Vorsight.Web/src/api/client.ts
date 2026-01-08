@@ -185,7 +185,10 @@ export const VorsightApi = {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
         });
-        if (!res.ok) throw new Error('Failed to archive machine');
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: 'Failed to archive machine' }));
+            throw new Error(errorData.error || 'Failed to archive machine');
+        }
         return res.json();
     },
 
@@ -194,7 +197,10 @@ export const VorsightApi = {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
         });
-        if (!res.ok) throw new Error('Failed to unarchive machine');
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ error: 'Failed to unarchive machine' }));
+            throw new Error(errorData.error || 'Failed to unarchive machine');
+        }
         return res.json();
     }
 };
