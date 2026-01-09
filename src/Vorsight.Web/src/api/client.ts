@@ -1,62 +1,13 @@
-export interface HealthReport {
-    screenshotsSuccessful: number;
-    screenshotsFailed: number;
-    uploadsSuccessful: number;
-    uploadsFailed: number;
-    totalScreenshotsSuccessful: number;
-    totalScreenshotsFailed: number;
-    totalUploadsSuccessful: number;
-    totalUploadsFailed: number;
-    periodDuration: string;
-    totalRuntime: string;
-}
+import type {
+    StatusResponse,
+    ApiResponse,
+    AgentSettings,
+    AccessSchedule,
+    PaginatedScreenshots,
+    ActivitySummary
+} from './types';
 
-export interface UptimeStatus {
-    currentStart: string | null;
-    lastSeen: string | null;
-    isTracking: boolean;
-}
-
-export interface ActivitySnapshot {
-    activeWindowTitle: string;
-    timeSinceLastInput: string;
-    timestamp: string;
-}
-
-export interface StatusResponse {
-    health: HealthReport;
-    uptime: UptimeStatus;
-    activity: ActivitySnapshot | null;
-    audit: AuditReport | null;
-}
-
-export interface AuditReport {
-    passed: boolean;
-    warnings: string[];
-    timestamp: string;
-}
-
-export interface ApiResponse {
-    status: string;
-    [key: string]: any;
-}
-
-export interface AgentSettings {
-    screenshotIntervalSeconds: number;
-    pingIntervalSeconds: number;
-    isMonitoringEnabled: boolean;
-    isAuditEnabled: boolean;
-    isScreenshotEnabled: boolean; // Separate from interval - feature on/off
-    isActivityEnabled: boolean;   // Separate from interval - feature on/off
-    isAccessControlEnabled: boolean; // Schedule-based access control
-    filterDuplicateScreenshots?: boolean; // Screenshot deduplication
-    screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
-    pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
-    // Ping monitor data
-    lastPingTime?: string;
-    lastPingSuccess?: string;
-    pingLatency?: number;
-}
+export * from './types';
 
 const BASE_URL = '/api'; // Relative URL - same server (localhost:3000)
 
@@ -108,6 +59,8 @@ export const VorsightApi = {
         if (!response.ok) throw new Error('Failed to fetch schedule');
         const text = await response.text();
         if (!text) return null;
+
+        // Use a safe parser or custom logic if needed, but here we assume the API returns JSON
         return JSON.parse(text);
     },
 
@@ -205,42 +158,3 @@ export const VorsightApi = {
         return res.json();
     }
 };
-
-export interface AccessSchedule {
-    scheduleId: string;
-    childUsername: string;
-    isActive: boolean;
-    allowedTimeWindows: TimeWindow[];
-    dailyTimeLimitMinutes: number;
-    weekendBonusMinutes: number;
-    createdUtc: string;
-    modifiedUtc: string;
-}
-
-export interface TimeWindow {
-    dayOfWeek: number; // 0=Sunday
-    startTime: string; // HH:mm
-    endTime: string;   // HH:mm
-}
-
-export interface DriveFile {
-    id: string;
-    name: string;
-    createdTime: string;
-    webViewLink: string;
-    webContentLink?: string;
-    thumbnailLink?: string;
-}
-
-export interface PaginatedScreenshots {
-    screenshots: DriveFile[];
-    hasMore: boolean;
-    cursor: string | null;
-}
-
-export interface ActivitySummary {
-    totalActiveHours: number;
-    timeline: { hour: number; activeMinutes: number }[];
-    topApps: { name: string; percentage: number }[];
-    lastActive: string;
-}
