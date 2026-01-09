@@ -204,7 +204,10 @@ public class Worker : BackgroundService
             var currentSettings = await _settingsManager.GetSettingsAsync();
             if (currentSettings.IsAuditEnabled)
             {
-                await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync());
+            if (currentSettings.IsAuditEnabled)
+            {
+                await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync(currentSettings));
+            }
             }
             else
             {
@@ -408,11 +411,10 @@ public class Worker : BackgroundService
             // Apply Audit Settings
             if (settings.IsAuditEnabled)
             {
-                if (!_auditManager.IsMonitoring)
-                {
-                    _logger.LogInformation("Enabling Audit Monitoring based on settings");
-                    await _auditManager.StartMonitoringAsync();
-                }
+                // Always call StartMonitoringAsync to ensure settings (filters) are up to date
+                // The manager handles restart if already running
+                _logger.LogInformation("Applying Audit Monitoring settings");
+                await _auditManager.StartMonitoringAsync(settings);
             }
             else
             {

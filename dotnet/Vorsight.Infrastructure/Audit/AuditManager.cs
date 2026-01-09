@@ -2,6 +2,7 @@ using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Logging;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Audit;
+using Vorsight.Contracts.Settings;
 
 namespace Vorsight.Infrastructure.Audit;
 
@@ -18,7 +19,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     private readonly TimeSpan _dedupeWindow = TimeSpan.FromSeconds(5);
     private readonly object _dedupeLock = new();
 
-    // Events for audit notifications
     // Events for audit notifications
     public event EventHandler<AuditEventDetectedEventArgs>? CriticalEventDetected;
     public event EventHandler<TamperingDetectedEventArgs>? TamperingDetected;
@@ -42,44 +42,42 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         await Task.CompletedTask;
     }
 
-
-
-    private EventLogWatcher? _securityLogWatcher;
+    private readonly List<EventLogWatcher> _activeWatchers = new();
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    public async Task StartMonitoringAsync()
+    public async Task StartMonitoringAsync(AgentSettings settings)
     {
         ThrowIfDisposed();
 
         if (IsMonitoring)
-            return;
+        {
+            // If already monitoring, restart to apply new settings
+            await StopMonitoringAsync();
+        }
 
         try
         {
-            // Build the query from filters
-            var query = BuildEventQuery();
-            if (string.IsNullOrEmpty(query))
+            // 1. Security Log Watcher (High Priority)
+            if (settings.AuditLogSecurityEnabled)
             {
-                logger.LogWarning("No audit filters configured. Event log monitoring will operate with default security catch-all.");
-                query = "*[System/Provider[@Name='Microsoft-Windows-Security-Auditing']]";
+                StartWatcher("Security", BuildSecurityQuery());
             }
 
-            var eventQuery = new EventLogQuery("Security", PathType.LogName, query);
-            _securityLogWatcher = new EventLogWatcher(eventQuery);
+            // 2. System Log Watcher (Services, Startups)
+            if (settings.AuditLogSystemEnabled)
+            {
+                StartWatcher("System", BuildSystemQuery());
+            }
+
+            // 3. Application Log Watcher (Optional/Future use)
+            if (settings.AuditLogApplicationEnabled)
+            {
+                // Basic application audit - can be expanded later
+                StartWatcher("Application", "*[System[Level<=3]]"); // Error, Warning, Critical
+            }
             
-            _securityLogWatcher.EventRecordWritten += SecurityLogWatcher_EventRecordWritten;
-            
-            _securityLogWatcher.Enabled = true;
             IsMonitoring = true;
-            
-            logger.LogInformation("Event log monitoring started with query: {Query}", query);
             await Task.CompletedTask;
-        }
-        catch (EventLogException ex)
-        {
-            // If we lack permission (must be admin/service), we log a warning but don't crash the app
-            logger.LogWarning(ex, "Could not initialize Event Log watchers. Ensure the service is running as Administrator/LocalSystem.");
-            IsMonitoring = false;
         }
         catch (Exception ex)
         {
@@ -88,17 +86,36 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         }
     }
 
-    private string BuildEventQuery()
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private void StartWatcher(string logName, string query)
     {
-        // Expanded query for comprehensive security monitoring
-        // Covers: User management, Service tampering, Scheduled tasks, Audit tampering
+        try
+        {
+            var eventQuery = new EventLogQuery(logName, PathType.LogName, query);
+            var watcher = new EventLogWatcher(eventQuery);
+            
+            watcher.EventRecordWritten += (sender, e) => 
+                LogWatcher_EventRecordWritten(sender, e, logName);
+            
+            watcher.Enabled = true;
+            _activeWatchers.Add(watcher);
+            
+            logger.LogInformation("Started monitoring {LogName} log with query: {Query}", logName, query);
+        }
+        catch (EventLogException ex)
+        {
+            logger.LogWarning(ex, "Could not initialize watcher for {LogName}. Ensure permissions.", logName);
+        }
+    }
+
+    private string BuildSecurityQuery()
+    {
+        // Security specific events: User management, Audit tampering, Process creation
         return @"*[System[(
             EventID=4720 or
             EventID=4732 or
             EventID=4728 or
             EventID=4672 or
-            EventID=7045 or
-            EventID=7040 or
             EventID=4697 or
             EventID=4698 or
             EventID=4699 or
@@ -110,8 +127,17 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         )]]";
     }
 
+    private string BuildSystemQuery()
+    {
+        // System specific events: Service Installation (System Log typically has 7045)
+        return @"*[System[(
+            EventID=7045 or
+            EventID=7040
+        )]]";
+    }
+
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private void SecurityLogWatcher_EventRecordWritten(object? sender, EventRecordWrittenEventArgs e)
+    private void LogWatcher_EventRecordWritten(object? sender, EventRecordWrittenEventArgs e, string logName)
     {
         try
         {
@@ -122,94 +148,107 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             {
                 Timestamp = eventRecord.TimeCreated ?? DateTime.UtcNow,
                 EventId = eventRecord.Id.ToString(),
-                EventType = eventRecord.TaskDisplayName ?? "Security Event",
-                SourceLogName = "Security",
-                Username = "System", // Will extract from event properties if needed
+                EventType = eventRecord.TaskDisplayName ?? $"{logName} Event",
+                SourceLogName = logName,
+                Username = "System", // Default, extraction logic could be improved
                 Details = eventRecord.FormatDescription() ?? "No description available"
             };
             
             // Check for duplicates before processing
             if (IsDuplicate(evt))
             {
-                logger.LogDebug("Skipping duplicate event {Id} for {Username}", evt.EventId, evt.Username);
+                // logger.LogDebug("Skipping duplicate event {Id}", evt.EventId);
                 return;
             }
             
-            // Basic detection logic
-            switch (eventRecord.Id)
-            {
-                case 4720: // User Created
-                    NotifyCriticalEvent(evt, "User Account Created");
-                    break;
-                    
-                case 4732:
-                case 4728: // Added to group
-                    NotifyCriticalEvent(evt, "Group Membership Changed");
-                    break;
-                    
-                case 4672: // Admin login (noisy, but critical)
-                    // Optionally filter admin noise
-                    break;
-                    
-                case 7045: // Service installed (System log)
-                    evt.SourceLogName = "System";
-                    evt.EventType = "Service Installed";
-                    NotifyCriticalEvent(evt, "New service installed - verify legitimacy");
-                    break;
-                    
-                case 7040: // Service start type changed
-                    evt.SourceLogName = "System";
-                    evt.EventType = "Service Configuration Changed";
-                    NotifyCriticalEvent(evt, "Service start type modified");
-                    break;
-                    
-                case 4697: // Service installed (Security log)
-                    evt.EventType = "Service Installed (Security)";
-                    NotifyCriticalEvent(evt, "New service installed via security event");
-                    break;
-                    
-                case 4698: // Scheduled task created
-                    evt.EventType = "Scheduled Task Created";
-                    NotifyCriticalEvent(evt, "New scheduled task created");
-                    break;
-                    
-                case 4699: // Scheduled task deleted
-                    evt.EventType = "Scheduled Task Deleted";
-                    NotifyCriticalEvent(evt, "Scheduled task deleted");
-                    break;
-                    
-                case 4700: // Scheduled task enabled
-                    evt.EventType = "Scheduled Task Enabled";
-                    NotifyCriticalEvent(evt, "Scheduled task enabled");
-                    break;
-                    
-                case 4701: // Scheduled task disabled
-                    evt.EventType = "Scheduled Task Disabled";
-                    NotifyCriticalEvent(evt, "Scheduled task disabled");
-                    break;
-                    
-                case 4702: // Scheduled task updated
-                    evt.EventType = "Scheduled Task Updated";
-                    NotifyCriticalEvent(evt, "Scheduled task modified");
-                    break;
-                    
-                case 1102: // Audit log cleared - CRITICAL!
-                    evt.EventType = "Audit Log Cleared";
-                    logger.LogCritical("CRITICAL: Audit log tampering detected! EventID={EventId}", evt.EventId);
-                    NotifyCriticalEvent(evt, "CRITICAL: Audit log cleared - tampering detected!");
-                    break;
-                    
-                case 4719: // Audit policy changed
-                    evt.EventType = "Audit Policy Changed";
-                    NotifyCriticalEvent(evt, "System audit policy modified");
-                    break;
-            }
-
-            logger.LogDebug("Captured Security Event {Id}: {Type}", eventRecord.Id, evt.EventType);
+            ProcessEvent(evt, eventRecord.Id, logName);
+            
+            // Log capture for debug
+            // logger.LogDebug("Captured {LogName} Event {Id}: {Type}", logName, eventRecord.Id, evt.EventType);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error processing event log record");
+            logger.LogError(ex, "Error processing event log record from {LogName}", logName);
+        }
+    }
+
+    private void ProcessEvent(AuditEvent evt, int eventId, string logName)
+    {
+        switch (eventId)
+        {
+            // --- Security Log Events ---
+            case 4720: // User Created
+                NotifyCriticalEvent(evt, "User Account Created");
+                break;
+                
+            case 4732:
+            case 4728: // Added to group
+                NotifyCriticalEvent(evt, "Group Membership Changed");
+                break;
+                
+            case 4672: // Admin login
+                // Optionally filter admin noise
+                break;
+                
+            case 4697: // Service installed (Security log)
+                evt.EventType = "Service Installed (Security)";
+                NotifyCriticalEvent(evt, "New service installed via security event");
+                break;
+                
+            case 4698: // Scheduled task created
+                evt.EventType = "Scheduled Task Created";
+                NotifyCriticalEvent(evt, "New scheduled task created");
+                break;
+                
+            case 4699: // Scheduled task deleted
+                evt.EventType = "Scheduled Task Deleted";
+                NotifyCriticalEvent(evt, "Scheduled task deleted");
+                break;
+                
+            case 4700: // Scheduled task enabled
+                evt.EventType = "Scheduled Task Enabled";
+                NotifyCriticalEvent(evt, "Scheduled task enabled");
+                break;
+                
+            case 4701: // Scheduled task disabled
+                evt.EventType = "Scheduled Task Disabled";
+                NotifyCriticalEvent(evt, "Scheduled task disabled");
+                break;
+                
+            case 4702: // Scheduled task updated
+                evt.EventType = "Scheduled Task Updated";
+                NotifyCriticalEvent(evt, "Scheduled task modified");
+                break;
+                
+            case 1102: // Audit log cleared - CRITICAL!
+                evt.EventType = "Audit Log Cleared";
+                logger.LogCritical("CRITICAL: Audit log tampering detected! EventID={EventId}", evt.EventId);
+                NotifyCriticalEvent(evt, "CRITICAL: Audit log cleared - tampering detected!");
+                break;
+                
+            case 4719: // Audit policy changed
+                evt.EventType = "Audit Policy Changed";
+                NotifyCriticalEvent(evt, "System audit policy modified");
+                break;
+
+            // --- System Log Events ---
+            case 7045: // Service installed (System log)
+                evt.EventType = "Service Installed";
+                NotifyCriticalEvent(evt, "New service installed - verify legitimacy");
+                break;
+                
+            case 7040: // Service start type changed
+                evt.EventType = "Service Configuration Changed";
+                NotifyCriticalEvent(evt, "Service start type modified");
+                break;
+                
+            default:
+                // For other events (captured by wildcard or app log), just log or generic notify if critical
+                if (logName == "Application" && (evt.Details.Contains("Critical") || evt.Details.Contains("Error")))
+                {
+                    NotifyCriticalEvent(evt, $"Application Error: {evt.EventType}");
+                }
+                break;
         }
     }
 
@@ -265,17 +304,17 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     {
         ThrowIfDisposed();
 
-        if (!IsMonitoring)
+        if (!IsMonitoring && _activeWatchers.Count == 0)
             return;
 
         try 
         {
-            if (_securityLogWatcher != null)
+            foreach (var watcher in _activeWatchers)
             {
-                _securityLogWatcher.Enabled = false;
-                _securityLogWatcher.Dispose();
-                _securityLogWatcher = null;
+                watcher.Enabled = false;
+                watcher.Dispose();
             }
+            _activeWatchers.Clear();
         }
         catch (Exception ex)
         {
@@ -286,8 +325,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         logger.LogInformation("Event log monitoring stopped");
         await Task.CompletedTask;
     }
-
-
 
     private void ThrowIfDisposed()
     {

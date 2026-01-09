@@ -7,6 +7,11 @@ public class AgentSettings
     public bool IsMonitoringEnabled { get; set; } = false;
     public bool IsAuditEnabled { get; set; } = false;
     
+    // Audit Log Source Filters
+    public bool AuditLogSecurityEnabled { get; set; } = true;
+    public bool AuditLogSystemEnabled { get; set; } = false;
+    public bool AuditLogApplicationEnabled { get; set; } = false;
+    
     // Feature enable flags (separate from interval configuration)
     public bool IsScreenshotEnabled { get; set; } = false;
     public bool IsActivityEnabled { get; set; } = false;

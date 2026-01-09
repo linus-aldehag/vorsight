@@ -96,6 +96,10 @@ export function FeaturesPage() {
         });
     };
 
+    const handleAuditSave = async (updates: Partial<AgentSettings>) => {
+        await updateFeature('Audit Logging', updates);
+    };
+
     const handleAccessControlToggle = async (enabled: boolean) => {
         await updateFeature('Access Control', {
             isAccessControlEnabled: enabled
@@ -195,7 +199,10 @@ export function FeaturesPage() {
                     onToggle={handleAuditToggle}
                     saving={saving === 'Audit Logging'}
                 >
-                    <AuditConfig />
+                    <AuditConfig
+                        settings={settings}
+                        onUpdate={handleAuditSave}
+                    />
                 </ExpandableFeatureCard>
 
                 {/* Access Control */}
