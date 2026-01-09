@@ -95,7 +95,7 @@ class GoogleDriveService {
             const files = searchResponse.data.files;
             if (files && files.length > 0) {
                 const firstFile = files[0];
-                if (firstFile && firstFile.id) return firstFile.id;
+                if (firstFile && firstFile.id) return firstFile.id as string;
             }
         } catch (e) {
             // Ignore search errors
@@ -112,23 +112,24 @@ class GoogleDriveService {
             fields: 'id'
         });
 
-        if (!createResponse.data.id) {
+        const folderId = createResponse.data.id;
+        if (!folderId) {
             throw new Error('Failed to create folder');
         }
 
-        console.log(`Created folder: ${folderName} (ID: ${createResponse.data.id})`);
-        return createResponse.data.id;
+        console.log(`Created folder: ${folderName} (ID: ${folderId})`);
+        return folderId;
     }
 
     async uploadFile(filePath: string, machineName: string, metadata: FileMetadata = {}): Promise<UploadResult> {
         try {
             const drive = await this.getDriveClient();
 
-            const dateFolder = new Date().toISOString().split('T')[0];
+            const dateFolder = new Date().toISOString().split('T')[0] as string;
 
-            const vorsightFolderId = await this.findOrCreateFolder('Vorsight');
-            const machineFolderId = await this.findOrCreateFolder(machineName, vorsightFolderId);
-            const dateFolderId = await this.findOrCreateFolder(dateFolder, machineFolderId);
+            const vorsightFolderId = await this.findOrCreateFolder('Vorsight') as string;
+            const machineFolderId = await this.findOrCreateFolder(machineName, vorsightFolderId) as string;
+            const dateFolderId = await this.findOrCreateFolder(dateFolder, machineFolderId) as string;
 
             const fileMetadata = {
                 name: path.basename(filePath),

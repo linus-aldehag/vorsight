@@ -66,7 +66,7 @@ router.get('/summary/:machineId', async (req: Request, res: Response) => {
             totalActiveHours,
             timeline,
             topApps,
-            lastActive: activities.length > 0 ? new Date(activities[0].startTime * 1000).toISOString() : null
+            lastActive: activities.length > 0 && activities[0] ? new Date(activities[0].startTime * 1000).toISOString() : null
         });
     } catch (error) {
         console.error('Analytics summary error:', error);

@@ -1,4 +1,4 @@
-import { Server as SocketIOServer } from 'socket.io';
+// Shared Types
 import {
     Machine,
     MachineState,
