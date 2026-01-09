@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AgentSettings } from '@/api/client';
-import { NumberField, ToggleField } from './form-fields';
+import { NumberField, ToggleField } from '@/components/common/form-fields';
 
 interface ScreenshotConfigProps {
     settings: AgentSettings;

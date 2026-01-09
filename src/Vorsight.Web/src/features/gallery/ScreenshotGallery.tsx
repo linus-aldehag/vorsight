@@ -7,8 +7,8 @@ import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/clien
 import { useMachine } from '../../context/MachineContext';
 import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
-import { ConfigSection } from '../../components/features/ConfigSection';
-import { ScreenshotConfig } from '../../components/features/ScreenshotConfig';
+import { ConfigSection } from '../../components/common/ConfigSection';
+import { ScreenshotConfig } from './ScreenshotConfig';
 
 // Screenshot Card Component
 interface ScreenshotCardProps {

@@ -5,8 +5,8 @@ import { Shield } from 'lucide-react';
 import { AuditFilters } from './AuditFilters';
 import { AuditTable } from './AuditTable';
 import { VorsightApi, type AgentSettings } from '@/api/client';
-import { ConfigSection } from '@/components/features/ConfigSection';
-import { AuditConfig } from '@/components/features/AuditConfig';
+import { ConfigSection } from '@/components/common/ConfigSection';
+import { AuditConfig } from './AuditConfig';
 
 
 
