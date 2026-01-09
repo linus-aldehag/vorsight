@@ -20,7 +20,7 @@ Write-Host "Restoring dependencies..."
 dotnet restore
 
 Write-Host "Publishing Service (self-contained)..."
-dotnet publish src\Vorsight.Service\Vorsight.Service.csproj `
+dotnet publish dotnet\Vorsight.Service\Vorsight.Service.csproj `
     -c $Configuration `
     -r win-x64 `
     --self-contained true `
@@ -29,7 +29,7 @@ dotnet publish src\Vorsight.Service\Vorsight.Service.csproj `
     -o publish\Service
 
 Write-Host "Publishing Agent (self-contained)..."
-dotnet publish src\Vorsight.Agent\Vorsight.Agent.csproj `
+dotnet publish dotnet\Vorsight.Agent\Vorsight.Agent.csproj `
     -c $Configuration `
     -r win-x64 `
     --self-contained true `

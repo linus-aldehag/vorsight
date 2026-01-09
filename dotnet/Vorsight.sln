@@ -5,15 +5,15 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Interop", "src\Vorsight.Interop\Vorsight.Interop.csproj", "{720C8069-DB49-44A6-9E75-F70304637897}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Interop", "Vorsight.Interop\Vorsight.Interop.csproj", "{720C8069-DB49-44A6-9E75-F70304637897}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Service", "src\Vorsight.Service\Vorsight.Service.csproj", "{3B32F8EE-2F54-464C-9076-0998531F30F1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Service", "Vorsight.Service\Vorsight.Service.csproj", "{3B32F8EE-2F54-464C-9076-0998531F30F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Agent", "src\Vorsight.Agent\Vorsight.Agent.csproj", "{920B5AAB-F7E3-484B-97C7-7A04E0795F1E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Agent", "Vorsight.Agent\Vorsight.Agent.csproj", "{920B5AAB-F7E3-484B-97C7-7A04E0795F1E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Contracts", "src\Vorsight.Contracts\Vorsight.Contracts.csproj", "{33E1500C-903C-42EB-9427-51586C160B7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Contracts", "Vorsight.Contracts\Vorsight.Contracts.csproj", "{33E1500C-903C-42EB-9427-51586C160B7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Infrastructure", "src\Vorsight.Infrastructure\Vorsight.Infrastructure.csproj", "{168D8552-CF2B-49E5-866D-9F1AAF54419B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vorsight.Infrastructure", "Vorsight.Infrastructure\Vorsight.Infrastructure.csproj", "{168D8552-CF2B-49E5-866D-9F1AAF54419B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

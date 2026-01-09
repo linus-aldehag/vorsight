@@ -45,6 +45,7 @@ DisableDirPage=no
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+// Verified paths are relative to output folder which remains same relative depth
 [Files]
 ; Service executable and dependencies
 Source: "..\..\publish\Service\*"; DestDir: "{app}"; Excludes: "appsettings.json"; Flags: ignoreversion recursesubdirs createallsubdirs

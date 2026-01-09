@@ -4,19 +4,21 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'src/Vorsight.Service/**'
-      - 'src/Vorsight.Agent/**'
-      - 'src/Vorsight.Core/**'
-      - 'src/Vorsight.Native/**'
+      - 'dotnet/Vorsight.Service/**'
+      - 'dotnet/Vorsight.Agent/**'
+      - 'dotnet/Vorsight.Contracts/**'
+      - 'dotnet/Vorsight.Infrastructure/**'
+      - 'dotnet/Vorsight.Interop/**'
       - 'deploy/windows/**'
       - '.github/workflows/build-windows.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'src/Vorsight.Service/**'
-      - 'src/Vorsight.Agent/**'
-      - 'src/Vorsight.Core/**'
-      - 'src/Vorsight.Native/**'
+      - 'dotnet/Vorsight.Service/**'
+      - 'dotnet/Vorsight.Agent/**'
+      - 'dotnet/Vorsight.Contracts/**'
+      - 'dotnet/Vorsight.Infrastructure/**'
+      - 'dotnet/Vorsight.Interop/**'
       - 'deploy/windows/**'
       - '.github/workflows/build-windows.yml'
   workflow_dispatch:
@@ -38,7 +40,7 @@ jobs:
       id: version
       shell: pwsh
       run: |
-        $csproj = "src/Vorsight.Service/Vorsight.Service.csproj"
+        $csproj = "dotnet/Vorsight.Service/Vorsight.Service.csproj"
         $xml = [xml](Get-Content $csproj)
         # Parse 1.4.136 -> get 1.4
         $rawVersion = ($xml.Project.PropertyGroup | Where-Object { $_.Version }).Version
@@ -74,8 +76,8 @@ jobs:
             Set-Content $path $content
         }
         
-        Update-Csproj "src/Vorsight.Service/Vorsight.Service.csproj" $version
-        Update-Csproj "src/Vorsight.Agent/Vorsight.Agent.csproj" $version
+        Update-Csproj "dotnet/Vorsight.Service/Vorsight.Service.csproj" $version
+        Update-Csproj "dotnet/Vorsight.Agent/Vorsight.Agent.csproj" $version
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
