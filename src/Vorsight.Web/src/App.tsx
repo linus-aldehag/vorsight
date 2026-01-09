@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { useMachine, MachineProvider } from './context/MachineContext';
 import { LoginPage } from './components/LoginPage';
 import { MainLayout } from './components/Layout/MainLayout';
 import { SettingsLayout } from './components/Layout/SettingsLayout';
@@ -10,15 +11,20 @@ export function App() {
     return (
         <AuthProvider>
             <SettingsProvider>
-                <AppContent />
+                <MachineProvider>
+                    <AppContent />
+                </MachineProvider>
             </SettingsProvider>
         </AuthProvider>
     );
 }
 
 function AppContent() {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+    const { machines, isLoading: isMachinesLoading } = useMachine();
     const [oauthConfigured, setOauthConfigured] = useState<boolean | null>(null);
+    const navigate = useNavigate();
+    const location = useLocation();
 
     // Check OAuth status on mount
     useEffect(() => {
@@ -43,7 +49,17 @@ function AppContent() {
         }
     }, [isAuthenticated]);
 
-    if (isLoading || (isAuthenticated && oauthConfigured === null)) {
+    // Handle redirection when no machines are available
+    useEffect(() => {
+        if (isAuthenticated && !isMachinesLoading && machines.length === 0) {
+            // If not already on a settings page, redirect to settings
+            if (!location.pathname.startsWith('/settings')) {
+                navigate('/settings', { replace: true });
+            }
+        }
+    }, [isAuthenticated, isMachinesLoading, machines.length, location.pathname, navigate]);
+
+    if (isAuthLoading || (isAuthenticated && (oauthConfigured === null || isMachinesLoading))) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-foreground">Loading...</div>
@@ -55,8 +71,8 @@ function AppContent() {
         return <LoginPage />;
     }
 
-    // Redirect to settings if OAuth not configured, otherwise dashboard
-    const defaultRoute = oauthConfigured ? '/dashboard' : '/settings';
+    // Redirect to settings if OAuth not configured OR no machines available, otherwise dashboard
+    const defaultRoute = (oauthConfigured && machines.length > 0) ? '/dashboard' : '/settings';
 
     return (
         <Routes>

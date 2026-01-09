@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { socketService } from '../services/socket';
+import { useAuth } from './AuthContext';
 
 // Helper to get authorization headers
 function getAuthHeaders(): HeadersInit {
@@ -40,6 +41,7 @@ interface MachineContextType {
 const MachineContext = createContext<MachineContextType | undefined>(undefined);
 
 export function MachineProvider({ children }: { children: ReactNode }) {
+    const { isAuthenticated } = useAuth();
     const [machines, setMachines] = useState<Machine[]>([]);
     const [pendingMachines, setPendingMachines] = useState<Machine[]>([]);
     const [selectedMachine, setSelectedMachine] = useState<Machine | null>(null);
@@ -54,6 +56,11 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     }, [selectedMachine]);
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            socketService.disconnect();
+            return; // Don't fetch or connect if not authenticated
+        }
+
         // Connect to WebSocket for real-time updates
         // In development, connect to backend server from env var
         // In production, backend and frontend are same server (window.location.origin)
@@ -186,7 +193,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             socketService.off('machine:discovered', handleMachineDiscovered);
             clearInterval(refreshInterval);
         };
-    }, [showArchived]); // Re-run when showArchived changes
+    }, [showArchived, isAuthenticated]); // Re-run when showArchived changes
 
     // Trigger refresh when showArchived changes
     useEffect(() => {
@@ -205,6 +212,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     };
 
     const refreshMachines = () => {
+        if (!isAuthenticated) return;
+
         if (socketService.isConnected) {
             socketService.emit('web:subscribe');
         } else {
