@@ -1,6 +1,7 @@
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using Vorsight.Interop;
 using Microsoft.Extensions.Logging;
 using Vorsight.Agent.Contracts;
 using Vorsight.Contracts.Screenshots;
@@ -97,6 +98,36 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
         try
         {
+            // Check if session is locked/in secure desktop mode
+            var hDesktop = User32.OpenInputDesktop(
+                0, false, 
+                Vorsight.Interop.User32.DESKTOP_READOBJECTS | Vorsight.Interop.User32.DESKTOP_WRITEOBJECTS);
+            
+            if (hDesktop != IntPtr.Zero)
+            {
+                try
+                {
+                    var desktopName = Vorsight.Interop.User32.GetDesktopName(hDesktop);
+                    if (!string.Equals(desktopName, "Default", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // If we are on Winlogon or another desktop, the session is likely locked or in UAC prompt
+                        // Taking a screenshot here usually results in black screen or old buffer
+                        logger.LogWarning("Skipping screenshot: Desktop is not 'Default' (Current: {Desktop}). Session appears locked.", desktopName);
+                        throw new InvalidOperationException("Session is locked");
+                    }
+                }
+                finally
+                {
+                    Vorsight.Interop.User32.CloseDesktop(hDesktop);
+                }
+            }
+            else
+            {
+                // If we can't open input desktop, we likely don't have access (e.g. system is locked)
+                 logger.LogWarning("Skipping screenshot: Could not open Input Desktop. Session appears locked.");
+                 throw new InvalidOperationException("Session is locked");
+            }
+
             using var graphics = Graphics.FromImage(bitmap);
             graphics.CopyFromScreen(bounds.X, bounds.Y, 0, 0, bounds.Size);
             return bitmap;
