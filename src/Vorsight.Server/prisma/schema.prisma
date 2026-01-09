@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+/// Vörsight Database Schema
+/// This schema defines all database models for the Vörsight monitoring system
+/// @namespace Vorsight.Server
 
 generator client {
   provider = "prisma-client-js"
@@ -7,20 +8,43 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-// Machines (registered client computers)
+/// Machines (registered client computers)
+/// Represents each monitored computer in the system
 model Machine {
+  /// Unique machine identifier (usually hostname or GUID)
   id                String   @id
+  
+  /// Machine name (typically hostname)
   name              String
-  displayName       String?  // Custom display name (nullable for backwards compatibility)
+  
+  /// Custom display name set by user
+  displayName       String?  @map("displayName")
+  
+  /// Network hostname
   hostname          String?
+  
+  /// Last known IP address
   ipAddress         String?  @map("ip_address")
+  
+  /// When the machine was first registered
   registrationDate  DateTime @map("registration_date")
+  
+  /// Last time the machine connected or sent data
   lastSeen          DateTime? @map("last_seen")
-  status            String   @default("pending") // pending or active
+  
+  /// Machine status: pending (awaiting adoption), active, or archived
+  status            String   @default("pending")
+  
+  /// API key for machine authentication
   apiKey            String   @unique @map("api_key")
-  metadata          String?  // JSON string
+  
+  /// Additional metadata as JSON string
+  metadata          String?
+  
+  /// Record creation timestamp
   createdAt         DateTime @default(now()) @map("created_at")
   
   // Relations
@@ -37,15 +61,31 @@ model Machine {
   @@map("machines")
 }
 
-// Machine State (latest snapshot)
+/// Machine State (latest snapshot)
+/// Stores the current state of each machine including health and settings
 model MachineState {
+  /// Foreign key to machine
   machineId         String   @id @map("machine_id")
+  
+  /// Timestamp of last recorded activity
   lastActivityTime  DateTime? @map("last_activity_time")
+  
+  /// Currently active window title
   activeWindow      String?  @map("active_window")
+  
+  /// Total screenshots captured by this machine
   screenshotCount   Int      @default(0) @map("screenshot_count")
+  
+  /// Total uploads performed by this machine
   uploadCount       Int      @default(0) @map("upload_count")
+  
+  /// Health status information as JSON string
   healthStatus      String?  @map("health_status")
-  settings          String?  // JSON string
+  
+  /// Machine settings as JSON string
+  settings          String?
+  
+  /// Last update timestamp
   updatedAt         DateTime @default(now()) @map("updated_at")
   
   // Relations
@@ -54,14 +94,28 @@ model MachineState {
   @@map("machine_state")
 }
 
-// Activity History (raw heartbeat snapshots - 48h retention)
+/// Activity History (raw heartbeat snapshots - 48h retention)
+/// Stores individual activity heartbeats for short-term tracking
 model ActivityHistory {
+  /// Auto-incrementing primary key
   id           Int      @id @default(autoincrement())
+  
+  /// Foreign key to machine
   machineId    String   @map("machine_id")
+  
+  /// Activity timestamp
   timestamp    DateTime
+  
+  /// Active window title at this timestamp
   activeWindow String?  @map("active_window")
+  
+  /// Process name of the active application
   processName  String?  @map("process_name")
+  
+  /// Duration in seconds (deprecated, kept for compatibility)
   duration     Int?
+  
+  /// Username associated with this activity
   username     String?
   
   // Relations
@@ -71,18 +125,40 @@ model ActivityHistory {
   @@map("activity_history")
 }
 
-// Activity Sessions (processed sessions - permanent)
+/// Activity Sessions (processed sessions - permanent)
+/// Aggregated activity data merged from sequential identical activities
 model ActivitySession {
+  /// Auto-incrementing primary key
   id              Int      @id @default(autoincrement())
+  
+  /// Foreign key to machine
   machineId       String   @map("machine_id")
+  
+  /// Session start time (Unix timestamp in seconds)
   startTime       Int      @map("start_time")
+  
+  /// Session end time (Unix timestamp in seconds)
   endTime         Int      @map("end_time")
+  
+  /// Total duration of this session in seconds
   durationSeconds Int      @map("duration_seconds")
+  
+  /// Process name during this session
   processName     String?  @map("process_name")
+  
+  /// Active window title during this session
   activeWindow    String?  @map("active_window")
+  
+  /// Username associated with this session
   username        String?
+  
+  /// Number of heartbeats merged into this session
   heartbeatCount  Int      @default(1) @map("heartbeat_count")
+  
+  /// Session creation timestamp
   createdAt       DateTime @default(now()) @map("created_at")
+  
+  /// Session last update timestamp
   updatedAt       DateTime @default(now()) @map("updated_at")
   
   // Relations
@@ -92,14 +168,28 @@ model ActivitySession {
   @@map("activity_sessions")
 }
 
-// Screenshots Metadata
+/// Screenshots Metadata
+/// Stores metadata for captured screenshots
 model Screenshot {
+  /// Unique screenshot identifier (GUID)
   id               String   @id
+  
+  /// Foreign key to machine
   machineId        String   @map("machine_id")
+  
+  /// When the screenshot was captured
   captureTime      DateTime @map("capture_time")
+  
+  /// What triggered the screenshot (scheduled, manual, etc.)
   triggerType      String?  @map("trigger_type")
+  
+  /// Google Drive file ID if uploaded
   googleDriveFileId String? @map("google_drive_file_id")
+  
+  /// Local file path on server (if stored locally)
   localPath        String?  @map("local_path")
+  
+  /// Whether the screenshot has been uploaded to cloud storage
   isUploaded       Boolean  @default(false) @map("is_uploaded")
   
   // Relations
@@ -109,12 +199,22 @@ model Screenshot {
   @@map("screenshots")
 }
 
-// Settings Queue (for offline machines)
+/// Settings Queue (for offline machines)
+/// Queues settings changes to be applied when machine reconnects
 model SettingsQueue {
+  /// Auto-incrementing primary key
   id         Int       @id @default(autoincrement())
+  
+  /// Foreign key to machine
   machineId  String    @map("machine_id")
-  settings   String    // JSON string
+  
+  /// Settings data as JSON string
+  settings   String
+  
+  /// When the settings were queued
   createdAt  DateTime  @default(now()) @map("created_at")
+  
+  /// When the settings were successfully applied (null if pending)
   appliedAt  DateTime? @map("applied_at")
   
   // Relations
@@ -123,49 +223,98 @@ model SettingsQueue {
   @@map("settings_queue")
 }
 
-// Audit Events
+/// Audit Events
+/// Security and compliance audit events from monitored machines
 model AuditEvent {
+  /// Auto-incrementing primary key
   id            Int      @id @default(autoincrement())
+  
+  /// Foreign key to machine
   machineId     String   @map("machine_id")
+  
+  /// Windows Event ID or unique event identifier
   eventId       String   @map("event_id")
+  
+  /// Event type classification
   eventType     String?  @map("event_type")
+  
+  /// Username associated with this event
   username      String?
+  
+  /// Event occurrence timestamp
   timestamp     DateTime
-  details       String?  // JSON string
+  
+  /// Additional event details as JSON string
+  details       String?
+  
+  /// Source log name (e.g., Security, System)
   sourceLogName String?  @map("source_log_name")
+  
+  /// Whether this event is flagged for attention
   isFlagged     Boolean  @default(true) @map("is_flagged")
+  
+  /// Whether this event has been acknowledged by admin
   acknowledged  Boolean  @default(false)
+  
+  /// Record creation timestamp
   createdAt     DateTime @default(now()) @map("created_at")
   
   // Relations
   machine       Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   @@index([machineId, timestamp])
+  @@index([isFlagged, acknowledged])
   @@map("audit_events")
 }
 
-// OAuth Tokens (for Google Drive integration)
+/// OAuth Tokens (for Google Drive integration)
+/// Stores OAuth tokens for cloud service integrations
 model OAuthToken {
+  /// Unique identifier (CUID)
   id           String   @id @default(cuid())
-  provider     String   // "google"
+  
+  /// OAuth provider name (e.g., "google")
+  provider     String
+  
+  /// Current access token
   accessToken  String   @map("access_token")
+  
+  /// Refresh token for obtaining new access tokens
   refreshToken String   @map("refresh_token")
+  
+  /// When the current access token expires
   expiresAt    DateTime @map("expires_at")
+  
+  /// OAuth scope permissions
   scope        String
+  
+  /// Record creation timestamp
   createdAt    DateTime @default(now()) @map("created_at")
+  
+  /// Record last update timestamp
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  @@unique([provider])
   @@map("oauth_tokens")
 }
 
-
-// Connection Events
+/// Connection Events
+/// Logs machine connection and disconnection events
 model ConnectionEvent {
+  /// Auto-incrementing primary key
   id         Int      @id @default(autoincrement())
+  
+  /// Foreign key to machine
   machineId  String   @map("machine_id")
+  
+  /// Event type (Connected, Disconnected, Archived, Unarchived)
   eventType  String   @map("event_type")
+  
+  /// Event timestamp
   timestamp  DateTime @default(now())
-  metadata   String?  // JSON string
+  
+  /// Additional event metadata as JSON string
+  metadata   String?
   
   // Relations
   machine    Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
@@ -174,17 +323,32 @@ model ConnectionEvent {
   @@map("connection_events")
 }
 
-// Data Cleanup Settings
+/// Data Cleanup Settings
+/// Configuration for automated data retention and cleanup
 model CleanupSettings {
+  /// Singleton ID (always 1)
   id                      Int       @id @default(autoincrement())
+  
+  /// Days to retain activity session data
   activityRetentionDays   Int       @default(90) @map("activity_retention_days")
+  
+  /// Days to retain screenshot metadata and files
   screenshotRetentionDays Int       @default(30) @map("screenshot_retention_days")
+  
+  /// Days to retain audit event data
   auditRetentionDays      Int       @default(180) @map("audit_retention_days")
+  
+  /// Hours to retain raw activity heartbeat data
   heartbeatRetentionHours Int       @default(48) @map("heartbeat_retention_hours")
+  
+  /// Whether to delete files from Google Drive during cleanup
   deleteDriveFiles        Boolean   @default(false) @map("delete_drive_files")
+  
+  /// Timestamp of last cleanup execution
   lastCleanupRun          DateTime? @map("last_cleanup_run")
+  
+  /// Record last update timestamp
   updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("cleanup_settings")
 }
-
