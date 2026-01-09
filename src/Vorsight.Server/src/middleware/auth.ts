@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db/database';
 
-const JWT_SECRET = process.env.SERVICE_KEY || process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
+
 
 // Middleware to authenticate machines via API Key
 export const authenticateMachine = async (req: Request, res: Response, next: NextFunction) => {
@@ -42,7 +42,10 @@ export const authenticateBrowser = (req: Request, res: Response, next: NextFunct
     }
 
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
+        // Get secret dynamically to ensure dotenv is loaded
+        const secret = (process.env.SERVICE_KEY || 'vorsight-secret-key-change-me').trim();
+
+        const decoded = jwt.verify(token, secret);
         req.user = decoded as any;
         next();
     } catch (error) {

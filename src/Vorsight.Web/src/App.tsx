@@ -25,13 +25,13 @@ function AppContent() {
         const checkOAuth = async () => {
             try {
                 const token = localStorage.getItem('auth_token');
-                const response = await fetch('/api/oauth/google/status', {
+                const response = await fetch('/api/oauth/status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
                 const data = await response.json();
-                setOauthConfigured(data.configured === true);
+                setOauthConfigured(data.connected === true);
             } catch (error) {
                 console.error('Failed to check OAuth status:', error);
                 setOauthConfigured(false);
