@@ -149,6 +149,17 @@ export default (io: Server) => {
             try {
                 const { machineId, apiKey } = data;
 
+                if (!machineId || !apiKey) {
+                    const ipAddress = (socket.handshake.address ||
+                        socket.conn.remoteAddress ||
+                        socket.request?.connection.remoteAddress ||
+                        'unknown') as string;
+
+                    console.error(`Connection rejected from ${ipAddress}: Missing credentials (machineId: ${machineId})`);
+                    socket.emit('machine:error', { error: 'Missing credentials' });
+                    return;
+                }
+
                 // Extract IP address from socket connection
                 const ipAddress = (socket.handshake.address ||
                     socket.conn.remoteAddress ||

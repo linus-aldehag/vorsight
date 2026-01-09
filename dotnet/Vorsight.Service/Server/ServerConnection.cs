@@ -74,6 +74,28 @@ public class ServerConnection : IServerConnection
 
     public async Task EnsureConnectedAsync(CancellationToken cancellationToken)
     {
+        // If we don't have an API key, we must try to register first
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            try 
+            {
+                _logger.LogInformation("Connection Watchdog: No API key found. Retrying registration...");
+                
+                // Ensure machine ID is loaded
+                if (string.IsNullOrEmpty(_machineId))
+                {
+                    _machineId = MachineIdentity.GenerateMachineId();
+                }
+                
+                await RegisterMachineAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Connection Watchdog: Failed to re-register ({Message})", ex.Message);
+                return; // Cannot connect without API key
+            }
+        }
+
         if (_socket != null && _socket.Connected) return;
 
         try 
