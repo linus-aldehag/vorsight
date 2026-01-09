@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-// JWT Secret (should be in env vars in production)
-const JWT_SECRET = process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
+// JWT Secret
+const JWT_SECRET = process.env.SERVICE_KEY || process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
 
 // Login route for browser client
 router.post('/login', async (req: Request, res: Response) => {

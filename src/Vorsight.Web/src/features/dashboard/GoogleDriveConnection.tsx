@@ -23,7 +23,7 @@ export function GoogleDriveConnection() {
 
     const checkStatus = async () => {
         try {
-            const response = await fetch('/api/oauth/google/status');
+            const response = await fetch('/api/oauth/status');
             const data = await response.json();
             setStatus(data);
         } catch (err) {

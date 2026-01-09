@@ -1,10 +1,12 @@
+import dotenv from 'dotenv';
+dotenv.config(); // Load env vars before imports
+
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import fs from 'fs';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { prisma } from './db/database';
 
 // Import authentication middleware
