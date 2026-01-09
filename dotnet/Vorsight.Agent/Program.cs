@@ -14,6 +14,7 @@ static class Program
     [STAThread]
     static async Task<int> Main(string[] args)
     {
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         SetupLogging();
 
         try
