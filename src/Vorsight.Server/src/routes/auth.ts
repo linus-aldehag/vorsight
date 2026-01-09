@@ -14,6 +14,9 @@ router.post('/login', async (req: Request, res: Response) => {
         // Default password is 'admin' if not set in env
         const validPassword = process.env.WEB_PASSPHRASE || 'admin';
 
+        console.log(`Debug Login: Env Var present: ${!!process.env.WEB_PASSPHRASE}`);
+        console.log(`Debug Login: Expected length: ${validPassword.length}, Received length: ${password?.length}`);
+
         if (password === validPassword) {
             // Generate JWT
             const token = jwt.sign(

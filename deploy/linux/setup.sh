@@ -61,7 +61,7 @@ SyslogIdentifier=vorsight
 # Security settings
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=strict
+ProtectSystem=full
 ProtectHome=true
 ReadWritePaths=$INSTALL_DIR/data
 
@@ -118,9 +118,9 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     # Ensure ownership is correct before restarting (migrations run as root)
     echo -e "${CYAN}🔐 Setting file permissions...${NC}"
     chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
-    chmod 755 $INSTALL_DIR
+    chmod -R 755 $INSTALL_DIR
     if [ -f "$INSTALL_DIR/.env" ]; then
-        chmod 644 $INSTALL_DIR/.env
+        chmod 600 $INSTALL_DIR/.env
     fi
 
     # Update service definition (in case paths changed, e.g. src -> dist)
@@ -302,9 +302,9 @@ else
     # Step 7: Set ownership
     echo -e "${CYAN}🔐 Setting file permissions...${NC}"
     chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
-    chmod 755 $INSTALL_DIR
+    chmod -R 755 $INSTALL_DIR
     if [ -f "$INSTALL_DIR/.env" ]; then
-        chmod 644 $INSTALL_DIR/.env
+        chmod 600 $INSTALL_DIR/.env
     fi
     echo -e "${GREEN}   ✓ Permissions set${NC}"
 
