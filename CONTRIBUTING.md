@@ -44,13 +44,13 @@ We welcome feature suggestions! Please open an issue with:
 
 ```
 vorsight/
-├── src/
-│   ├── Vorsight.Service/      # Windows Service (C#/.NET)
-│   ├── Vorsight.Agent/         # User Session Agent (C#/.NET)
-│   ├── Vorsight.Core/          # Shared C# libraries
-│   ├── Vorsight.Native/        # Windows P/Invoke wrappers
-│   ├── Vorsight.Server/        # Node.js API server
-│   └── Vorsight.Web/           # React web dashboard
+├── dotnet/                 # C# Services & Agent
+│   ├── Vorsight.Agent/     # Windows Service Agent
+│   ├── Vorsight.Service/   # Service logic
+│   └── ...
+├── node/                   # JavaScript stack
+│   ├── server/             # Node.js API server
+│   └── client/             # React web dashboard
 ├── deploy/
 │   ├── windows/                # Windows installer (Inno Setup)
 │   └── linux/                  # Linux deployment scripts
@@ -67,7 +67,7 @@ vorsight/
 ## Code Style
 
 - **C#**: Follow standard .NET conventions, use async/await for I/O operations
-- **JavaScript/TypeScript**: Use prettier formatting, prefer functional components (React)
+- **TypeScript**: Use prettier formatting, prefer functional components (React)
 - **Naming**: Clear, descriptive names; avoid abbreviations unless well-known
 
 ## Testing

@@ -4,15 +4,15 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'src/Vorsight.Server/**'
-      - 'src/Vorsight.Web/**'
+      - 'node/server/**'
+      - 'node/client/**'
       - 'deploy/linux/**'
       - '.github/workflows/build-linux.yml'
   pull_request:
     branches: [ "main" ]
     paths:
-      - 'src/Vorsight.Server/**'
-      - 'src/Vorsight.Web/**'
+      - 'node/server/**'
+      - 'node/client/**'
       - 'deploy/linux/**'
       - '.github/workflows/build-linux.yml'
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
       id: version
       run: |
         # Read version from package.json (1.0.6)
-        RAW_VERSION=$(node -p "require('./src/Vorsight.Server/package.json').version")
+        RAW_VERSION=$(node -p "require('./node/server/package.json').version")
         
         # Split Major.Minor
         MAJOR=$(echo $RAW_VERSION | cut -d. -f1)
@@ -57,23 +57,23 @@ jobs:
         # Update package.json version temporarily for build
         VERSION="${{ steps.version.outputs.version }}"
         
-        cd src/Vorsight.Web
+        cd node/client
         npm version $VERSION --no-git-tag-version --allow-same-version
         npm ci
         cd ../..
         
-        cd src/Vorsight.Server
+        cd node/server
         npm version $VERSION --no-git-tag-version --allow-same-version
         # Install ALL dependencies including dev for building TypeScript
         npm ci
         cd ../..
 
     - name: Build Server
-      working-directory: src/Vorsight.Server
+      working-directory: node/server
       run: npm run build
 
     - name: Build React Web App
-      working-directory: src/Vorsight.Web
+      working-directory: node/client
       run: npm run build
 
     - name: Create Deployment Package
@@ -84,21 +84,21 @@ jobs:
         mkdir -p deploy/linux/vorsight-server
         
         # Copy compiled server files (dist)
-        cp -r src/Vorsight.Server/dist deploy/linux/vorsight-server/
+        cp -r node/server/dist deploy/linux/vorsight-server/
         
         # Copy Prisma folder (schema and migrations)
-        cp -r src/Vorsight.Server/prisma deploy/linux/vorsight-server/
+        cp -r node/server/prisma deploy/linux/vorsight-server/
         
         # Copy configuration files
-        cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
-        cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
-        cp src/Vorsight.Server/.env.template deploy/linux/vorsight-server/
+        cp node/server/package.json deploy/linux/vorsight-server/
+        cp node/server/package-lock.json deploy/linux/vorsight-server/
+        cp node/server/.env.template deploy/linux/vorsight-server/
         
         # Note: We do NOT need src folder in production
         # Note: node_modules NOT included - installed on target machine
         
         # Copy React build to public/
-        cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public
+        cp -r node/client/dist deploy/linux/vorsight-server/public
         
         # Copy deployment scripts
         cp deploy/linux/setup.sh deploy/linux/vorsight-server/

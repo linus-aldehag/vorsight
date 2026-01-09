@@ -132,3 +132,10 @@ src/Vorsight.Server/public/
 # Pi deployment archives
 deploy/pi/*.tar.gz
 
+
+# SQLite WAL/SHM
+*.db-shm
+*.db-wal
+
+# Build output assets
+node/server/public/assets/

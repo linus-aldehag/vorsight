@@ -150,14 +150,13 @@ The service starts automatically and begins monitoring.
 
 ```
 vorsight/
-├── src/
-│   ├── Vorsight.Service/       # Windows Service (C#) - "The Brain"
-│   ├── Vorsight.Agent/         # User Session Agent (C#) - "The Eye"
-│   ├── Vorsight.Contracts/     # Shared contracts
-│   ├── Vorsight.Infrastructure/# Shared infrastructure & logic
-│   ├── Vorsight.Interop/       # Windows P/Invoke wrappers
-│   ├── Vorsight.Server/        # Node.js API server
-│   └── Vorsight.Web/           # React web dashboard
+├── dotnet/                 # C# Services & Agent
+│   ├── Vorsight.Agent/     # Windows Service Agent
+│   ├── Vorsight.Service/   # Service logic
+│   └── ...
+├── node/                   # Web stack
+│   ├── server/             # Node.js API server
+│   └── client/             # React web dashboard
 ├── deploy/
 │   ├── windows/                # Windows installer (Inno Setup)
 │   └── linux/                  # Linux deployment scripts & docs
