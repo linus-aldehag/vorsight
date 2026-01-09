@@ -8,6 +8,7 @@
     <AssemblyName>Vorsight.Agent</AssemblyName>
     <UseWindowsForms>true</UseWindowsForms>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <Version>1.4.136</Version>
     <AssemblyVersion>1.4.136</AssemblyVersion>
