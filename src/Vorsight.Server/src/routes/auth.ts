@@ -9,15 +9,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
 // Login route for browser client
 router.post('/login', async (req: Request, res: Response) => {
     try {
-        const { password } = req.body;
+        const { passphrase } = req.body;
 
         // Default password is 'admin' if not set in env
         const validPassword = process.env.WEB_PASSPHRASE || 'admin';
 
-        console.log(`Debug Login: Env Var present: ${!!process.env.WEB_PASSPHRASE}`);
-        console.log(`Debug Login: Expected length: ${validPassword.length}, Received length: ${password?.length}`);
-
-        if (password === validPassword) {
+        if (passphrase === validPassword) {
             // Generate JWT
             const token = jwt.sign(
                 { role: 'admin' },
