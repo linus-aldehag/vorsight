@@ -64,8 +64,13 @@ jobs:
         
         cd src/Vorsight.Server
         npm version $VERSION --no-git-tag-version --allow-same-version
-        npm ci --omit=dev
+        # Install ALL dependencies including dev for building TypeScript
+        npm ci
         cd ../..
+
+    - name: Build Server
+      working-directory: src/Vorsight.Server
+      run: npm run build
 
     - name: Build React Web App
       working-directory: src/Vorsight.Web
@@ -78,15 +83,19 @@ jobs:
         # Create staging directory
         mkdir -p deploy/linux/vorsight-server
         
-        # Copy server files
-        cp -r src/Vorsight.Server/src deploy/linux/vorsight-server/
+        # Copy compiled server files (dist)
+        cp -r src/Vorsight.Server/dist deploy/linux/vorsight-server/
+        
+        # Copy Prisma folder (schema and migrations)
         cp -r src/Vorsight.Server/prisma deploy/linux/vorsight-server/
-        # NOTE: node_modules NOT included - installed on target machine to ensure native modules
-        # like better-sqlite3 are compiled for the correct architecture (ARM for RPi, etc.)
+        
+        # Copy configuration files
         cp src/Vorsight.Server/package.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/package-lock.json deploy/linux/vorsight-server/
         cp src/Vorsight.Server/.env.template deploy/linux/vorsight-server/
-        cp src/Vorsight.Server/prisma.config.ts deploy/linux/vorsight-server/
+        
+        # Note: We do NOT need src folder in production
+        # Note: node_modules NOT included - installed on target machine
         
         # Copy React build to public/
         cp -r src/Vorsight.Web/dist deploy/linux/vorsight-server/public

@@ -267,7 +267,7 @@ User=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR
 Environment=NODE_ENV=production
 EnvironmentFile=$INSTALL_DIR/.env
-ExecStart=/usr/bin/node $INSTALL_DIR/src/server.js
+ExecStart=/usr/bin/node $INSTALL_DIR/dist/server.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

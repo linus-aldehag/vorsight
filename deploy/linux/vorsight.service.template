@@ -8,7 +8,7 @@ User=vorsight
 WorkingDirectory=/opt/vorsight
 Environment=NODE_ENV=production
 EnvironmentFile=/opt/vorsight/.env
-ExecStart=/usr/bin/node /opt/vorsight/src/server.js
+ExecStart=/usr/bin/node /opt/vorsight/dist/server.js
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
