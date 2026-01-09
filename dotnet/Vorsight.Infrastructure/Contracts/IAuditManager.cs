@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Vorsight.Contracts.Audit;
 
+using Vorsight.Contracts.Settings;
+
 namespace Vorsight.Infrastructure.Contracts
 {
     /// <summary>
@@ -29,7 +31,7 @@ namespace Vorsight.Infrastructure.Contracts
         /// <summary>
         /// Starts the real-time Event Log monitoring.
         /// </summary>
-        Task StartMonitoringAsync(Contracts.Settings.AgentSettings settings);
+        Task StartMonitoringAsync(AgentSettings settings);
 
         /// <summary>
         /// Stops real-time Event Log monitoring.
