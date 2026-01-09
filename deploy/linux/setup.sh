@@ -37,6 +37,44 @@ echo -e "${CYAN}📂 Mode: ${INSTALL_MODE}${NC}"
 echo -e "${CYAN}📂 Installation directory: ${INSTALL_DIR}${NC}"
 echo ""
 
+# Function to create/update systemd service
+setup_service() {
+    echo -e "${CYAN}🔧 Configuring systemd service...${NC}"
+    cat > /etc/systemd/system/$SERVICE_NAME.service <<EOF
+[Unit]
+Description=Vorsight Monitoring Server
+After=network.target
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+WorkingDirectory=$INSTALL_DIR
+Environment=NODE_ENV=production
+EnvironmentFile=$INSTALL_DIR/.env
+ExecStart=/usr/bin/node $INSTALL_DIR/dist/server.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vorsight
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$INSTALL_DIR/data
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    echo -e "${GREEN}   ✓ Service file configured${NC}"
+    
+    # Reload systemd
+    systemctl daemon-reload
+    systemctl enable $SERVICE_NAME
+}
+
 # UPGRADE MODE
 if [ "$INSTALL_MODE" = "upgrade" ]; then
     echo -e "${YELLOW}🔄 Existing installation detected - performing upgrade${NC}"
@@ -71,7 +109,23 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     npx prisma generate
     echo -e "${GREEN}   ✓ Migrations applied and client generated${NC}"
     
-    # Step 6: Restart service
+    # Step 6: Update service configuration and restart
+    # Remove legacy JS files that might confuse the system
+    if [ -d "$INSTALL_DIR/src" ]; then
+        find "$INSTALL_DIR/src" -name "*.js" -type f -delete
+    fi
+    
+    # Ensure ownership is correct before restarting (migrations run as root)
+    echo -e "${CYAN}🔐 Setting file permissions...${NC}"
+    chown -R $SERVICE_USER:$SERVICE_USER $INSTALL_DIR
+    chmod 755 $INSTALL_DIR
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        chmod 644 $INSTALL_DIR/.env
+    fi
+
+    # Update service definition (in case paths changed, e.g. src -> dist)
+    setup_service
+
     echo -e "${CYAN}▶️  Restarting service...${NC}"
     systemctl start $SERVICE_NAME
     sleep 2
@@ -254,43 +308,13 @@ else
     fi
     echo -e "${GREEN}   ✓ Permissions set${NC}"
 
-    # Step 8: Create systemd service
-    echo -e "${CYAN}🔧 Creating systemd service...${NC}"
-    cat > /etc/systemd/system/$SERVICE_NAME.service <<EOF
-[Unit]
-Description=Vorsight Monitoring Server
-After=network.target
 
-[Service]
-Type=simple
-User=$SERVICE_USER
-WorkingDirectory=$INSTALL_DIR
-Environment=NODE_ENV=production
-EnvironmentFile=$INSTALL_DIR/.env
-ExecStart=/usr/bin/node $INSTALL_DIR/dist/server.js
-Restart=on-failure
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=vorsight
 
-# Security settings
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=strict
-ProtectHome=true
-ReadWritePaths=$INSTALL_DIR/data
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
+    setup_service
     echo -e "${GREEN}   ✓ Service file created${NC}"
 
     # Step 9: Reload systemd and enable service
-    echo -e "${CYAN}🔄 Enabling service...${NC}"
-    systemctl daemon-reload
-    systemctl enable $SERVICE_NAME
+    # (Handled by setup_service)
     echo -e "${GREEN}   ✓ Service enabled (will start on boot)${NC}"
 
     # Step 10: Start service
