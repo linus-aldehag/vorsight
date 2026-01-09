@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { useMachine, MachineProvider } from './context/MachineContext';
-import { LoginPage } from './components/LoginPage';
+import { LoginPage } from './features/auth/LoginPage';
 import { MainLayout } from './components/Layout/MainLayout';
 import { SettingsLayout } from './components/Layout/SettingsLayout';
 

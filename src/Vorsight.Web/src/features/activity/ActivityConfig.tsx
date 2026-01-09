@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { AgentSettings } from '@/api/client';
-import { NumberField } from './form-fields';
+import { NumberField } from '@/components/common/form-fields';
 
 interface ActivityConfigProps {
     settings: AgentSettings;

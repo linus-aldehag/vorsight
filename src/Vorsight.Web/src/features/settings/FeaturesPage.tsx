@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { VorsightApi, type AgentSettings, type AccessSchedule } from '@/api/client';
 import { useMachine } from '@/context/MachineContext';
 import { Eye, Activity, Shield, Sliders, Loader2, AlertCircle } from 'lucide-react';
-import { ExpandableFeatureCard } from '@/components/features/ExpandableFeatureCard';
-import { ScreenshotConfig } from '@/components/features/ScreenshotConfig';
-import { ActivityConfig } from '@/components/features/ActivityConfig';
-import { AuditConfig } from '@/components/features/AuditConfig';
-import { AccessControlConfig } from '@/components/features/AccessControlConfig';
+import { ExpandableFeatureCard } from '@/components/common/ExpandableFeatureCard';
+import { ScreenshotConfig } from '@/features/gallery/ScreenshotConfig';
+import { ActivityConfig } from '@/features/activity/ActivityConfig';
+import { AuditConfig } from '@/features/audit/AuditConfig';
+import { AccessControlConfig } from '@/features/schedule/AccessControlConfig';
 
 export function FeaturesPage() {
     const { selectedMachine } = useMachine();

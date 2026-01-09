@@ -4,8 +4,8 @@ import { useMachine } from '../../context/MachineContext';
 import { Card } from '../../components/ui/card';
 import { Clock, Sliders } from 'lucide-react';
 import { Usage24HourChart } from './Usage24HourChart';
-import { ConfigSection } from '../../components/features/ConfigSection';
-import { AccessControlConfig } from '../../components/features/AccessControlConfig';
+import { ConfigSection } from '@/components/common/ConfigSection';
+import { AccessControlConfig } from './AccessControlConfig';
 
 export function AccessControlPage() {
     const { selectedMachine } = useMachine();

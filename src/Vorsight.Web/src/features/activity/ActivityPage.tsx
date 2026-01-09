@@ -8,8 +8,8 @@ import { VorsightApi, type AgentSettings } from "@/api/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Activity } from "lucide-react";
-import { ConfigSection } from "@/components/features/ConfigSection";
-import { ActivityConfig } from "@/components/features/ActivityConfig";
+import { ConfigSection } from "@/components/common/ConfigSection";
+import { ActivityConfig } from "./ActivityConfig";
 
 export function ActivityPage() {
     const { selectedMachine } = useMachine();
