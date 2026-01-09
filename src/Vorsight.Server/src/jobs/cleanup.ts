@@ -1,6 +1,5 @@
 import { prisma } from '../db/database';
 import schedule from 'node-schedule';
-import { CleanupSettings } from '../types';
 
 interface CleanupStats {
     activityDeleted: number;

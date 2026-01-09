@@ -41,6 +41,10 @@ router.get('/verify', (req: Request, res: Response) => {
     if (authHeader) {
         const token = authHeader.split(' ')[1];
 
+        if (!token) {
+            return res.status(401).json({ valid: false });
+        }
+
         try {
             jwt.verify(token, JWT_SECRET);
             return res.json({ valid: true });

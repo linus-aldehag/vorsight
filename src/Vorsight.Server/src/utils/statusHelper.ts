@@ -7,6 +7,7 @@ export interface MachineWithState extends Partial<Machine> {
     settings?: string | null;
     state?: MachineState | null;
     pingStatus?: string;
+    isOnline?: boolean;
 }
 
 export interface ConnectionStatus {

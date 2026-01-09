@@ -20,7 +20,7 @@ router.get('/', async (req: Request, res: Response) => {
         });
 
         // Parse details if JSON string
-        const formatted = events.map(e => ({
+        const formatted = events.map((e: any) => ({
             ...e,
             details: typeof e.details === 'string' ? JSON.parse(e.details) : e.details
         }));
@@ -38,7 +38,7 @@ router.patch('/:id/acknowledge', async (req: Request, res: Response) => {
         const { id } = req.params;
 
         await prisma.auditEvent.update({
-            where: { id: parseInt(id) },
+            where: { id: parseInt(id as string) },
             data: { isFlagged: false }
         });
 

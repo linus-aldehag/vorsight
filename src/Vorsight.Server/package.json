@@ -11,7 +11,7 @@
     "build:web": "cd ..\\Vorsight.Web && npm run build",
     "copy:web": "xcopy /E /I /Y ..\\Vorsight.Web\\dist\\* public\\",
     "deploy:web": "npm run build:web && npm run copy:web",
-    "all": "npm run deploy:web && npm run dev",
+    "all": "npm run deploy:web && npm run build && npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",

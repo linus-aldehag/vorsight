@@ -79,7 +79,8 @@ router.get('/google/callback', async (req: Request, res: Response) => {
                     provider: 'google',
                     accessToken: tokens.access_token,
                     refreshToken: tokens.refresh_token,
-                    expiresAt: new Date(tokens.expiry_date)
+                    expiresAt: new Date(tokens.expiry_date),
+                    scope: SCOPES.join(' ')
                 }
             });
         }
