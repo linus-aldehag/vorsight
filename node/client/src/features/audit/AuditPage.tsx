@@ -103,6 +103,23 @@ export function AuditPage() {
         return true;
     });
 
+    const handleSettingsUpdate = async (newSettings: Partial<AgentSettings>) => {
+        if (!selectedMachine || !settings) return;
+
+        try {
+            // Optimistic update
+            const updatedSettings = { ...settings, ...newSettings };
+            setSettings(updatedSettings);
+
+            // Persist to server
+            await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
+        } catch (error) {
+            console.error('Failed to update audit settings:', error);
+            // Revert on failure (reload from server)
+            loadSettings();
+        }
+    };
+
     if (!selectedMachine) {
         return (
             <div className="p-8 text-center text-muted-foreground">
@@ -124,7 +141,7 @@ export function AuditPage() {
                         </span>
                     )}
                 >
-                    <AuditConfig />
+                    <AuditConfig settings={settings} onUpdate={handleSettingsUpdate} />
                 </ConfigSection>
             )}
 

@@ -46,6 +46,10 @@ export interface AgentSettings {
     pingIntervalSeconds: number;
     isMonitoringEnabled: boolean;
     isAuditEnabled: boolean;
+    // Audit Log Source Filters
+    auditLogSecurityEnabled?: boolean;
+    auditLogSystemEnabled?: boolean;
+    auditLogApplicationEnabled?: boolean;
     isScreenshotEnabled: boolean; // Separate from interval - feature on/off
     isActivityEnabled: boolean;   // Separate from interval - feature on/off
     isAccessControlEnabled: boolean; // Schedule-based access control
