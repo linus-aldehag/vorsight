@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db/database';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
+const JWT_SECRET = process.env.SERVICE_KEY || process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
 
 // Middleware to authenticate machines via API Key
 export const authenticateMachine = async (req: Request, res: Response, next: NextFunction) => {
