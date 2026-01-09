@@ -112,7 +112,8 @@ router.get('/status', async (_req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('OAuth Status Error:', error);
-        return res.json({ connected: false, error: 'Check failed' });
+        // Ensure we send JSON even on error
+        return res.status(200).json({ connected: false, error: 'Check failed' });
     }
 });
 
