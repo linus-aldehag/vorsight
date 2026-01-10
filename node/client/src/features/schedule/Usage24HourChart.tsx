@@ -125,7 +125,7 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
             </div>
 
             <div className="w-full bg-card border border-border rounded-lg p-3" style={{ height: 150 }}>
-                <ResponsiveContainer width="100%" height={120}>
+                <ResponsiveContainer width="100%" height={120} minWidth={0}>
                     <BarChart data={hourlyData} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
                         <XAxis
                             dataKey="hour"

@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { SectionHeader } from '@/components/common/SectionHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Activity, Shield, Sliders, Settings2 } from 'lucide-react';
@@ -77,14 +78,13 @@ export function FeaturesWidget({ settings }: FeaturesWidgetProps) {
     };
 
     return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold tracking-wide uppercase flex items-center gap-2">
-                    <Sliders size={14} />
-                    System Features
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Card variant="glass">
+            <SectionHeader
+                title="System Features"
+                className="pb-3"
+                rightContent={<Sliders size={14} className="text-primary" />}
+            />
+            <CardContent className="space-y-3 pt-0">
                 <div className="space-y-2">
                     {features.map(feature => (
                         <button
