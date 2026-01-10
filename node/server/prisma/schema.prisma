@@ -55,6 +55,7 @@ model Machine {
   settingsQueue     SettingsQueue[]
   auditEvents       AuditEvent[]
   connectionEvents  ConnectionEvent[]
+  machineLogs       MachineLog[]
 
   @@index([lastSeen], name: "machines_last_seen_idx")
   @@index([status], name: "machines_status_idx")
@@ -84,6 +85,18 @@ model MachineState {
   
   /// Machine settings as JSON string
   settings          String?
+
+  /// Settings that have been confirmed as applied by the machine
+  appliedSettings   String?  @map("applied_settings")
+
+  /// Last ping timestamp
+  lastPingTime      DateTime? @map("last_ping_time")
+
+  /// Last successful ping timestamp
+  lastPingSuccess   DateTime? @map("last_ping_success")
+
+  /// Last ping latency in milliseconds
+  pingLatency       Int?     @map("ping_latency")
   
   /// Last update timestamp
   updatedAt         DateTime @default(now()) @map("updated_at")
@@ -92,6 +105,41 @@ model MachineState {
   machine           Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   @@map("machine_state")
+}
+
+/// Machine Logs
+/// Centralized logs from machines for remote debugging
+model MachineLog {
+  /// Auto-incrementing primary key
+  id            Int      @id @default(autoincrement())
+  
+  /// Foreign key to machine
+  machineId     String   @map("machine_id")
+  
+  /// Log timestamp
+  timestamp     DateTime
+  
+  /// Log level (Information, Warning, Error, Fatal)
+  level         String
+  
+  /// Log message
+  message       String
+  
+  /// Exception details if any
+  exception     String?
+  
+  /// Source context (class or namespace)
+  sourceContext String?  @map("source_context")
+  
+  /// Record creation timestamp
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  machine       Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+
+  @@index([machineId, timestamp])
+  @@index([level])
+  @@map("machine_logs")
 }
 
 /// Activity History (raw heartbeat snapshots - 48h retention)

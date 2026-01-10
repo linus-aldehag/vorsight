@@ -447,6 +447,10 @@ public class Worker : BackgroundService
                     await _auditManager.StopMonitoringAsync();
                 }
             }
+
+            // Report successful application to server (Settings Sync)
+            var settingsJson = JsonSerializer.Serialize(settings);
+            await _serverConnection.ReportAppliedSettingsAsync(settingsJson);
         }
         catch (Exception ex)
         {
