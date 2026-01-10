@@ -66,7 +66,7 @@ export function MachineSelector({ onClick }: MachineSelectorProps) {
             variant="outline"
             role="combobox"
             className={cn(
-                "w-full justify-between gap-2 min-w-[200px] md:w-[260px] max-w-[300px]",
+                "justify-between gap-2 min-w-[200px] max-w-[260px]",
                 !selectedMachine && "text-muted-foreground"
             )}
             onClick={onClick}

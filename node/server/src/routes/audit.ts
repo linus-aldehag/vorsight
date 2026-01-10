@@ -36,10 +36,14 @@ router.get('/', async (req: Request, res: Response) => {
 router.patch('/:id/acknowledge', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
+        const { acknowledged } = req.body;
 
         await prisma.auditEvent.update({
             where: { id: parseInt(id as string) },
-            data: { isFlagged: false }
+            data: {
+                isFlagged: false,
+                acknowledged: Boolean(acknowledged)
+            }
         });
 
         return res.json({ success: true });

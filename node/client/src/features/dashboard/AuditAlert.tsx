@@ -25,7 +25,11 @@ export const AuditAlert = memo(function AuditAlert() {
         try {
             const response = await fetch(`/api/audit/${id}/acknowledge`, {
                 method: 'PATCH',
-                headers: getAuthHeaders()
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ acknowledged: true })
             });
 
             if (response.ok) {
@@ -114,9 +118,9 @@ export const AuditAlert = memo(function AuditAlert() {
                                         {event.details && (
                                             <>
                                                 <div className={`text-xs text-muted-foreground mt-1 ${isExpanded ? '' : 'line-clamp-2'}`}>
-                                                    {event.details}
+                                                    {typeof event.details === 'object' ? JSON.stringify(event.details) : event.details}
                                                 </div>
-                                                {event.details.length > 100 && (
+                                                {(typeof event.details === 'string' ? event.details : JSON.stringify(event.details)).length > 100 && (
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

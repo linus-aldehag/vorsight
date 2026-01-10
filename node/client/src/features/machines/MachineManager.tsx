@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import {
     Search
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
     Dialog,
     DialogContent,
@@ -36,6 +37,7 @@ export function MachineManager({ open, onOpenChange, defaultTab = 'active' }: Ma
         showArchived,
         setShowArchived
     } = useMachine();
+    const navigate = useNavigate();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState<string>(defaultTab);
@@ -109,6 +111,7 @@ export function MachineManager({ open, onOpenChange, defaultTab = 'active' }: Ma
         // If viewing archived machine, we might need to enable read-only mode?
         // For now, allow selection for both active and archived if visible.
         selectMachine(machine.id);
+        navigate(`/${machine.id}/dashboard`);
         onOpenChange(false);
     };
 

@@ -48,10 +48,34 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                 allowed: isHourAllowed(i, allowedStart, allowedEnd)
             }));
 
-            // Aggregate usage by hour
+            // Aggregate usage by hour with time splitting
             sessions.forEach((session: ActivitySession) => {
-                const hour = new Date(session.startTime * 1000).getHours();
-                hours[hour].usage += session.durationSeconds / 3600; // Convert to hours
+                const start = session.startTime * 1000;
+                const end = session.endTime * 1000;
+
+                let current = start;
+                while (current < end) {
+                    const currentHourStart = new Date(current);
+                    currentHourStart.setMinutes(0, 0, 0);
+
+                    const nextHourStart = new Date(currentHourStart);
+                    nextHourStart.setHours(nextHourStart.getHours() + 1);
+
+                    const hour = currentHourStart.getHours();
+                    const segmentEnd = Math.min(end, nextHourStart.getTime());
+                    const durationInHour = (segmentEnd - current) / 1000; // seconds
+
+                    if (hours[hour]) {
+                        hours[hour].usage += durationInHour / 3600;
+                    }
+
+                    current = segmentEnd;
+                }
+            });
+
+            // Cap usage at 1.0 (100%) to handle any potential slight overlaps
+            hours.forEach(h => {
+                if (h.usage > 1) h.usage = 1;
             });
 
             setHourlyData(hours);
