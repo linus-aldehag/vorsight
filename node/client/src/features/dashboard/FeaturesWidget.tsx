@@ -19,9 +19,9 @@ export function FeaturesWidget({ settings }: FeaturesWidgetProps) {
         return null;
     }
 
-    const screenshotsEnabled = settings.isScreenshotEnabled;
-    const activityEnabled = settings.isActivityEnabled;
-    const auditEnabled = settings.isAuditEnabled;
+    const screenshotsEnabled = !!settings.isScreenshotEnabled;
+    const activityEnabled = !!settings.isActivityEnabled;
+    const auditEnabled = !!settings.isAuditEnabled;
 
     const screenshotInterval = screenshotsEnabled
         ? Math.round(settings.screenshotIntervalSeconds / 60)
@@ -60,7 +60,7 @@ export function FeaturesWidget({ settings }: FeaturesWidgetProps) {
             id: 'access-control',
             icon: <Sliders size={16} />,
             label: 'Access Control',
-            enabled: settings.isAccessControlEnabled,
+            enabled: !!settings.isAccessControlEnabled,
             config: null,
             route: 'control'
         }

@@ -4,9 +4,10 @@ import { Button } from '../ui/button';
 
 interface AppHeaderProps {
     onSettingsClick: () => void;
+    onMachineSelectorClick: () => void;
 }
 
-export function AppHeader({ onSettingsClick }: AppHeaderProps) {
+export function AppHeader({ onSettingsClick, onMachineSelectorClick }: AppHeaderProps) {
     return (
         <header className="border-b border-white/10 min-h-16 flex items-center px-4 md:px-6 shrink-0 bg-surface/50 backdrop-blur-sm z-50">
             <div className="flex items-center justify-between w-full gap-2 md:gap-4">
@@ -15,7 +16,7 @@ export function AppHeader({ onSettingsClick }: AppHeaderProps) {
                 </h1>
 
                 <div className="flex-1 flex justify-center min-w-0 px-2">
-                    <MachineSelector />
+                    <MachineSelector onClick={onMachineSelectorClick} />
                 </div>
 
                 <Button

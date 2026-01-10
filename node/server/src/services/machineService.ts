@@ -16,6 +16,9 @@ export interface AdoptDTO {
     enableScreenshots: boolean;
     enableActivity: boolean;
     enableAudit: boolean;
+    enableAccessControl: boolean;
+    accessControlStartTime?: string;
+    accessControlEndTime?: string;
 }
 
 export interface UpdateMachineDTO {
@@ -134,11 +137,24 @@ export class MachineService {
     }
 
     async adopt(data: AdoptDTO) {
-        const { machineId, displayName, enableScreenshots, enableActivity, enableAudit } = data;
+        const {
+            machineId,
+            displayName,
+            enableScreenshots,
+            enableActivity,
+            enableAudit,
+            enableAccessControl,
+            accessControlStartTime,
+            accessControlEndTime
+        } = data;
 
         const machine = await prisma.machine.findUnique({
             where: { id: machineId }
         });
+
+        // ... existing check logic ...
+        // Note: The previous view showed "where: { id: machineId }" for findUnique. 
+        // I should stick to the structure I saw. Wait, line 140 in previous view was where: { id: machineId }
 
         if (!machine) {
             throw new Error('Machine not found');
@@ -157,12 +173,40 @@ export class MachineService {
             }
         });
 
+        // Construct schedule if enabled
+        let schedule = undefined;
+        if (enableAccessControl) {
+            const start = accessControlStartTime || "09:00";
+            const end = accessControlEndTime || "17:00";
+
+            schedule = {
+                isActive: true,
+                scheduleId: crypto.randomUUID(),
+                childUsername: "User", // Default placeholder
+                allowedTimeWindows: [
+                    { dayOfWeek: 1, startTime: start, endTime: end }, // Mon
+                    { dayOfWeek: 2, startTime: start, endTime: end }, // Tue
+                    { dayOfWeek: 3, startTime: start, endTime: end }, // Wed
+                    { dayOfWeek: 4, startTime: start, endTime: end }, // Thu
+                    { dayOfWeek: 5, startTime: start, endTime: end }, // Fri
+                    { dayOfWeek: 6, startTime: start, endTime: end }, // Sat
+                    { dayOfWeek: 0, startTime: start, endTime: end }, // Sun
+                ],
+                dailyTimeLimitMinutes: 0,
+                weekendBonusMinutes: 0,
+                createdUtc: new Date().toISOString(),
+                modifiedUtc: new Date().toISOString()
+            };
+        }
+
         // Create settings
         const initialSettings: MachineSettings = {
             screenshotIntervalSeconds: enableScreenshots ? 300 : 0,
             pingIntervalSeconds: enableActivity ? 30 : 0,
             isMonitoringEnabled: enableScreenshots || enableActivity,
-            isAuditEnabled: !!enableAudit
+            isAuditEnabled: !!enableAudit,
+            isAccessControlEnabled: !!enableAccessControl,
+            schedule: schedule
         };
 
         // Store settings

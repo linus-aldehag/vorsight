@@ -38,8 +38,9 @@ router.get('/', authenticateBrowser, async (req: Request, res: Response) => {
         }
 
         return res.json({
-            items: screenshots,
-            nextCursor
+            screenshots: screenshots,
+            cursor: nextCursor,
+            hasMore: !!nextCursor
         });
     } catch (error) {
         console.error('Get screenshots error:', error);

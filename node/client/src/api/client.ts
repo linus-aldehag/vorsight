@@ -23,7 +23,10 @@ function getAuthHeaders(): HeadersInit {
 
 export const VorsightApi = {
     async getStatus(machineId?: string): Promise<StatusResponse> {
-        const url = machineId ? `${BASE_URL}/status?machineId=${machineId}` : `${BASE_URL}/status`;
+        // If no machineId, this endpoint doesn't really exist on server as generic status
+        // But let's assume if machineId is provided we use the path param
+        if (!machineId) throw new Error('Machine ID required for status check');
+        const url = `${BASE_URL}/status/${machineId}`;
         const res = await fetch(url, { headers: getAuthHeaders() });
         if (!res.ok) throw new Error(`Status check failed: ${res.statusText}`);
         return res.json();
@@ -76,7 +79,7 @@ export const VorsightApi = {
 
     async getScreenshots(machineId: string, limit: number = 30, after?: string): Promise<PaginatedScreenshots> {
         const afterParam = after ? `&after=${after}` : '';
-        const response = await fetch(`${BASE_URL}/screenshots/${machineId}?limit=${limit}${afterParam}`, { headers: getAuthHeaders() });
+        const response = await fetch(`${BASE_URL}/screenshots?machineId=${machineId}&limit=${limit}${afterParam}`, { headers: getAuthHeaders() });
         if (!response.ok) throw new Error('Failed to fetch screenshots');
         return response.json();
     },
@@ -124,6 +127,9 @@ export const VorsightApi = {
         enableScreenshots: boolean;
         enableActivity: boolean;
         enableAudit: boolean;
+        enableAccessControl: boolean;
+        accessControlStartTime?: string;
+        accessControlEndTime?: string;
     }): Promise<{ success: boolean; machineId: string; displayName?: string }> {
         const res = await fetch(`${BASE_URL}/machines/${machineId}/adopt`, {
             method: 'POST',
@@ -155,6 +161,16 @@ export const VorsightApi = {
             const errorData = await res.json().catch(() => ({ error: 'Failed to unarchive machine' }));
             throw new Error(errorData.error || 'Failed to unarchive machine');
         }
+        return res.json();
+    },
+
+    async updateMachineDisplayName(machineId: string, displayName: string): Promise<{ displayName: string }> {
+        const res = await fetch(`${BASE_URL}/machines/${machineId}/display-name`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ displayName })
+        });
+        if (!res.ok) throw new Error('Failed to update display name');
         return res.json();
     }
 };
