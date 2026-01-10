@@ -8,7 +8,7 @@ const cardVariants = cva(
         variants: {
             variant: {
                 default: "bg-card",
-                glass: "border-border/50 bg-card/50 backdrop-blur-sm",
+                glass: "border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)]",
             },
         },
         defaultVariants: {

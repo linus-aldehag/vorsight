@@ -6,7 +6,7 @@ const tableVariants = cva("relative w-full overflow-auto", {
     variants: {
         variant: {
             default: "",
-            glass: "[&_th]:bg-muted/10 [&_tr]:border-border/50",
+            glass: "[&_th]:bg-[var(--glass-bg)] [&_tr]:border-[var(--glass-border)]",
         },
     },
     defaultVariants: {
@@ -25,7 +25,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
                 ref={ref}
                 className={cn(
                     "w-full caption-bottom text-sm",
-                    variant === "glass" && "[&_tr]:border-border/50 [&_th]:bg-muted/10",
+                    variant === "glass" && "[&_tr]:border-[var(--glass-border)] [&_th]:bg-[var(--glass-bg)]",
                     className
                 )}
                 {...props}

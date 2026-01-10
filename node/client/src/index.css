@@ -39,6 +39,10 @@
   --radius-lg: var(--theme-border-radius);
   --radius-md: var(--theme-border-radius);
   --radius-sm: calc(var(--theme-border-radius) * 0.75);
+  /* Glass effect tokens */
+  --glass-bg: rgba(5, 5, 5, 0.5);
+  --glass-border: rgba(0, 209, 255, 0.5);
+  --glass-blur: 4px;
 }
 
 /* Custom Utilities */

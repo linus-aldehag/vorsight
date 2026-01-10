@@ -1,9 +1,11 @@
 import { useEffect, useState, memo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Progress } from '../../components/ui/progress';
-import { VorsightApi, type ActivitySummary } from '../../api/client';
-import { useMachine } from '../../context/MachineContext';
+import { Card, CardContent } from '@/components/ui/card';
+import { VorsightApi, type ActivitySummary } from '@/api/client';
+import { useMachine } from '@/context/MachineContext';
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from 'recharts';
+import { SectionHeader } from '@/components/common/SectionHeader';
+import { StatRow } from './components/StatRow';
+import { cn } from '@/lib/utils';
 
 export const ActivityStats = memo(function ActivityStats({ isDisabled = false }: { isDisabled?: boolean }) {
     const { selectedMachine } = useMachine();
@@ -47,22 +49,20 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
             {/* Activity Timeline */}
-            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm flex flex-col ${isDisabled ? 'opacity-40' : ''}`}>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="text-lg tracking-wide text-primary">ACTIVITY TIMELINE</CardTitle>
-                            <p className="text-xs text-muted-foreground mt-1">24 Hour Cycle</p>
-                        </div>
-                        <div className="text-right">
+            <Card variant="glass" className={cn("flex flex-col h-full", isDisabled && "opacity-40")}>
+                <SectionHeader
+                    title="Activity Timeline"
+                    description="24 Hour Cycle"
+                    rightContent={
+                        <>
                             <div className="text-2xl font-bold text-primary">{summary.totalActiveHours}h</div>
                             <div className="text-xs text-muted-foreground">TOTAL ACTIVE</div>
-                        </div>
-                    </div>
-                </CardHeader>
+                        </>
+                    }
+                />
                 <CardContent className="pb-4 flex-1 min-h-0">
                     <div className="w-full h-full min-h-[120px]">
-                        <ResponsiveContainer width="100%" height={160}>
+                        <ResponsiveContainer width="100%" height={160} minWidth={0}>
                             <BarChart data={chartData}>
                                 <XAxis
                                     dataKey="label"
@@ -73,8 +73,8 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
                                     interval={5}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0D1117', border: '1px solid #333' }}
-                                    labelStyle={{ color: '#888888' }}
+                                    contentStyle={{ backgroundColor: 'var(--glass-bg)', borderColor: 'var(--glass-border)', backdropFilter: 'blur(var(--glass-blur))' }}
+                                    labelStyle={{ color: '#888' }}
                                     cursor={{ fill: 'transparent' }}
                                     formatter={(value: number | undefined) => {
                                         if (value === undefined) return ['0 minutes', 'Active Time'];
@@ -89,20 +89,19 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
                                 />
                                 <Bar
                                     dataKey="minutes"
-                                    fill="#00D1FF"
+                                    fill="var(--color-primary)" // Use theme color
                                     radius={[2, 2, 0, 0]}
                                     barSize={8}
                                 />
-                                {/* Now indicator line */}
                                 <ReferenceLine
                                     x={`${currentHour}:00`}
-                                    stroke="#00D1FF"
+                                    stroke="var(--color-primary)"
                                     strokeWidth={2}
                                     strokeDasharray="3 3"
                                     label={{
                                         value: 'NOW',
                                         position: 'top',
-                                        fill: '#00D1FF',
+                                        fill: 'var(--color-primary)',
                                         fontSize: 10,
                                         fontWeight: 'bold'
                                     }}
@@ -114,21 +113,20 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
             </Card>
 
             {/* Top Applications */}
-            <Card className={`border-border/50 bg-card/50 backdrop-blur-sm flex flex-col ${isDisabled ? 'opacity-40' : ''}`}>
-                <CardHeader>
-                    <CardTitle className="text-lg tracking-wide text-primary">TOP PROCESSES</CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">Focus Distribution</p>
-                </CardHeader>
+            <Card variant="glass" className={cn("flex flex-col h-full", isDisabled && "opacity-40")}>
+                <SectionHeader
+                    title="Top Processes"
+                    description="Focus Distribution"
+                />
                 <CardContent className="flex-1 overflow-auto">
                     <div className="space-y-4">
                         {summary.topApps.length > 0 ? summary.topApps.map((app, index) => (
-                            <div key={index} className="space-y-1">
-                                <div className="flex justify-between text-xs text-muted-foreground">
-                                    <span className="truncate max-w-[70%]">{app.name}</span>
-                                    <span>{app.percentage}%</span>
-                                </div>
-                                <Progress value={app.percentage} className="h-1.5 bg-secondary" />
-                            </div>
+                            <StatRow
+                                key={index}
+                                label={app.name}
+                                value={`${app.percentage}%`}
+                                percentage={app.percentage}
+                            />
                         )) : (
                             <div className="text-center text-xs text-muted-foreground italic py-4">No activity recorded</div>
                         )}
@@ -138,3 +136,4 @@ export const ActivityStats = memo(function ActivityStats({ isDisabled = false }:
         </div>
     );
 });
+
