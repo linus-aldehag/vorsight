@@ -185,6 +185,11 @@ else
             cp "$INSTALL_DIR/.env.template" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Created .env from template${NC}"
             
+            echo -e "${CYAN}🔧 Configuring database path...${NC}"
+            ABS_DB_PATH="file:$INSTALL_DIR/data/vorsight.db"
+            sed -i "s|DATABASE_URL=.*|DATABASE_URL=$ABS_DB_PATH|" "$INSTALL_DIR/.env"
+            echo -e "${GREEN}   ✓ Set absolute database path${NC}"
+            
             # Auto-generate service key
             echo -e "${CYAN}🔐 Generating service key...${NC}"
             SERVICE_KEY=$(openssl rand -base64 32)
