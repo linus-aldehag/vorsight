@@ -4,6 +4,8 @@ import { AlertTriangle, ShieldAlert, X, ChevronDown, ChevronUp } from 'lucide-re
 import { useSettings } from '@/context/SettingsContext';
 import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { auditCardVariants } from '@/components/ui/variants/log';
 
 // Helper to get authorization headers
 function getAuthHeaders(): HeadersInit {
@@ -80,6 +82,7 @@ export const AuditAlert = memo(function AuditAlert() {
         );
     }
 
+
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <div className="flex-1 overflow-y-auto px-4 pb-4">
@@ -89,13 +92,15 @@ export const AuditAlert = memo(function AuditAlert() {
                         return (
                             <div
                                 key={event.id}
-                                className="flex flex-col gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 hover:bg-destructive/15 transition-colors"
+                                className={cn(
+                                    auditCardVariants({ variant: 'flagged' }) // Dashboard alerts are typically flagged/important
+                                )}
                             >
                                 <div className="flex items-start gap-3">
-                                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                                    <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                            <div className="font-medium text-sm text-destructive">
+                                            <div className="font-medium text-sm">
                                                 {event.event_type}
                                             </div>
                                             <div className="flex items-center gap-1">

@@ -11,6 +11,38 @@ interface AuditFiltersProps {
     availableEventTypes: string[];
 }
 
+// Local helper component to encapsulate the "Filter Badge" style pattern
+function FilterBadge({
+    active,
+    onClick,
+    children,
+    onClear
+}: {
+    active: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+    onClear?: () => void;
+}) {
+    return (
+        <Badge
+            variant={active ? 'default' : 'outline'}
+            className="cursor-pointer text-xs h-6 transition-all hover:opacity-80"
+            onClick={onClick}
+        >
+            {children}
+            {active && onClear && (
+                <div
+                    role="button"
+                    className="ml-1 hover:text-red-300"
+                    onClick={(e) => { e.stopPropagation(); onClear(); }}
+                >
+                    <X size={10} />
+                </div>
+            )}
+        </Badge>
+    );
+}
+
 export function AuditFilters({
     statusFilter,
     onStatusFilterChange,
@@ -34,27 +66,15 @@ export function AuditFilters({
             <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase">Status:</span>
                 <div className="flex gap-1">
-                    <Badge
-                        variant={statusFilter === 'all' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onStatusFilterChange('all')}
-                    >
+                    <FilterBadge active={statusFilter === 'all'} onClick={() => onStatusFilterChange('all')}>
                         All
-                    </Badge>
-                    <Badge
-                        variant={statusFilter === 'unacknowledged' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onStatusFilterChange('unacknowledged')}
-                    >
+                    </FilterBadge>
+                    <FilterBadge active={statusFilter === 'unacknowledged'} onClick={() => onStatusFilterChange('unacknowledged')}>
                         Unacknowledged
-                    </Badge>
-                    <Badge
-                        variant={statusFilter === 'acknowledged' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onStatusFilterChange('acknowledged')}
-                    >
+                    </FilterBadge>
+                    <FilterBadge active={statusFilter === 'acknowledged'} onClick={() => onStatusFilterChange('acknowledged')}>
                         Acknowledged
-                    </Badge>
+                    </FilterBadge>
                 </div>
             </div>
 
@@ -65,34 +85,10 @@ export function AuditFilters({
             <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase">Period:</span>
                 <div className="flex gap-1">
-                    <Badge
-                        variant={dateRangeFilter === '24h' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onDateRangeFilterChange('24h')}
-                    >
-                        24h
-                    </Badge>
-                    <Badge
-                        variant={dateRangeFilter === '7d' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onDateRangeFilterChange('7d')}
-                    >
-                        7d
-                    </Badge>
-                    <Badge
-                        variant={dateRangeFilter === '30d' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onDateRangeFilterChange('30d')}
-                    >
-                        30d
-                    </Badge>
-                    <Badge
-                        variant={dateRangeFilter === 'all' ? 'default' : 'outline'}
-                        className="cursor-pointer text-xs h-6"
-                        onClick={() => onDateRangeFilterChange('all')}
-                    >
-                        All
-                    </Badge>
+                    <FilterBadge active={dateRangeFilter === '24h'} onClick={() => onDateRangeFilterChange('24h')}>24h</FilterBadge>
+                    <FilterBadge active={dateRangeFilter === '7d'} onClick={() => onDateRangeFilterChange('7d')}>7d</FilterBadge>
+                    <FilterBadge active={dateRangeFilter === '30d'} onClick={() => onDateRangeFilterChange('30d')}>30d</FilterBadge>
+                    <FilterBadge active={dateRangeFilter === 'all'} onClick={() => onDateRangeFilterChange('all')}>All</FilterBadge>
                 </div>
             </div>
 
@@ -104,17 +100,14 @@ export function AuditFilters({
                         <span className="text-xs font-medium text-muted-foreground uppercase">Types:</span>
                         <div className="flex gap-1 flex-wrap">
                             {availableEventTypes.map(type => (
-                                <Badge
+                                <FilterBadge
                                     key={type}
-                                    variant={eventTypeFilter.includes(type) ? 'default' : 'outline'}
-                                    className="cursor-pointer text-xs h-6"
+                                    active={eventTypeFilter.includes(type)}
                                     onClick={() => toggleEventType(type)}
+                                    onClear={eventTypeFilter.includes(type) ? () => toggleEventType(type) : undefined}
                                 >
                                     {type}
-                                    {eventTypeFilter.includes(type) && (
-                                        <X size={10} className="ml-1" />
-                                    )}
-                                </Badge>
+                                </FilterBadge>
                             ))}
                         </div>
                     </div>

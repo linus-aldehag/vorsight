@@ -1,8 +1,11 @@
+
+import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import type { LogEntry } from './types';
+import { logRowVariants } from '@/components/ui/variants/log';
 
 interface LogTableProps {
     logs: LogEntry[];
@@ -20,14 +23,7 @@ export function LogTable({ logs, loading }: LogTableProps) {
         }
     };
 
-    const getRowColor = (level: string) => {
-        switch (level.toLowerCase()) {
-            case 'error': return 'bg-red-500/5 hover:bg-red-500/10';
-            case 'fatal': return 'bg-red-500/10 hover:bg-red-500/20';
-            case 'warning': return 'bg-amber-500/5 hover:bg-amber-500/10';
-            default: return 'hover:bg-muted/50';
-        }
-    };
+
 
     return (
         <ScrollArea className="h-full w-full">
@@ -62,7 +58,10 @@ export function LogTable({ logs, loading }: LogTableProps) {
                         </TableRow>
                     ) : (
                         logs.map((log) => (
-                            <TableRow key={log.id} className={`text-xs border-b-border/40 transition-colors ${getRowColor(log.level)}`}>
+                            <TableRow
+                                key={log.id}
+                                className={cn(logRowVariants({ level: log.level.toLowerCase() as any }))}
+                            >
                                 <TableCell className="font-mono text-muted-foreground whitespace-nowrap py-2">
                                     {format(new Date(log.timestamp), 'HH:mm:ss.SSS')}
                                 </TableCell>

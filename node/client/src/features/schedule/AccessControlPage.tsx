@@ -6,6 +6,7 @@ import { Clock, Sliders } from 'lucide-react';
 import { Usage24HourChart } from './Usage24HourChart';
 import { ConfigSection } from '@/components/common/ConfigSection';
 import { AccessControlConfig } from './AccessControlConfig';
+import { settingsEvents } from '../../lib/settingsEvents';
 
 export function AccessControlPage() {
     const { selectedMachine } = useMachine();
@@ -15,6 +16,20 @@ export function AccessControlPage() {
     const [saving, setSaving] = useState(false);
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('22:00');
+
+    const getStartTime = (sched: AccessSchedule): string => {
+        if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
+            return sched.allowedTimeWindows[0].startTime || '08:00';
+        }
+        return '08:00';
+    };
+
+    const getEndTime = (sched: AccessSchedule): string => {
+        if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
+            return sched.allowedTimeWindows[0].endTime || '22:00';
+        }
+        return '22:00';
+    };
 
     useEffect(() => {
         if (selectedMachine) {
@@ -71,7 +86,6 @@ export function AccessControlPage() {
             setSchedule(updatedSchedule);
             setStartTime(getStartTime(updatedSchedule));
             setEndTime(getEndTime(updatedSchedule));
-            const { settingsEvents } = await import('../../lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
             console.error('Failed to save schedule:', err);
@@ -80,19 +94,7 @@ export function AccessControlPage() {
         }
     };
 
-    const getStartTime = (sched: AccessSchedule): string => {
-        if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
-            return sched.allowedTimeWindows[0].startTime || '08:00';
-        }
-        return '08:00';
-    };
 
-    const getEndTime = (sched: AccessSchedule): string => {
-        if (sched.allowedTimeWindows && sched.allowedTimeWindows.length > 0) {
-            return sched.allowedTimeWindows[0].endTime || '22:00';
-        }
-        return '22:00';
-    };
 
     if (loading) return <div className="text-center text-muted-foreground animate-pulse p-10">Loading configuration...</div>;
 
