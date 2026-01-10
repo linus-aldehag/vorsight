@@ -149,6 +149,29 @@ public class Worker : BackgroundService
                 await FetchAndApplySettingsAsync();
             };
 
+            // Hook up connection restored (re-fetch everything)
+            _serverConnection.ConnectionRestored += async (sender, args) =>
+            {
+                _logger.LogInformation("Connection to server restored - re-fetching settings and schedule");
+                
+                // 1. Fetch Schedule
+                try
+                {
+                    var scheduleJson = await _serverConnection.FetchScheduleJsonAsync();
+                    if (scheduleJson != null)
+                    {
+                        await _scheduleManager.UpdateScheduleFromJsonAsync(scheduleJson);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to update schedule after connection restore");
+                }
+
+                // 2. Fetch Settings
+                await FetchAndApplySettingsAsync();
+            };
+
             // Hook up audit events
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {

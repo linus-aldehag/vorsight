@@ -4,6 +4,8 @@ using Vorsight.Infrastructure.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
+using Vorsight.Service.Storage;
+
 namespace Vorsight.Service.Server;
 
 public interface IServerConnection
@@ -23,12 +25,14 @@ public interface IServerConnection
     event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     event EventHandler? ScheduleUpdateReceived;
     event EventHandler? SettingsUpdateReceived;
+    event EventHandler? ConnectionRestored;
 }
 
 public class ServerConnection : IServerConnection
 {
     private readonly ILogger<ServerConnection> _logger;
     private readonly HttpClient _httpClient;
+    private readonly ICredentialStore _credentialStore;
     private SocketIOClient.SocketIO? _socket;
     private string? _machineId;
     private string? _apiKey;
@@ -42,10 +46,12 @@ public class ServerConnection : IServerConnection
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
     public event EventHandler? ScheduleUpdateReceived;
     public event EventHandler? SettingsUpdateReceived;
+    public event EventHandler? ConnectionRestored;
     
-    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration, ICredentialStore credentialStore)
     {
         _logger = logger;
+        _credentialStore = credentialStore;
         _httpClient = httpClientFactory.CreateClient();
         _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
         _httpClient.BaseAddress = new Uri(_serverUrl);
@@ -57,11 +63,25 @@ public class ServerConnection : IServerConnection
         try
         {
             // Generate or load machine ID
-            _machineId = MachineIdentity.GenerateMachineId();
-            _logger.LogInformation("Machine ID: {MachineId}", _machineId);
+            var (storedId, storedKey) = await _credentialStore.LoadCredentialsAsync();
             
-            // Register with server
-            await RegisterMachineAsync();
+            if (!string.IsNullOrEmpty(storedKey))
+            {
+                _apiKey = storedKey;
+                _machineId = storedId ?? MachineIdentity.GenerateMachineId();
+                _logger.LogInformation("Loaded API Key from store for Machine ID: {MachineId}", _machineId);
+            }
+            else
+            {
+                _machineId = MachineIdentity.GenerateMachineId();
+                _logger.LogInformation("No credentials found. Generated Machine ID: {MachineId}", _machineId);
+            }
+            
+            // Register with server if no API key
+            if (string.IsNullOrEmpty(_apiKey))
+            {
+                await RegisterMachineAsync();
+            }
             
             // Connect WebSocket
             await ConnectWebSocketAsync();
@@ -155,6 +175,12 @@ public class ServerConnection : IServerConnection
             _apiKey = result?.ApiKey;
             
             _logger.LogInformation("Successfully registered with server. API Key received.");
+            
+            // Persist credentials
+            if (!string.IsNullOrEmpty(_apiKey) && !string.IsNullOrEmpty(_machineId))
+            {
+                await _credentialStore.SaveCredentialsAsync(_machineId, _apiKey);
+            }
         }
         catch (Exception ex)
         {
@@ -185,6 +211,9 @@ public class ServerConnection : IServerConnection
             {
                 _isConnected = true;
                 _logger.LogInformation("Machine authenticated with server");
+                
+                // Trigger connection restored event so listeners can fetch settings/schedules
+                Task.Run(() => ConnectionRestored?.Invoke(this, EventArgs.Empty));
             });
             
             _socket.On("machine:error", response =>
@@ -275,8 +304,12 @@ public class ServerConnection : IServerConnection
             
             _socket.OnDisconnected += (sender, e) =>
             {
-                _isConnected = false;
-                _logger.LogWarning("WebSocket disconnected");
+                // Only log if we were previously connected
+                if (_isConnected)
+                {
+                     _isConnected = false;
+                     _logger.LogWarning("WebSocket disconnected");
+                }
             };
             
             await _socket.ConnectAsync();

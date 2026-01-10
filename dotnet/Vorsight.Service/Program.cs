@@ -173,6 +173,7 @@ try
     
     // Server Connection (Node.js server)
     builder.Services.AddHttpClient();
+    builder.Services.AddSingleton<ICredentialStore, FileCredentialStore>();
     builder.Services.AddSingleton<IServerConnection, ServerConnection>();
     builder.Services.AddSingleton<IAgentLauncher, AgentLauncher>();
     
