@@ -96,7 +96,20 @@ public class ServerConnection : IServerConnection
             }
         }
 
-        if (_socket != null && _socket.Connected) return;
+        if (_socket != null && _socket.Connected) 
+        {
+            // NEW: Check if we are physically connected but not logically authenticated
+            if (!_isConnected && !string.IsNullOrEmpty(_apiKey))
+            {
+                 _logger.LogWarning("Connection Watchdog: Socket connected but not authenticated. Retrying handshake...");
+                 await _socket.EmitAsync("machine:connect", new
+                 {
+                     machineId = _machineId,
+                     apiKey = _apiKey
+                 });
+            }
+            return;
+        }
 
         try 
         {
