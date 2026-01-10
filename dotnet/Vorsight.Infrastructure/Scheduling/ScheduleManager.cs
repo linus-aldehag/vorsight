@@ -321,8 +321,19 @@ namespace Vorsight.Infrastructure.Scheduling
                             else if (!schedule.IsAccessAllowedNow())
                             {
                                 // Access time expired or outside window
-                                _logger.LogWarning("Access denied (Outside Allowed Hours)");
-                                await ForceLogoffAsync();
+                                _logger.LogWarning("Access denied (Outside Allowed Hours). Action: {Action}", schedule.ViolationAction);
+                                
+                                if (schedule.ViolationAction == AccessViolationAction.ShutDown)
+                                {
+                                    // Initiate shutdown if not already shutting down
+                                    // 60 second warning to user
+                                    ShutdownHelper.TryInitiateShutdown(0, "Computer usage time limit exceeded. System will shut down.", true, false);
+                                }
+                                else
+                                {
+                                    // Default to logoff
+                                    await ForceLogoffAsync();
+                                }
                             }
                         }
 

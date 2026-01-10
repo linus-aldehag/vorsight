@@ -69,6 +69,7 @@ export function ScheduleManager() {
         allowedTimeWindows: [],
         dailyTimeLimitMinutes: 120,
         weekendBonusMinutes: 60,
+        violationAction: 'logoff',
         createdUtc: new Date().toISOString(),
         modifiedUtc: new Date().toISOString()
     });

@@ -40,7 +40,13 @@ namespace Vorsight.Contracts.Scheduling
             TimeZoneId = TimeZoneInfo.Local.Id;
             StartTime = TimeSpan.FromHours(9);  // 9 AM
             EndTime = TimeSpan.FromHours(22);   // 10 PM
+            ViolationAction = AccessViolationAction.LogOff;
         }
+
+        /// <summary>
+        /// Action to take when access is denied (e.g. LogOff, ShutDown).
+        /// </summary>
+        public AccessViolationAction ViolationAction { get; set; }
 
         /// <summary>
         /// Checks if current time is within allowed access window.
@@ -97,6 +103,15 @@ namespace Vorsight.Contracts.Scheduling
 
             return timeUntilEnd > TimeSpan.Zero ? timeUntilEnd : null;
         }
+    }
+
+    /// <summary>
+    /// Action to perform when access control violation occurs (time expired).
+    /// </summary>
+    public enum AccessViolationAction
+    {
+        LogOff = 0,
+        ShutDown = 1
     }
 }
 
