@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
 using Vorsight.Service.Storage;
+using Vorsight.Service.Logging;
 
 namespace Vorsight.Service.Server;
 
@@ -19,6 +20,8 @@ public interface IServerConnection
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     Task<string?> FetchScheduleJsonAsync();
     Task<string?> FetchSettingsJsonAsync();
+    Task SendLogBatchAsync(IEnumerable<LogEventDto> logs);
+    Task ReportAppliedSettingsAsync(string settingsJson);
     bool IsConnected { get; }
     string? ApiKey { get; }
     string? MachineId { get; }
@@ -60,6 +63,9 @@ public class ServerConnection : IServerConnection
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task InitializeAsync()
     {
+        // Bind this connection to the static logger sink
+        Logging.ServerSink.CurrentConnection = this;
+
         try
         {
             // Generate or load machine ID
@@ -102,7 +108,7 @@ public class ServerConnection : IServerConnection
                 _logger.LogInformation("Connection Watchdog: No API key found. Retrying registration...");
                 
                 // Ensure machine ID is loaded
-                if (string.IsNullOrEmpty(_machineId))
+                if (string.IsNullOrEmpty(_machineId) && OperatingSystem.IsWindows())
                 {
                     _machineId = MachineIdentity.GenerateMachineId();
                 }
@@ -462,10 +468,55 @@ public class ServerConnection : IServerConnection
 
             return await response.Content.ReadAsStringAsync();
         }
+
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching settings JSON");
             return null;
+        }
+    }
+    
+    public async Task SendLogBatchAsync(IEnumerable<LogEventDto> logs)
+    {
+        if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
+            return;
+
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("/api/logs", logs);
+            if (!response.IsSuccessStatusCode)
+            {
+               // Do not log here to avoid recursive logging loops if the sink uses this
+            }
+        }
+        catch
+        {
+            // Silent fail for logs
+        }
+    }
+
+    public async Task ReportAppliedSettingsAsync(string settingsJson)
+    {
+        if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
+            return;
+
+        try
+        {
+            var request = new
+            {
+                machineId = _machineId,
+                settings = settingsJson
+            };
+            
+            var response = await _httpClient.PostAsJsonAsync("/api/settings/applied", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to report settings application: {Status}", response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to report settings application");
         }
     }
     

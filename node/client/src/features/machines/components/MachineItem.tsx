@@ -119,17 +119,35 @@ export function MachineItem({
 
             <div className="flex items-center gap-2">
                 {machine.status !== 'archived' && (
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 border border-border/50">
-                        <Circle
-                            size={6}
-                            className={cn(
-                                "fill-current",
-                                machine.isOnline ? "text-emerald-500" : "text-muted-foreground"
-                            )}
-                        />
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                            {machine.connectionStatus}
-                        </span>
+                    <div className="flex items-center gap-2">
+                        {/* Sync Status Badge */}
+                        {machine.settings && machine.appliedSettings && machine.settings !== machine.appliedSettings && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600" title="Settings change pending">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                <span className="text-[10px] uppercase font-bold tracking-wider">Syncing</span>
+                            </div>
+                        )}
+
+                        {/* Ping Latency Badge */}
+                        {machine.isOnline && machine.pingLatency !== undefined && machine.pingLatency !== null && (
+                            <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground bg-muted/50">
+                                <span>{machine.pingLatency}ms</span>
+                            </div>
+                        )}
+
+                        {/* Connection Status Badge */}
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-background/50 border border-border/50">
+                            <Circle
+                                size={6}
+                                className={cn(
+                                    "fill-current",
+                                    machine.isOnline ? "text-emerald-500" : "text-muted-foreground"
+                                )}
+                            />
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                                {machine.connectionStatus}
+                            </span>
+                        </div>
                     </div>
                 )}
 

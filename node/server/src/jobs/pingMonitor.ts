@@ -1,7 +1,6 @@
 import { prisma } from '../db/database';
 import ping from 'ping';
 import schedule from 'node-schedule';
-import { MachineSettings } from '../types';
 
 export async function checkOfflineMachines() {
     try {
@@ -49,34 +48,29 @@ export async function checkOfflineMachines() {
 
                 // Store ping result in machine_state with timestamp
                 const pingStatus = result.alive ? 'reachable' : 'unreachable';
-                const pingTime = result.alive ? result.time : null; // ping.promise returns number for time
-                const now = new Date().toISOString();
+                const pingTime = result.alive ? (result.time as unknown as number) : null;
+                const now = new Date(); // Use Date object for Prisma
 
-                // Get existing settings and merge with ping data (preserve user settings!)
-                const existingSettings: MachineSettings = prevState?.settings
-                    ? JSON.parse(prevState.settings)
-                    : {} as MachineSettings;
-
-                const mergedSettings = {
-                    ...existingSettings, // Preserve screenshot/activity settings
-                    lastPingTime: now,
-                    lastPingSuccess: result.alive ? now : existingSettings['lastPingSuccess'], // Access dynamic props
-                    pingLatency: pingTime
-                };
-
-                // Update or insert machine_state using upsert
+                // Update machine_state with dedicated ping columns
+                // We no longer merge into the settings blob to avoid race conditions with user settings edits
                 await prisma.machineState.upsert({
                     where: { machineId: machine.id },
                     create: {
                         machineId: machine.id,
                         healthStatus: pingStatus,
-                        settings: JSON.stringify(mergedSettings),
-                        updatedAt: new Date()
+                        lastPingTime: now,
+                        lastPingSuccess: result.alive ? now : undefined,
+                        pingLatency: pingTime ? Math.round(pingTime) : null,
+                        settings: prevState?.settings ?? "{}", // Preserve or init
+                        updatedAt: now
                     },
                     update: {
                         healthStatus: pingStatus,
-                        settings: JSON.stringify(mergedSettings),
-                        updatedAt: new Date()
+                        lastPingTime: now,
+                        // Only update lastPingSuccess if alive
+                        ...(result.alive ? { lastPingSuccess: now } : {}),
+                        pingLatency: pingTime ? Math.round(pingTime) : null,
+                        updatedAt: now
                     }
                 });
 

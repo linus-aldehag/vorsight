@@ -6,6 +6,8 @@ import { AuditAlert } from './AuditAlert';
 import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
 import { FeaturesWidget } from './FeaturesWidget';
+import { MachineLogs } from '../machines/components/MachineLogs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { useMachine } from '@/context/MachineContext';
@@ -93,17 +95,35 @@ export function Dashboard() {
                 </div>
             </div>
 
-            {/* Bottom Section: Audit Log - Collapsed on mobile */}
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-xs sm:text-sm font-semibold tracking-wide uppercase">
-                        Audit Log
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <AuditAlert />
-                </CardContent>
-            </Card>
+            {/* Bottom Section: Logs & Audits - Collapsed on mobile */}
+            <Tabs defaultValue="audit" className="w-full">
+                <div className="flex items-center justify-between mb-2">
+                    <TabsList className="bg-muted/50">
+                        <TabsTrigger value="audit" className="text-xs uppercase font-semibold tracking-wide">Audit Log</TabsTrigger>
+                        <TabsTrigger value="system" className="text-xs uppercase font-semibold tracking-wide">System Logs</TabsTrigger>
+                    </TabsList>
+                </div>
+
+                <TabsContent value="audit" className="mt-0">
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardContent className="p-0">
+                            <AuditAlert />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="system" className="mt-0">
+                    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                        <CardContent className="p-0">
+                            {selectedMachine ? (
+                                <MachineLogs machineId={selectedMachine.id} />
+                            ) : (
+                                <div className="p-4 text-center text-muted-foreground">Select a machine to view logs</div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             {/* Mobile-only: System Controls at bottom */}
             <Card className="lg:hidden border-border/50 bg-card/50 backdrop-blur-sm">

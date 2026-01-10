@@ -24,6 +24,11 @@ export interface Machine {
     statusText?: string;
     lastSeen: string | null;
     status?: 'pending' | 'active' | 'archived';
+    // State fields (from MachineState)
+    settings?: string;
+    appliedSettings?: string;
+    pingLatency?: number;
+    lastPingSuccess?: string;
 }
 
 interface MachineContextType {

@@ -29,6 +29,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.0" />
     <PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3428" />
     <PackageReference Include="Google.Apis.Auth" Version="1.68.0" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="5.0.0" />
     <PackageReference Include="SocketIOClient" Version="3.1.2" />
     <PackageReference Include="Shipwreck.Phash" Version="0.5.0" />
     <PackageReference Include="Shipwreck.Phash.Bitmaps" Version="0.5.0" />

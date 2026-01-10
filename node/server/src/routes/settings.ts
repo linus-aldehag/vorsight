@@ -98,4 +98,66 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
+// POST /api/settings/applied
+// Called by machine when it successfully applies settings
+router.post('/applied', async (req: Request, res: Response) => {
+    try {
+        const { machineId, settings } = req.body;
+
+        if (!machineId) {
+            return res.status(400).json({ error: 'machineId required' });
+        }
+
+        if (!settings) {
+            return res.status(400).json({ error: 'settings required' });
+        }
+
+        // Update appliedSettings in machine_state
+        // We only update the checked-in field, not the desired configuration
+        await prisma.machineState.update({
+            where: { machineId: machineId },
+            data: {
+                appliedSettings: typeof settings === 'string' ? settings : JSON.stringify(settings),
+                updatedAt: new Date()
+            }
+        });
+
+        return res.json({ success: true });
+    } catch (error: any) {
+        console.error('Report applied settings error:', error);
+        return res.status(500).json({ error: 'Failed to report applied settings' });
+    }
+});
+
+// POST /api/settings/applied
+// Called by machine when it successfully applies settings
+router.post('/applied', async (req: Request, res: Response) => {
+    try {
+        const { machineId, settings } = req.body;
+
+        if (!machineId) {
+            return res.status(400).json({ error: 'machineId required' });
+        }
+
+        if (!settings) {
+            return res.status(400).json({ error: 'settings required' });
+        }
+
+        // Update appliedSettings in machine_state
+        // We only update the checked-in field, not the desired configuration
+        await prisma.machineState.update({
+            where: { machineId: machineId },
+            data: {
+                appliedSettings: typeof settings === 'string' ? settings : JSON.stringify(settings),
+                updatedAt: new Date()
+            }
+        });
+
+        return res.json({ success: true });
+    } catch (error: any) {
+        console.error('Report applied settings error:', error);
+        return res.status(500).json({ error: 'Failed to report applied settings' });
+    }
+});
+
 export default router;

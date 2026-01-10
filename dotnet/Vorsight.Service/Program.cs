@@ -13,6 +13,14 @@ using Vorsight.Service.Monitoring;
 using Vorsight.Service.Storage;
 using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Auditing;
+using Serilog.Events;
+using Serilog.Sinks.PeriodicBatching;
+using Vorsight.Infrastructure.IO;
+using Vorsight.Infrastructure.IPC;
+using Vorsight.Infrastructure.Settings;
+using Vorsight.Infrastructure.Uptime;
+using Vorsight.Service.Logging;
+using Vorsight.Service.Utilities;
 
 // Configure Serilog for structured logging
 var configuration = new ConfigurationBuilder()
@@ -25,14 +33,22 @@ var configuration = new ConfigurationBuilder()
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .MinimumLevel.Information() // Default if not in config
-    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information) 
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information) 
     .WriteTo.File(
-        path: Path.Combine(Vorsight.Infrastructure.IO.PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
+        path: Path.Combine(PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 3,
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
     .WriteTo.Console(
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+    // Add Server Sink for remote logging (Warning+ by default)
+    .WriteTo.Sink(new PeriodicBatchingSink(
+        new ServerSink(LogEventLevel.Warning),
+        new PeriodicBatchingSinkOptions 
+        { 
+            BatchSizeLimit = 50, 
+            Period = TimeSpan.FromSeconds(5) 
+        }))
     .CreateLogger();
 
 try
@@ -149,17 +165,17 @@ try
     // Configure core services
     builder.Services.AddCors();
     builder.Services.AddSingleton<INamedPipeServer>(sp =>
-        new Vorsight.Infrastructure.IPC.NamedPipeServer(sp.GetRequiredService<ILogger<Vorsight.Infrastructure.IPC.NamedPipeServer>>(), "VorsightIPC"));
+        new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
 
     builder.Services.AddSingleton<IScheduleManager>(sp =>
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
-        new Vorsight.Infrastructure.Scheduling.ScheduleManager(
-            sp.GetRequiredService<ILogger<Vorsight.Infrastructure.Scheduling.ScheduleManager>>(),
+        new ScheduleManager(
+            sp.GetRequiredService<ILogger<ScheduleManager>>(),
             sp.GetRequiredService<IHttpClientFactory>(),
             sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
 #pragma warning restore CA1416
 
-    builder.Services.AddSingleton<IAuditManager, Vorsight.Infrastructure.Audit.AuditManager>();
+    builder.Services.AddSingleton<IAuditManager, AuditManager>();
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();
 
     // Screenshot Upload Services (Direct to Drive with server credentials)
@@ -168,7 +184,7 @@ try
     builder.Services.AddSingleton<IUploadQueueProcessor, UploadQueueProcessor>();
     builder.Services.AddSingleton<ITempFileManager, TempFileManager>();
     builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
-    builder.Services.AddSingleton<Vorsight.Infrastructure.Uptime.UptimeMonitor>();
+    builder.Services.AddSingleton<UptimeMonitor>();
 
     
     // Server Connection (Node.js server)
@@ -181,8 +197,8 @@ try
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
     builder.Services.AddSingleton<ICommandExecutor, CommandExecutor>();
-    builder.Services.AddSingleton<ISettingsManager, Vorsight.Infrastructure.Settings.SettingsManager>();
-    builder.Services.AddSingleton<Vorsight.Service.Utilities.IPerceptualHashService, Vorsight.Service.Utilities.PerceptualHashService>();
+    builder.Services.AddSingleton<ISettingsManager, SettingsManager>();
+    builder.Services.AddSingleton<IPerceptualHashService, PerceptualHashService>();
 
     // Agents and IPC Handlers
     builder.Services.AddSingleton<ScreenshotHandler>();
