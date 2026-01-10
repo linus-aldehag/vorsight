@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Image as ImageIcon, Info } from 'lucide-react';
-import { useState, memo } from 'react';
+import { Image as ImageIcon, Info, Loader2 } from 'lucide-react';
+import { useState, memo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,8 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
     const { formatTimestamp } = useSettings();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [isRequesting, setIsRequesting] = useState(false);
+    const [isWaitingForUpdate, setIsWaitingForUpdate] = useState(false);
+    const lastCapturedIdRef = useRef<string | null>(null);
 
 
     const fetcher = async (url: string) => {
@@ -40,11 +42,24 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
 
     const latestScreenshot = screenshotData?.screenshots?.[0];
 
+    // Reset waiting state when a new screenshot arrives
+    useEffect(() => {
+        if (isWaitingForUpdate && latestScreenshot?.id !== lastCapturedIdRef.current) {
+            setIsWaitingForUpdate(false);
+        }
+    }, [latestScreenshot?.id, isWaitingForUpdate]);
+
     const handleCapture = async () => {
         if (!selectedMachine) return;
 
         try {
             setIsRequesting(true);
+            setIsWaitingForUpdate(true);
+            lastCapturedIdRef.current = latestScreenshot?.id || null; // Capture current ID
+
+            // Safety timeout: reset waiting state after 30 seconds if no new image arrives
+            setTimeout(() => setIsWaitingForUpdate(false), 30000);
+
             const token = localStorage.getItem('auth_token');
             const res = await fetch(`/api/screenshots/request?machineId=${selectedMachine.id}`, {
                 method: 'POST',
@@ -94,12 +109,12 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
                     {!isDisabled && selectedMachine && (
                         <button
                             onClick={handleCapture}
-                            disabled={isRequesting}
+                            disabled={isRequesting || isWaitingForUpdate}
                             className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                             title="Request a new screenshot immediately"
                         >
-                            <ImageIcon size={12} />
-                            {isRequesting ? 'Capturing...' : 'Capture'}
+                            {isRequesting || isWaitingForUpdate ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                            {isRequesting ? 'Capturing...' : isWaitingForUpdate ? 'Waiting...' : 'Capture'}
                         </button>
                     )}
                 </CardTitle>
