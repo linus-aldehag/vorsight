@@ -3,25 +3,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { LogToolbar } from './MachineLogs/LogToolbar';
 import { LogTable } from './MachineLogs/LogTable';
 import { useMachineLogs } from './MachineLogs/useMachineLogs';
+import { cn } from '@/lib/utils';
 
 interface MachineLogsProps {
     machineId: string;
+    className?: string; // Allow overriding height/style
 }
 
-export function MachineLogs({ machineId }: MachineLogsProps) {
+export function MachineLogs({ machineId, className }: MachineLogsProps) {
     const { logs, loading } = useMachineLogs(machineId);
     const [filterLevel, setFilterLevel] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredLogs = logs.filter(log => {
-        const matchesLevel = filterLevel === 'all' || log.level.toLowerCase() === filterLevel;
         const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.sourceContext?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesLevel && matchesSearch;
+        const matchesLevel = filterLevel === 'all' || log.level.toLowerCase() === filterLevel;
+        return matchesSearch && matchesLevel;
     });
 
     return (
-        <Card className="h-[500px] flex flex-col border-0 shadow-none bg-transparent">
+        <Card className={cn("flex flex-col border-0 shadow-none bg-transparent", className)}>
             <LogToolbar
                 totalEvents={filteredLogs.length}
                 searchTerm={searchTerm}

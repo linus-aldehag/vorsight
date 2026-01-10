@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Activity } from "lucide-react";
 import { ConfigSection } from "@/components/common/ConfigSection";
 import { ActivityConfig } from "./ActivityConfig";
+import { settingsEvents } from "@/lib/settingsEvents";
 
 export function ActivityPage() {
     const { selectedMachine } = useMachine();
@@ -60,7 +61,6 @@ export function ActivityPage() {
             const updatedSettings = { ...settings, ...updates };
             const response = await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
             setSettings(response);
-            const { settingsEvents } = await import('../../lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
             console.error('Failed to save settings:', err);

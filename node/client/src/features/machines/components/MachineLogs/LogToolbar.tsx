@@ -1,4 +1,7 @@
+
+import { cn } from '@/lib/utils';
 import { CardHeader, CardTitle } from '@/components/ui/card';
+import { toolbarControlVariants } from '@/components/ui/variants/log';
 
 interface LogToolbarProps {
     totalEvents: number;
@@ -27,12 +30,12 @@ export function LogToolbar({
                 <input
                     type="text"
                     placeholder="Search logs..."
-                    className="h-8 w-[200px] bg-background/50 border rounded text-xs px-2.5 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className={cn(toolbarControlVariants({ variant: 'search' }))}
                     value={searchTerm}
                     onChange={(e) => onSearchChange(e.target.value)}
                 />
                 <select
-                    className="h-8 bg-background/50 border rounded text-xs px-2 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className={cn(toolbarControlVariants())}
                     value={filterLevel}
                     onChange={(e) => onFilterChange(e.target.value)}
                 >

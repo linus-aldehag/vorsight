@@ -76,7 +76,7 @@ app.use('/api/analytics', authenticateBrowser, analyticsRouter);
 app.use('/api/audit', authenticateBrowser, auditRouter);
 app.use('/api/cleanup', authenticateBrowser, cleanupRouter);
 app.use('/api/ping', authenticateBrowser, pingRouter);
-app.use('/api/logs', authenticateBrowser, logsRouter);
+app.use('/api/logs', logsRouter);
 
 // OAuth has its own auth flow
 app.use('/api/oauth', oauthRouter);

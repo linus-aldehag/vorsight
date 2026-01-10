@@ -9,6 +9,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
 import { ConfigSection } from '../../components/common/ConfigSection';
 import { ScreenshotConfig } from './ScreenshotConfig';
+import { settingsEvents } from '../../lib/settingsEvents';
 
 // Screenshot Card Component
 interface ScreenshotCardProps {
@@ -167,7 +168,6 @@ export function ScreenshotGallery() {
             const updatedSettings = { ...settings, ...updates };
             const response = await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
             setSettings(response);
-            const { settingsEvents } = await import('../../lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
             console.error('Failed to save settings:', err);

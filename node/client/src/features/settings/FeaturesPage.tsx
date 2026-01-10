@@ -7,6 +7,7 @@ import { ScreenshotConfig } from '@/features/gallery/ScreenshotConfig';
 import { ActivityConfig } from '@/features/activity/ActivityConfig';
 import { AuditConfig } from '@/features/audit/AuditConfig';
 import { AccessControlConfig } from '@/features/schedule/AccessControlConfig';
+import { settingsEvents } from '@/lib/settingsEvents';
 
 export function FeaturesPage() {
     const { selectedMachine } = useMachine();
@@ -60,7 +61,6 @@ export function FeaturesPage() {
             setSettings(response);
 
             // Broadcast settings update to refresh navigation
-            const { settingsEvents } = await import('@/lib/settingsEvents');
             settingsEvents.emit();
         } catch (err) {
             console.error(`Failed to update ${featureName}:`, err);

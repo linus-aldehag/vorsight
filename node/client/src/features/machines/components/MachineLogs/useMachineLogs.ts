@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { LogEntry } from './types';
 
-export function useMachineLogs(machineId: string) {
+export function useMachineLogs(machineId: string, pollingInterval = 10000) {
     const { token } = useAuth();
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,9 +29,11 @@ export function useMachineLogs(machineId: string) {
         };
 
         fetchLogs();
-        const interval = setInterval(fetchLogs, 10000); // Poll every 10s
-        return () => clearInterval(interval);
-    }, [machineId, token]);
+        if (pollingInterval > 0) {
+            const interval = setInterval(fetchLogs, pollingInterval);
+            return () => clearInterval(interval);
+        }
+    }, [machineId, token, pollingInterval]);
 
     return { logs, loading };
 }
