@@ -75,6 +75,7 @@ export interface AccessSchedule {
     allowedTimeWindows: TimeWindow[];
     dailyTimeLimitMinutes: number;
     weekendBonusMinutes: number;
+    violationAction: 'logoff' | 'shutdown';
     createdUtc: string;
     modifiedUtc: string;
 }

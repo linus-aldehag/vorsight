@@ -19,6 +19,7 @@ export interface AdoptDTO {
     enableAccessControl: boolean;
     accessControlStartTime?: string;
     accessControlEndTime?: string;
+    accessControlAction?: 'logoff' | 'shutdown';
 }
 
 export interface UpdateMachineDTO {
@@ -145,7 +146,8 @@ export class MachineService {
             enableAudit,
             enableAccessControl,
             accessControlStartTime,
-            accessControlEndTime
+            accessControlEndTime,
+            accessControlAction
         } = data;
 
         const machine = await prisma.machine.findUnique({
@@ -194,6 +196,7 @@ export class MachineService {
                 ],
                 dailyTimeLimitMinutes: 0,
                 weekendBonusMinutes: 0,
+                violationAction: accessControlAction || 'logoff',
                 createdUtc: new Date().toISOString(),
                 modifiedUtc: new Date().toISOString()
             };
