@@ -1,11 +1,9 @@
-
-import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AlertCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Info } from 'lucide-react';
 import { format } from 'date-fns';
 import type { LogEntry } from './types';
-import { logRowVariants } from '@/components/ui/variants/log';
 
 interface LogTableProps {
     logs: LogEntry[];
@@ -14,22 +12,25 @@ interface LogTableProps {
 
 export function LogTable({ logs, loading }: LogTableProps) {
 
-    const getIcon = (level: string) => {
-        switch (level.toLowerCase()) {
-            case 'error': return <XCircle className="h-3.5 w-3.5 text-red-500" />;
-            case 'fatal': return <AlertCircle className="h-3.5 w-3.5 text-red-700" />;
-            case 'warning': return <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />;
-            default: return <Info className="h-3.5 w-3.5 text-blue-500" />;
+    const getLevelBadge = (level: string) => {
+        const normalizedLevel = level.toLowerCase();
+        switch (normalizedLevel) {
+            case 'fatal':
+                return <Badge variant="destructive" className="bg-red-900/50 text-red-200 border-red-800 hover:bg-red-900/70">FATAL</Badge>;
+            case 'error':
+                return <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30">ERROR</Badge>;
+            case 'warning':
+                return <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20">WARN</Badge>;
+            default:
+                return <Badge variant="secondary" className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20">INFO</Badge>;
         }
     };
 
-
-
     return (
         <ScrollArea className="h-full w-full">
-            <Table>
-                <TableHeader className="bg-muted/50 sticky top-0 z-10">
-                    <TableRow className="hover:bg-transparent border-b-border/50">
+            <Table variant="glass">
+                <TableHeader className="bg-[var(--glass-bg)] backdrop-blur sticky top-0 z-10 border-b border-[var(--glass-border)]">
+                    <TableRow className="hover:bg-transparent border-b-[var(--glass-border)]">
                         <TableHead className="w-[140px] text-xs font-medium">Timestamp</TableHead>
                         <TableHead className="w-[100px] text-xs font-medium">Level</TableHead>
                         <TableHead className="text-xs font-medium">Message</TableHead>
@@ -60,23 +61,16 @@ export function LogTable({ logs, loading }: LogTableProps) {
                         logs.map((log) => (
                             <TableRow
                                 key={log.id}
-                                className={cn(logRowVariants({ level: log.level.toLowerCase() as any }))}
+                                className="border-b-[var(--glass-border)] hover:bg-muted/10"
                             >
-                                <TableCell className="font-mono text-muted-foreground whitespace-nowrap py-2">
+                                <TableCell className="font-mono text-muted-foreground whitespace-nowrap py-2 text-xs">
                                     {format(new Date(log.timestamp), 'HH:mm:ss.SSS')}
                                 </TableCell>
                                 <TableCell className="py-2">
-                                    <div className="flex items-center gap-1.5">
-                                        {getIcon(log.level)}
-                                        <span className={
-                                            log.level === 'Error' ? 'text-red-500 font-semibold' :
-                                                log.level === 'Warning' ? 'text-amber-600 font-medium' :
-                                                    'text-muted-foreground'
-                                        }>{log.level}</span>
-                                    </div>
+                                    {getLevelBadge(log.level)}
                                 </TableCell>
                                 <TableCell className="py-2 max-w-[500px]">
-                                    <div className="break-words font-medium text-foreground/90">{log.message}</div>
+                                    <div className="break-words font-medium text-foreground/90 text-sm">{log.message}</div>
                                     {log.exception && (
                                         <div className="mt-1.5 p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 overflow-x-auto">
                                             <pre className="text-[10px] font-mono text-red-400 leading-relaxed">
