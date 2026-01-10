@@ -45,11 +45,11 @@ export function DataRetention() {
             const data = await response.json();
             setSettings(data);
             setFormData({
-                activity_retention_days: data.activity_retention_days,
-                screenshot_retention_days: data.screenshot_retention_days,
-                audit_retention_days: data.audit_retention_days,
-                heartbeat_retention_hours: data.heartbeat_retention_hours || 48,
-                delete_drive_files: Boolean(data.delete_drive_files)
+                activity_retention_days: data.activityRetentionDays,
+                screenshot_retention_days: data.screenshotRetentionDays,
+                audit_retention_days: data.auditRetentionDays,
+                heartbeat_retention_hours: data.heartbeatRetentionHours || 48,
+                delete_drive_files: Boolean(data.deleteDriveFiles)
             });
         } catch (error) {
             console.error('Failed to fetch retention settings:', error);

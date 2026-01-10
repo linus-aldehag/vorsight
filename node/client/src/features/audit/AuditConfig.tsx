@@ -30,7 +30,7 @@ export function AuditConfig({ settings, onUpdate }: AuditConfigProps) {
                 <ToggleField
                     label="System Log"
                     description="Detects service installations, start type changes, and other systemic modifications."
-                    checked={settings.auditLogSystemEnabled ?? false}
+                    checked={settings.auditLogSystemEnabled ?? true}
                     onCheckedChange={(checked) => onUpdate({ auditLogSystemEnabled: checked })}
                     disabled={!isEnabled}
                     divided
@@ -39,7 +39,7 @@ export function AuditConfig({ settings, onUpdate }: AuditConfigProps) {
                 <ToggleField
                     label="Application Log"
                     description="Monitors for critical application errors and warnings."
-                    checked={settings.auditLogApplicationEnabled ?? false}
+                    checked={settings.auditLogApplicationEnabled ?? true}
                     onCheckedChange={(checked) => onUpdate({ auditLogApplicationEnabled: checked })}
                     disabled={!isEnabled}
                     divided

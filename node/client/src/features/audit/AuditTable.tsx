@@ -143,14 +143,14 @@ export function AuditTable({
                                             <div
                                                 className={`text-xs text-muted-foreground ${isExpanded ? '' : 'line-clamp-2'}`}
                                             >
-                                                {event.details}
+                                                {typeof event.details === 'object' ? JSON.stringify(event.details) : event.details}
                                             </div>
                                         )}
 
                                         {/* Action buttons */}
                                         <div className="flex items-center gap-2 mt-3">
                                             {/* Expand/collapse button */}
-                                            {event.details && event.details.length > 100 && (
+                                            {event.details && (typeof event.details === 'string' ? event.details : JSON.stringify(event.details)).length > 100 && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"

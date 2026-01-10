@@ -25,12 +25,12 @@ interface PendingMachineItemProps {
 export function PendingMachineItem({ machine, onAdopt }: PendingMachineItemProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [displayName, setDisplayName] = useState('');
-    const [enableScreenshots, setEnableScreenshots] = useState(false);
-    const [enableActivity, setEnableActivity] = useState(false);
-    const [enableAudit, setEnableAudit] = useState(false);
-    const [enableAccessControl, setEnableAccessControl] = useState(false);
-    const [startTime, setStartTime] = useState('09:00');
-    const [endTime, setEndTime] = useState('17:00');
+    const [enableScreenshots, setEnableScreenshots] = useState(true);
+    const [enableActivity, setEnableActivity] = useState(true);
+    const [enableAudit, setEnableAudit] = useState(true);
+    const [enableAccessControl, setEnableAccessControl] = useState(true);
+    const [startTime, setStartTime] = useState('07:00');
+    const [endTime, setEndTime] = useState('22:00');
     const [isAdopting, setIsAdopting] = useState(false);
 
     const handleAdopt = async () => {

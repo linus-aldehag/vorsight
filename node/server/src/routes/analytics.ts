@@ -34,20 +34,71 @@ router.get('/summary/:machineId', async (req: Request, res: Response) => {
         const appDurations: Record<string, number> = {};
         let totalDuration = 0;
 
+        // Initialize hourly intervals container
+        const hourlyIntervals: Array<Array<{ start: number, end: number }>> = Array.from({ length: 24 }, () => []);
+
         activities.forEach(activity => {
-            const activityDate = new Date(activity.startTime * 1000); // Unix timestamp to milliseconds
-            const hour = activityDate.getHours();
+            const start = activity.startTime * 1000;
+            const end = activity.endTime * 1000;
             const duration = activity.durationSeconds || 0;
 
-            // Add to timeline
-            if (timeline[hour]) {
-                timeline[hour].activeMinutes += Math.floor(duration / 60);
-            }
-
-            // Add to app totals
+            // Add to app totals for "Top Processes" (simple sum is fine here as it reflects focus time)
             const appName = activity.processName || 'Unknown';
             appDurations[appName] = (appDurations[appName] || 0) + duration;
             totalDuration += duration;
+
+            // Split into hour buckets for Timeline
+            let current = start;
+            while (current < end) {
+                const currentHourStart = new Date(current);
+                currentHourStart.setMinutes(0, 0, 0); // Corrected to remove milliseconds clearing if needed, but 3 args is fine
+
+                const nextHourStart = new Date(currentHourStart);
+                nextHourStart.setHours(nextHourStart.getHours() + 1);
+
+                const hour = currentHourStart.getHours();
+                const segmentEnd = Math.min(end, nextHourStart.getTime());
+
+                // Store interval for this hour
+                if (hourlyIntervals[hour]) {
+                    hourlyIntervals[hour].push({ start: current, end: segmentEnd });
+                }
+
+                current = segmentEnd;
+            }
+        });
+
+        // Calculate active minutes for each hour by merging overlapping intervals
+        timeline.forEach((t, i) => {
+            const intervals = hourlyIntervals[i];
+            if (!intervals || intervals.length === 0) return;
+
+            // Sort by start time
+            intervals.sort((a, b) => a.start - b.start);
+
+            let mergedDuration = 0;
+            // Safe access because we checked length > 0
+            let currentStart = intervals[0]?.start ?? 0;
+            let currentEnd = intervals[0]?.end ?? 0;
+
+            for (let k = 1; k < intervals.length; k++) {
+                const next = intervals[k];
+                if (!next) continue;
+
+                if (next.start < currentEnd) {
+                    // Overlap: extend current end if needed
+                    currentEnd = Math.max(currentEnd, next.end);
+                } else {
+                    // Gap: add current duration and start new segment
+                    mergedDuration += (currentEnd - currentStart);
+                    currentStart = next.start;
+                    currentEnd = next.end;
+                }
+            }
+            // Add the last segment
+            mergedDuration += (currentEnd - currentStart);
+
+            t.activeMinutes = Math.round(mergedDuration / 1000 / 60);
         });
 
         // Sort apps by duration and take top 5

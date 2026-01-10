@@ -205,6 +205,9 @@ export class MachineService {
             pingIntervalSeconds: enableActivity ? 30 : 0,
             isMonitoringEnabled: enableScreenshots || enableActivity,
             isAuditEnabled: !!enableAudit,
+            auditLogSecurityEnabled: !!enableAudit,
+            auditLogSystemEnabled: !!enableAudit,
+            auditLogApplicationEnabled: !!enableAudit,
             isAccessControlEnabled: !!enableAccessControl,
             schedule: schedule
         };

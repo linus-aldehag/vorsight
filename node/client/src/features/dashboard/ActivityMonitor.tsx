@@ -1,5 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Clock, Activity as ActivityIcon } from 'lucide-react';
 import { useSettings } from '@/context/SettingsContext';
 import { useMachine } from '@/context/MachineContext';
@@ -46,12 +45,6 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
                     <h5 className="text-sm font-semibold tracking-wide text-foreground uppercase">
                         Current Activity
                     </h5>
-                    <Badge
-                        variant="outline"
-                        className="text-xs font-mono bg-success/20 text-success border-success/50"
-                    >
-                        ACTIVE
-                    </Badge>
                 </div>
 
                 {/* Activity Info */}

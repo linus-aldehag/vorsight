@@ -9,6 +9,36 @@ router.get('/summary', (_req: Request, res: Response) => {
     return res.json([]);
 });
 
+// Get activity sessions for chart (24h view)
+router.get('/sessions', async (req: Request, res: Response) => {
+    try {
+        const { machineId, hoursAgo } = req.query;
+        if (!machineId) {
+            return res.status(400).json({ error: 'machineId is required' });
+        }
+
+        const hours = parseInt(hoursAgo as string) || 24;
+        const cutoffTime = Math.floor(Date.now() / 1000) - (hours * 3600);
+
+        const sessions = await prisma.activitySession.findMany({
+            where: {
+                machineId: machineId as string,
+                startTime: {
+                    gte: cutoffTime
+                }
+            },
+            orderBy: {
+                startTime: 'asc'
+            }
+        });
+
+        return res.json(sessions);
+    } catch (error) {
+        console.error('Get activity sessions error:', error);
+        return res.status(500).json({ error: 'Failed to fetch activity sessions' });
+    }
+});
+
 // Get activity sessions for a machine
 router.get('/:machineId', async (req: Request, res: Response) => {
     try {
