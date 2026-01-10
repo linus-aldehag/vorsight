@@ -87,7 +87,7 @@ export function Dashboard() {
                     <FeaturesWidget settings={settings} />
 
                     {/* System Controls - hide on mobile, show on large screens */}
-                    <Card className="hidden lg:block border-border/50 bg-card/50 backdrop-blur-sm">
+                    <Card variant="glass" className="hidden lg:block">
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-semibold tracking-wide uppercase">
                                 System Control
@@ -101,7 +101,7 @@ export function Dashboard() {
             </div>
 
             {/* Bottom Section: Audit Log */}
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+            <Card variant="glass">
                 <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-sm font-semibold tracking-wide uppercase">
                         Audit Log
@@ -113,7 +113,7 @@ export function Dashboard() {
             </Card>
 
             {/* Mobile-only: System Controls at bottom */}
-            <Card className="lg:hidden border-border/50 bg-card/50 backdrop-blur-sm mb-12"> {/* Add margin bottom for status bar */}
+            <Card variant="glass" className="lg:hidden mb-12"> {/* Add margin bottom for status bar */}
                 <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-semibold tracking-wide uppercase">
                         System Control
