@@ -51,11 +51,21 @@ router.get('/:machineId', async (req: Request, res: Response) => {
             isOnline: status.isOnline
         });
 
+        // Construct activity object from state
+        let activity = null;
+        if (machine.state) {
+            activity = {
+                activeWindowTitle: machine.state.activeWindow,
+                timestamp: machine.state.lastActivityTime
+            };
+        }
+
         return res.json({
             status: status.connectionStatus,
             text: statusText,
             isOnline: status.isOnline,
-            lastSeen: machine.lastSeen
+            lastSeen: machine.lastSeen,
+            activity
         });
 
     } catch (error) {
