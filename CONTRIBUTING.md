@@ -45,9 +45,12 @@ We welcome feature suggestions! Please open an issue with:
 ```
 vorsight/
 ├── dotnet/                 # C# Services & Agent
-│   ├── Vorsight.Agent/     # Windows Service Agent
-│   ├── Vorsight.Service/   # Service logic
-│   └── ...
+│   ├── Vorsight.Agent/           # Windows Service Agent (UI Context)
+│   ├── Vorsight.Service/         # Main Windows Service Logic & Host
+│   ├── Vorsight.Contracts/       # Shared DTOs and Logic Definitions
+│   ├── Vorsight.Infrastructure/  # Common Utilities & Data Access
+│   ├── Vorsight.Interop/         # Native Windows API Wrappers (P/Invoke)
+│   └── Vorsight.sln              # Visual Studio Solution
 ├── node/                   # JavaScript stack
 │   ├── server/             # Node.js API server
 │   └── client/             # React web dashboard
@@ -63,6 +66,15 @@ vorsight/
 - **Server**: Node.js, Express, Prisma, SQLite, Socket.io
 - **Web UI**: React, TypeScript, Vite, Recharts
 - **CI/CD**: GitHub Actions, CalVer versioning
+
+### Deployment & Releases
+
+**Automated Releases**
+
+GitHub Actions will:
+1. Build Windows installer (Inno Setup)
+2. Build Linux deployment package (`.tar.gz`)
+3. Create GitHub Releases
 
 ## Code Style
 

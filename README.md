@@ -1,302 +1,89 @@
 ![Vörsight Logo](./.github/assets/vorsight-banner.png)
-# Vörsight - Comprehensive PC Monitoring & Management System
 
-A monitoring system for Windows PCs with centralized web dashboard for parental oversight, activity tracking, and secure screenshot archival.
+# Vörsight
 
-## ⚖️ Licensing & Intent
+**Vörsight** is a modern, self-hosted parental monitoring solution designed for privacy-conscious families. It combines a lightweight Windows agent with a centralized web dashboard to help you keep your children safe online while maintaining full ownership of your data.
 
-Vörsight is **Source Available** under the [PolyForm Noncommercial 1.0.0](LICENSE) license.
+> [!NOTE]
+> Vörsight is currently under active development. The User Interface and features shown in screenshots may evolve as we continuously refine the UX and functionality.
 
-### ✅ Personal & Local Use
-**Always free.** We believe users should own their own surveillance and data-gathering tools.
+## Features
 
-Permitted uses include:
-- Personal/family monitoring and parental oversight
-- Home network management
-- Research, experimentation, and testing
-- Educational and non-profit organizations
-- Government institutions
+### 🌐 Centralized Dashboard
+*   **Real-time Monitoring**: View the online/offline status and active user for all connected machines instantly.
+*   **Live Updates**: Dashboard updates in real-time via WebSockets, no refresh needed.
+*   **Device Management**: Rename, archive, and manage your fleet of devices easily.
 
-### 🤝 Open Contributions
-Pull Requests are highly encouraged! By contributing, you agree to license your work under the project's existing terms.
+![Dashboard Preview](./.github/assets/screenshot-dashboard.png)
 
-### 🚫 Commercial Restriction
-Use in for-profit corporate environments or for direct commercial gain is **strictly restricted**.
+### 📸 Visual Activity Tracking
+*   **Smart Screenshots**: Captures screen activity at configurable intervals (default every minute) while the user is active.
+*   **Smart Filters**: Automatically skips redundant or identical screenshots before uploading them to reduce bandwidth and storage usage.
+*   **Direct-to-Drive Uploads**: Screenshots are uploaded directly from the client PC to your personal Google Drive, ensuring privacy and speed.
+*   **Interactive Timeline**: Browse history with a fluid, zoomable timeline that aggregates activity by hour and day.
+*   **Gallery View**: Filter and view high-resolution screenshots with a dedicated gallery interface.
 
-If you are interested in a commercial license, please contact the author.
+![Timeline Preview](./.github/assets/screenshot-timeline.png)
 
----
+### 🛡️ Security & Auditing
+*   **Session Auditing**: Automatically logs Windows session events including Login, Logout, Lock, and Unlock.
+*   **Security Alerts**: Detects critical changes like User Creation, Local Group Membership changes, and Privilege Escalation.
+*   **Audit Log**: A searchable, persistent log of all security events across your network, with dismissal and filtering capabilities.
 
-For the full legal text, see the [`LICENSE`](LICENSE) file in the root of this repository.
+### ⏰ Access Control
+*   **Usage Scheduling**: Define specific time windows when computer usage is permitted.
+*   **Strict Enforcement**: Automatically force logoff or shutdown when a user is outside their allowed schedule.
+*   **Dynamic Warnings**: Users receive notifications before their time expires.
 
-## Vörsight
+### 🔧 Architecture & Privacy
+*   **Self-Hosted Server**: You run the server. No third-party cloud (other than your own Google Drive) touches your data.
+*   **Secure Communication**: All client-server communication is authenticated via unique API keys.
+*   **Client-Side Privacy**: Heavy media data (screenshots) goes straight to Google Drive, keeping your server lightweight and your data private.
 
-**Vörsight** is a lightweight, self-hosted parental monitoring solution designed for privacy-conscious families. Keep your children safe online while maintaining full control of your data.
+## Getting Started
 
-## ⚖️ Legal & Ethical Use
+### 1. Requirements
+- **Server**: A Linux machine (VPS, Raspberry Pi, etc.) to run the dashboard and API.
+- **Client**: Windows PCs (Windows 10/11) to be monitored.
+- **Google Cloud Project**: Required for Google Drive integration (storing screenshots).
 
-> [!CAUTION]
-> **Vörsight is intended for legal, transparent monitoring purposes only.**
+### 2. Server Setup (Linux)
+Download the latest `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases).
 
-This software is designed for:
-- **Parental monitoring** of minor children with parental authority
-- **Personal device monitoring** of your own equipment
-
-**You must ensure:**
-- ✅ The monitored individual is **aware** of being monitored (except where legally permitted for minor children under parental supervision)
-- ✅ You have the **legal right** to monitor the device and user
-- ✅ Your use complies with **local laws and regulations** regarding monitoring, privacy, and consent
-- ✅ You are **not using this for illegal surveillance**, stalking, or unauthorized monitoring
-
-**Disclaimer:** The developers of Vörsight assume no liability for misuse of this software. Users are solely responsible for ensuring their use complies with applicable laws. Use at your own discretion and legal risk.
-
----
-
-## Overview
-
-Vörsight is a client-server monitoring solution designed for Windows PCs with a Linux server. It provides real-time activity monitoring, screenshot capture, access scheduling, and comprehensive audit logging through a modern web interface.
-
-### Architecture
-
-![Vörsight Architecture](./.github/assets/vorsight-architecture.jpg)
-
-### Etymology
-
-**Vörsight** = **Vör** + **foresight**
-
-**Pronunciation**: /ˈvœrˌsaɪt/ (VURR-site) — with Swedish/Nordic **ö** (like the "u" in "hurt").
-
-[Vör](https://en.wikipedia.org/wiki/V%C3%B6r) is a Norse goddess of wisdom and vigilance. She is described as wise and inquisitive, with the ability to perceive and understand all that happens. The name Vör means "the careful one" or "the aware one."
-
-Combined with "foresight" (the ability to predict or anticipate future events), **Vörsight** embodies:
-- **Vigilance**: Constant, watchful monitoring
-- **Wisdom**: Understanding patterns and behaviors 
-- **Foresight**: Anticipating issues before they occur
-
-## Key Features
-
-### 🔒 **Security & Privacy**
-- Windows Service runs as LocalSystem for full system access
-- Agent runs unprivileged in user session for live screen access
-- Secure IPC via Named Pipes (memory-only, no network exposure)
-- Machine API key authentication for client-server communication
-- Service key for web dashboard authentication
-
-### 📸 **Activity Monitoring**
-- Automated screenshot capture at configurable intervals
-- Direct upload to Google Drive
-- Organized folder structure: `/Vorsight/MachineName/YYYY-MM-DD/`
-- Timeline view of all activity with Drive links
-
-### 🛡️ **Audit & Security Events**
-- Windows Event Log monitoring for security events
-- Detects user creation, group changes, privilege escalations
-- Web-based alert dashboard with persistent dismissal
-
-### ⏰ **Access Control**
-- Scheduled access windows
-- Forced logoff enforcement
-- Real-time schedule updates
-
-### 🌐 **Web Dashboard**
-- Modern React-based UI
-- Real-time machine status via WebSocket
-- **Machine display names** with inline editing
-- Screenshot gallery with **direct Google Drive links**
-- Activity timeline and statistics
-- Audit event management with persistent dismissal
-- Multi-machine support
-
-### 🔧 **Streamlined Installation**
-- Windows installer (Inno Setup) with guided setup
-- Server generates service key automatically during Linux setup
-
-## Quick Start
-
-### Linux Server Setup
-
-The server runs on any Linux system (Ubuntu, Debian, Raspberry Pi OS, etc.).
-
-Download `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases):
-
-**Example:**
 ```bash
-# Transfer to server
-scp vorsight-server-*.tar.gz user@server:~/
-
-# SSH and install
-ssh user@server
+# Extract and install
 tar -xzf vorsight-server-*.tar.gz
 cd vorsight-server
 sudo ./setup.sh
 ```
 
-See [Linux Deployment Guide](deploy/linux/README.md) for detailed instructions.
+Follow the prompts to configure your admin account and Google Cloud credentials. The installer will generate a **Service Key** - keep this safe!
 
-### Windows PC Installation
+### 3. Client Installation (Windows)
+Download `VorsightSetup.exe` from [GitHub Releases](../../releases) on the target PC.
 
-Download the latest `VorsightSetup.exe` from [GitHub Releases](../../releases):
-
-1. Run the installer
-2. Configure server connection:
-   - **Server Address** (e.g., `server-hostname` or IP address)
-   - **Server Port** (default: `3000`)
-   - **Service Key** (obtained from Linux server installation output)
-3. Complete installation
-
-The service starts automatically and begins monitoring.
-
-## Project Structure
-
-```
-vorsight/
-├── dotnet/                 # C# Services & Agent
-│   ├── Vorsight.Agent/     # Windows Service Agent
-│   ├── Vorsight.Service/   # Service logic
-│   └── ...
-├── node/                   # Web stack
-│   ├── server/             # Node.js API server
-│   └── client/             # React web dashboard
-├── deploy/
-│   ├── windows/                # Windows installer (Inno Setup)
-│   └── linux/                  # Linux deployment scripts & docs
-└── .github/workflows/          # CI/CD automation
-```
+1. Run the installer.
+2. Enter your **Server Address** (e.g., `http://192.168.1.50:3000`).
+3. Enter the **Service Key** provided during server setup.
+4. The service will start automatically in the background.
 
 ## Configuration
 
-### Windows Service (`appsettings.json`)
+### Google Drive Integration
+Vörsight uses a secure, client-side upload architecture. Your server coordinates authentication, but the heavy lifting (file uploads) happens directly from the Windows PC to Google Drive.
 
-```json
-{
-  "Server": {
-    "Url": "http://your-server:3000"
-  },
-  "Agent": {
-    "ExecutablePath": "Agent\\Vorsight.Agent.exe"
-  }
-}
-```
-
-### Server (`.env` on Linux)
-
-```bash
-PORT=3000
-NODE_ENV=production
-CLIENT_ORIGIN=http://your-server-address:3000
-SERVICE_KEY=your-secure-random-secret  # Service key - Auto-generated by installer
-DB_PATH=./data/vorsight.db
-
-# Google Drive OAuth (configured during setup)
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REFRESH_TOKEN=your-refresh-token
-```
-
-## Deployment & Releases
-
-### Automated Releases
-
-GitHub Actions will:
-1. Build Windows installer (Inno Setup)
-2. Build Linux deployment package (`.tar.gz`)
-3. Create GitHub Release
-4. Attach both artifacts
-
-## Google Drive Integration
-
-Vörsight uses a **client-side direct upload architecture** for screenshots:
-
-1. **Windows client** captures screenshots
-2. **Client requests OAuth token** from server via `/api/oauth/google/credentials`
-3. **Client uploads directly** to Google Drive (no data through server)
-4. **Server provides credentials only**, not file throughput
-
-This keeps the lightweight Node.js server focused on coordination and authentication.
-
-### Setup via Server Installation
-
-1. Create a Google Cloud Project
-2. Enable Google Drive API
-3. Create OAuth 2.0 credentials (Web application)
-4. **During Linux server installation**, provide Client ID and Client Secret
-5. After setup, connect via web dashboard Settings page
-6. Complete OAuth flow in browser
-7. Server stores refresh token, provides access tokens to Windows clients
-
-### Remote Server / SSH Tunneling Setup
-
-If your server is not publicly accessible (e.g., local network, Raspberry Pi), you'll need to set up OAuth differently:
-
-**Option 1: Manual URL Trick (Simplest)**
-
-1. Start the OAuth flow from the web UI.
-2. Google will redirect you to `http://localhost:3000/...` which will fail (connection refused).
-3. Copy the full URL from your browser address bar.
-4. Replace `localhost` with your server's IP address (e.g., `192.168.1.100`) and go to the new URL.
-5. The server will receive the code and complete the setup.
-
-**Option 2: SSH Tunnel (Recommended)**
-
-1. Create an SSH tunnel from your local machine:
-   ```bash
-   ssh -L 3000:localhost:3000 user@your-server
-   ```
-2. In Google Cloud Console, add redirect URI: `http://localhost:3000/api/oauth/google/callback`
-3. Access the web UI via `http://localhost:3000` on your local machine
-4. Complete OAuth flow - it will work through the tunnel
-
-**Option 3: Temporary Public Access**
-
-1. Use a temporary tunnel service (e.g., ngrok, cloudflared):
-   ```bash
-   # On server
-   ngrok http 3000
-   ```
-2. Add the ngrok URL as redirect URI in Google Cloud Console: `https://abc123.ngrok.io/api/oauth/google/callback`
-3. Access web UI via ngrok URL and complete OAuth
-4. After OAuth is complete, you can close the tunnel
-
-**Option 4: Update Redirect URI**
-
-1. Set up OAuth with your actual access method (VPN, Tailscale, local domain)
-2. Add appropriate redirect URI in Google Cloud Console
-3. Update `GOOGLE_REDIRECT_URI` in `/opt/vorsight/.env` to match
-4. Restart: `sudo systemctl restart vorsight`
-
-### Folder Organization
-
-Screenshots are organized automatically:
-```
-/Vorsight/
-  └── MACHINE-NAME/
-      └── 2025-12-26/
-          ├── 14-30-15 - Chrome.png
-          └── 14-45-22 - Visual Studio.png
-```
+1. **Create OAuth Credentials**: In your Google Cloud Console, create OAuth 2.0 credentials for a Web Application.
+2. **Configure Server**: Provide the Client ID and Secret during server installation (or in `.env`).
+3. **Connect**: Go to the **Settings** page in the Vörsight dashboard and click "Connect Google Drive" to authorize.
 
 ## Troubleshooting
 
-### Service Won't Start
-- Verify running as LocalSystem
-- Check `C:\ProgramData\Vorsight\logs\`
-- Ensure Agent executable path is correct in appsettings.json
+- **Web Dashboard shows "Offline"**: Ensure the Windows client machine is turned on and has network access to the server. Check firewall rules on port 3000.
+- **Screenshots not appearing**: Verify your Google Drive connection in Settings. Ensure the Windows client has the correct time and date settings.
 
-### Screenshots Not Uploading
-- Verify server has valid Google OAuth credentials (check server `.env`)
-- Check Windows service can reach server: test `/api/oauth/google/credentials` endpoint
-- Check service logs at `C:\ProgramData\Vorsight\logs\` for upload errors
-- Verify Google Drive API is enabled in your Google Cloud Project
-- Ensure machine is registered and has valid API key
+---
 
-### Web Dashboard Shows "Offline"
-- Verify server is running: `sudo systemctl status vorsight`
-- Check server URL in Windows `appsettings.json`
-- Verify machine has registered successfully and received API key
-- Check firewall allows port 3000
-- Check WebSocket connection in browser console
+## ⚖️ Legal & Contributing
 
-### Agent Not Launching
-- Verify path in `appsettings.json` → `Agent:ExecutablePath`
-- Check Event Viewer → Application logs
-- Run agent manually to test: `Vorsight.Agent.exe`
+- **Legal Notice**: Vörsight is intended for legal, transparent monitoring. See [LEGAL.md](LEGAL.md) for acceptable use and licensing details.
+- **Contributing**: We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development guides and project structure.
