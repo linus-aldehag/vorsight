@@ -77,8 +77,8 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
     };
 
     return (
-        <Card className={cn(
-            "border-border/50 bg-card/50 backdrop-blur-sm h-full flex flex-col",
+        <Card variant="glass" className={cn(
+            "h-full flex flex-col",
             isDisabled && "opacity-60"
         )}>
             <CardHeader className="pb-3">

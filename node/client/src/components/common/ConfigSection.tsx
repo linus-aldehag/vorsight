@@ -15,7 +15,7 @@ export function ConfigSection({ icon, title = "Configuration", description, badg
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+        <Card variant="glass">
             <CardContent className="p-0">
                 {/* Header */}
                 <div className="p-6">

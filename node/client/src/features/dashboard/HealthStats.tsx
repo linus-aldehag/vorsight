@@ -1,12 +1,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMachine } from '@/context/MachineContext';
-import { StatusBadge } from './components/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { UptimeDisplay } from './components/UptimeDisplay';
 import { useHealthStats } from './hooks/useHealthStats';
 import useSWR from 'swr';
 import { memo } from 'react';
 import { useMachineLogs } from '../machines/components/MachineLogs/useMachineLogs';
 import { cn } from '@/lib/utils';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 
 
 interface HealthStatsProps {
@@ -55,8 +56,11 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     const machineStatus = selectedMachine?.connectionStatus ?? 'offline';
     const statusText = selectedMachine?.statusText;
 
+    // Determine effective status for the badge (override if log issues)
+    const effectiveStatus = (logHealth?.type || machineStatus) as any;
+
     return (
-        <Card className="border-border/50 bg-card/50 backdrop-blur-sm h-full">
+        <Card variant="glass" className="h-full">
             <CardContent className="p-4 space-y-4">
                 {/* Header: Machine Name & Status */}
                 <div className="space-y-3">
@@ -74,13 +78,10 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-3">
                             <StatusBadge
-                                status={machineStatus}
+                                status={effectiveStatus}
+                                statusText={statusText}
+                                icon={logHealth?.type === 'error' ? AlertCircle : logHealth?.type === 'warning' ? AlertTriangle : undefined}
                             />
-                            {statusText && (
-                                <p className="text-xs text-muted-foreground font-medium">
-                                    {statusText}
-                                </p>
-                            )}
                         </div>
 
                         {/* Log Warnings/Errors Link */}
@@ -88,15 +89,11 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                             <div
                                 onClick={onToggleLogs}
                                 className={cn(
-                                    "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 flex items-center gap-1.5 w-fit transition-colors",
+                                    "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 flex items-center gap-1.5 w-fit transition-colors ml-1",
                                     logHealth.type === 'error' ? "text-destructive hover:text-destructive/80" : "text-warning hover:text-warning/80"
                                 )}
                             >
-                                <span className={cn(
-                                    "h-1.5 w-1.5 rounded-full animate-pulse",
-                                    logHealth.type === 'error' ? "bg-destructive" : "bg-warning"
-                                )} />
-                                {logHealth.message}
+                                View Log Details
                             </div>
                         )}
                     </div>
