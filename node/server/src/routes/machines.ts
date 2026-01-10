@@ -126,7 +126,15 @@ router.patch('/:id/display-name', authenticateBrowser, async (req: Request, res:
 // Adopt a pending machine (Browser Auth)
 router.post('/:id/adopt', authenticateBrowser, async (req: Request, res: Response) => {
     try {
-        const { displayName, enableScreenshots, enableActivity, enableAudit } = req.body;
+        const {
+            displayName,
+            enableScreenshots,
+            enableActivity,
+            enableAudit,
+            enableAccessControl,
+            accessControlStartTime,
+            accessControlEndTime
+        } = req.body;
         const machineId = req.params.id as string;
 
         const result = await machineService.adopt({
@@ -134,7 +142,10 @@ router.post('/:id/adopt', authenticateBrowser, async (req: Request, res: Respons
             displayName,
             enableScreenshots,
             enableActivity,
-            enableAudit
+            enableAudit,
+            enableAccessControl,
+            accessControlStartTime,
+            accessControlEndTime
         });
 
         // Emit WebSocket event for machine adoption

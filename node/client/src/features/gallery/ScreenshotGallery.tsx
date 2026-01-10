@@ -191,7 +191,7 @@ export function ScreenshotGallery() {
 
     // Apply date range filter
     const filteredImages = useMemo(() => {
-        return screenshots.filter(img => {
+        return (screenshots || []).filter(img => {
             if (dateRangeFilter === 'all') return true;
 
             const imageDate = new Date(img.createdTime);

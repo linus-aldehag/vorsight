@@ -78,10 +78,10 @@ export function AuditPage() {
 
 
     // Get unique event types from data
-    const eventTypes = Array.from(new Set(auditEvents.map(e => e.event_type))).sort();
+    const eventTypes = Array.from(new Set((auditEvents || []).map(e => e.event_type))).sort();
 
     // Apply filters
-    const filteredEvents = auditEvents.filter(event => {
+    const filteredEvents = (auditEvents || []).filter(event => {
         // Acknowledged status filter
         if (statusFilter === 'acknowledged' && !event.acknowledged) return false;
         if (statusFilter === 'unacknowledged' && event.acknowledged) return false;

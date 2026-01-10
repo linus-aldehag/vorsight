@@ -159,11 +159,12 @@ export function FeaturesPage() {
 
             <div className="space-y-4">
                 {/* Screenshot Capture */}
+                {/* Screenshot Capture */}
                 <ExpandableFeatureCard
                     icon={<Eye size={24} />}
                     title="Screenshot Capture"
                     description="Automatically capture screenshots at regular intervals"
-                    enabled={settings.isScreenshotEnabled}
+                    enabled={!!settings.isScreenshotEnabled}
                     onToggle={handleScreenshotsToggle}
                     saving={saving === 'Screenshot Capture'}
                 >
@@ -179,7 +180,7 @@ export function FeaturesPage() {
                     icon={<Activity size={24} />}
                     title="Activity Tracking"
                     description="Monitor active applications and window titles"
-                    enabled={settings.isActivityEnabled}
+                    enabled={!!settings.isActivityEnabled}
                     onToggle={handleActivityToggle}
                     saving={saving === 'Activity Tracking'}
                 >
@@ -195,7 +196,7 @@ export function FeaturesPage() {
                     icon={<Shield size={24} />}
                     title="Audit Logging"
                     description="Track security events and system modifications"
-                    enabled={settings.isAuditEnabled}
+                    enabled={!!settings.isAuditEnabled}
                     onToggle={handleAuditToggle}
                     saving={saving === 'Audit Logging'}
                 >
@@ -210,7 +211,7 @@ export function FeaturesPage() {
                     icon={<Sliders size={24} />}
                     title="Access Control"
                     description="Schedule-based monitoring with time windows"
-                    enabled={settings.isAccessControlEnabled}
+                    enabled={!!settings.isAccessControlEnabled}
                     onToggle={handleAccessControlToggle}
                     saving={saving === 'Access Control'}
                 >

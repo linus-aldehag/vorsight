@@ -132,67 +132,6 @@ export function AccessControlPage() {
                     />
                 </Card>
             )}
-
-            {/* Usage Statistics Card */}
-            {selectedMachine && (
-                <Card className="border-border/50 bg-card/50 backdrop-blur-sm p-6">
-                    <h3 className="font-semibold mb-4 flex items-center gap-2">
-                        <Clock size={16} className="text-primary" />
-                        Current Session
-                    </h3>
-                    <UsageStats machineId={selectedMachine.id} />
-                </Card>
-            )}
-        </div>
-    );
-}
-
-// Separate component for usage stats to handle data fetching
-function UsageStats({ machineId }: { machineId: string }) {
-    const [uptime, setUptime] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadUsageData();
-        const interval = setInterval(loadUsageData, 30000); // Refresh every 30s
-        return () => clearInterval(interval);
-    }, [machineId]);
-
-    const loadUsageData = async () => {
-        try {
-            const status = await VorsightApi.getStatus(machineId);
-            setUptime(status.uptime);
-        } catch (err) {
-            console.error('Failed to load usage data', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const formatDuration = (start: string | null): string => {
-        if (!start) return 'N/A';
-        const startTime = new Date(start + 'Z');
-        const now = new Date();
-        const diffMs = now.getTime() - startTime.getTime();
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hours}h ${minutes}m`;
-    };
-
-    if (loading) {
-        return <div className="text-sm text-muted-foreground animate-pulse">Loading statistics...</div>;
-    }
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1">
-                <div className="text-sm text-muted-foreground">Current Session</div>
-                <div className="text-2xl font-mono font-semibold">{formatDuration(uptime?.currentStart)}</div>
-            </div>
-            <div className="space-y-1">
-                <div className="text-sm text-muted-foreground">Status</div>
-                <div className="text-2xl font-semibold">{uptime?.isTracking ? '🟢 Active' : '⚫ Inactive'}</div>
-            </div>
         </div>
     );
 }
