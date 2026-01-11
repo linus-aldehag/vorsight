@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using SocketIOClient;
 using Vorsight.Infrastructure.Identity;
 using Microsoft.Extensions.Logging;
@@ -42,6 +43,10 @@ public class ServerConnection : IServerConnection
     private bool _isConnected;
     
     private readonly string _serverUrl;
+    private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+    {
+        PropertyNameCaseInsensitive = true
+    };
     
     public bool IsConnected => _isConnected;
     public string? ApiKey => _apiKey;
@@ -177,15 +182,27 @@ public class ServerConnection : IServerConnection
             var response = await _httpClient.PostAsJsonAsync("/api/machines/register", registrationData);
             response.EnsureSuccessStatusCode();
             
-            var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>();
+            var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>(_jsonOptions);
             _apiKey = result?.ApiKey;
             
-            _logger.LogInformation("Successfully registered with server. API Key received.");
+            _logger.LogInformation("Successfully registered with server. Received API Key: {ApiKeyPrefix}...", _apiKey?.Substring(0, Math.Min(5, _apiKey?.Length ?? 0)));
             
+            // Adopt canonical ID from server if different (Name-based recovery)
+            if (!string.IsNullOrEmpty(result?.MachineId) && !string.Equals(result.MachineId, _machineId, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Adopting canonical Machine ID from server: {NewId} (was {OldId})", result.MachineId, _machineId);
+                _machineId = result.MachineId;
+            }
+
             // Persist credentials
             if (!string.IsNullOrEmpty(_apiKey) && !string.IsNullOrEmpty(_machineId))
             {
                 await _credentialStore.SaveCredentialsAsync(_machineId, _apiKey);
+                _logger.LogInformation("Credentials persisted to store.");
+            }
+            else
+            {
+                _logger.LogError("Failed to extract API Key from registration response.");
             }
         }
         catch (Exception ex)
@@ -205,6 +222,10 @@ public class ServerConnection : IServerConnection
             {
                 _logger.LogInformation("WebSocket connected");
                 
+                _logger.LogInformation("Authenticating... MachineId: {MachineId}, KeyPrefix: {KeyPrefix}", 
+                    _machineId, 
+                    !string.IsNullOrEmpty(_apiKey) && _apiKey.Length > 5 ? _apiKey.Substring(0, 5) + "..." : "invalid");
+
                 // Authenticate
                 await _socket.EmitAsync("machine:connect", new
                 {
@@ -221,12 +242,49 @@ public class ServerConnection : IServerConnection
                 // Trigger connection restored event so listeners can fetch settings/schedules
                 Task.Run(() => ConnectionRestored?.Invoke(this, EventArgs.Empty));
             });
-            
-            _socket.On("machine:error", response =>
+
+            _socket.On("machine:error", async response => 
             {
-                var error = response.GetValue<JsonElement>();
-                _logger.LogError("Server error: {Error}", error);
+                var data = response.GetValue<JsonElement>();
+                
+                // Handle credential errors
+                if (data.TryGetProperty("error", out var errorProp) && 
+                    errorProp.GetString()?.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    _logger.LogWarning("Server rejected credentials. Flushing stored keys and re-registering...");
+                    
+                    try 
+                    {
+                        // 1. Delete bad credentials
+                        await _credentialStore.DeleteCredentialsAsync();
+                        
+                        // 2. Clear local state
+                        _apiKey = null;
+                        
+                        // 3. Re-register (generates new ID)
+                        await RegisterMachineAsync();
+                        
+                        // 4. Re-connect
+                        if (!string.IsNullOrEmpty(_apiKey)) {
+                             _logger.LogInformation("Re-acquired credentials. Retrying authentication...");
+                             await _socket.EmitAsync("machine:connect", new {
+                                machineId = _machineId,
+                                apiKey = _apiKey
+                             });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Critical failure during credential recovery.");
+                    }
+                }
+                else 
+                {
+                    _logger.LogError("Server reported error: {Error}", data.GetRawText());
+                }
             });
+            
+
 
             _socket.On("server:command", response =>
             {
@@ -522,8 +580,13 @@ public class ServerConnection : IServerConnection
     
     private class RegistrationResponse
     {
+        [JsonPropertyName("success")]
         public bool Success { get; set; }
+        
+        [JsonPropertyName("apiKey")]
         public string? ApiKey { get; set; }
+        
+        [JsonPropertyName("machineId")]
         public string? MachineId { get; set; }
     }
 }

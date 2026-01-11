@@ -33,24 +33,41 @@ export class MachineService {
     async register(data: RegisterDTO) {
         const { machineId, name, hostname, metadata } = data;
 
-        // Check if machine already exists
-        const existing = await prisma.machine.findUnique({
+        // 1. Check if machine already exists by ID
+        const existingById = await prisma.machine.findUnique({
             where: { id: machineId }
         });
 
-        if (existing) {
+        if (existingById) {
             return {
                 isNew: false,
-                apiKey: existing.apiKey,
-                machineId: existing.id,
-                machine: existing
+                apiKey: existingById.apiKey,
+                machineId: existingById.id,
+                machine: existingById
             };
         }
 
-        // Generate API key
+        // 2. Check if machine exists by Name (Recovery Logic)
+        // Only valid if name is provided and not empty
+        if (name) {
+            const existingByName = await prisma.machine.findFirst({
+                where: { name: name }
+            });
+
+            if (existingByName) {
+                console.log(`♻ Machine recovery: '${name}' matched existing ID ${existingByName.id}. Returning existing credentials.`);
+                return {
+                    isNew: false,
+                    apiKey: existingByName.apiKey,
+                    machineId: existingByName.id,
+                    machine: existingByName
+                };
+            }
+        }
+
+        // 3. New Machine Registration
         const apiKey = crypto.randomBytes(32).toString('hex');
 
-        // Insert machine
         const machine = await prisma.machine.create({
             data: {
                 id: machineId,
