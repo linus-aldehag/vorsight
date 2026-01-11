@@ -16,7 +16,13 @@ export function LogsDrawer({ isOpen, onClose, machineId }: LogsDrawerProps) {
     // Close on click outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (drawerRef.current && !drawerRef.current.contains(event.target as Node) && isOpen) {
+            const target = event.target as HTMLElement;
+            // Prevent closing when interacting with portals (like dropdowns)
+            const isInsidePortal = target.closest('[data-radix-portal]') ||
+                target.closest('[role="menu"]') ||
+                target.closest('[role="listbox"]');
+
+            if (drawerRef.current && !drawerRef.current.contains(target) && !isInsidePortal && isOpen) {
                 onClose(); // Optional: Close when clicking background? Maybe strictly blocking is better. Use overlay if blocking.
             }
         }
@@ -43,7 +49,7 @@ export function LogsDrawer({ isOpen, onClose, machineId }: LogsDrawerProps) {
             <div className="flex-1 overflow-hidden">
                 {/* Only render content when opening/open to save resources, or keep mounted? 
                     Keep mounted to preserve state/scroll is usually better for logs. */}
-                <MachineLogs machineId={machineId} className="h-full" />
+                <MachineLogs machineId={machineId} className="h-full" minimal={true} />
             </div>
         </div>
     );

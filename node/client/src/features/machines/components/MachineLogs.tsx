@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils';
 interface MachineLogsProps {
     machineId: string;
     className?: string; // Allow overriding height/style
+    minimal?: boolean;
 }
 
-export function MachineLogs({ machineId, className }: MachineLogsProps) {
+export function MachineLogs({ machineId, className, minimal = false }: MachineLogsProps) {
     const { logs, loading } = useMachineLogs(machineId);
     const [filterLevel, setFilterLevel] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,7 @@ export function MachineLogs({ machineId, className }: MachineLogsProps) {
                 onSearchChange={setSearchTerm}
                 filterLevel={filterLevel}
                 onFilterChange={setFilterLevel}
+                minimal={minimal}
             />
             <CardContent className="flex-1 p-0 overflow-hidden">
                 <LogTable logs={filteredLogs} loading={loading} />
