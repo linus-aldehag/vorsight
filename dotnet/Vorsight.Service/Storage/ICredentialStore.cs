@@ -4,4 +4,5 @@ public interface ICredentialStore
 {
     Task SaveCredentialsAsync(string machineId, string apiKey);
     Task<(string? MachineId, string? ApiKey)> LoadCredentialsAsync();
+    Task DeleteCredentialsAsync();
 }

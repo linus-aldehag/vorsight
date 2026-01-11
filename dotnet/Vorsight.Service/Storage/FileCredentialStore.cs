@@ -73,6 +73,24 @@ public class FileCredentialStore : ICredentialStore
         return (null, null);
     }
 
+    public Task DeleteCredentialsAsync()
+    {
+        try
+        {
+            if (File.Exists(_credentialsPath))
+            {
+                File.Delete(_credentialsPath);
+                _logger.LogWarning("Credentials file deleted from {Path}", _credentialsPath);
+            }
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete credentials file");
+            throw;
+        }
+    }
+
     private class CredentialsModel
     {
         public string? MachineId { get; set; }
