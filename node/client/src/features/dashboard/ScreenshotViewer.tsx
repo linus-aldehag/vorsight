@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useMachine } from '@/context/MachineContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Image as ImageIcon, Info, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useState, memo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
@@ -93,60 +93,67 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
 
     return (
         <Card variant="glass" className={cn(
-            "h-full flex flex-col",
-            isDisabled && "opacity-60"
+            "flex flex-col",
+            isDisabled ? "h-auto opacity-70" : "h-full"
         )}>
-            <CardHeader className="pb-3">
-                <CardTitle className="text-sm sm:text-base font-semibold tracking-wide uppercase flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                        <span>Latest Screenshot</span>
-                        {latestScreenshot && (
-                            <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
-                                {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
-                            </Badge>
-                        )}
-                    </div>
-                    {!isDisabled && selectedMachine && (
-                        <button
-                            onClick={handleCapture}
-                            disabled={isRequesting || isWaitingForUpdate}
-                            className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                            title="Request a new screenshot immediately"
-                        >
-                            {isRequesting || isWaitingForUpdate ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
-                            {isRequesting ? 'Capturing...' : isWaitingForUpdate ? 'Waiting...' : 'Capture'}
-                        </button>
-                    )}
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex items-center justify-center p-4 min-h-[200px]">
+            <CardContent className={cn("p-4", isDisabled ? "py-3" : "flex-1 flex flex-col")}>
                 {isDisabled ? (
-                    <div className="text-center space-y-2">
-                        <Info className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                            Screenshot monitoring disabled
-                        </p>
-                    </div>
-                ) : !latestScreenshot ? (
-                    <div className="text-center space-y-2">
-                        <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                            No screenshots available
-                        </p>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <ImageIcon size={16} />
+                            <span className="text-xs font-semibold uppercase tracking-wide">Screenshot Monitor</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] bg-muted/50">Disabled</Badge>
                     </div>
                 ) : (
-                    <div className="relative w-full h-full flex items-center justify-center group">
-                        <img
-                            key={latestScreenshot.id}
-                            src={`/api/media/${latestScreenshot.id}`}
-                            alt="Latest screenshot"
-                            className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                            onClick={() => setSelectedImage(`/api/media/${latestScreenshot.id}`)}
-                        />
-                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            Click to expand
+                    <>
+                        <div className="flex items-center justify-between mb-3">
+                            {/* Standard Header Content */}
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold tracking-wide uppercase">Latest Screenshot</span>
+                                {latestScreenshot && (
+                                    <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
+                                        {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
+                                    </Badge>
+                                )}
+                            </div>
+                            {selectedMachine && (
+                                <button
+                                    onClick={handleCapture}
+                                    disabled={isRequesting || isWaitingForUpdate}
+                                    className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                    title="Request a new screenshot immediately"
+                                >
+                                    {isRequesting || isWaitingForUpdate ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                                    {isRequesting ? 'Capturing...' : isWaitingForUpdate ? 'Waiting...' : 'Capture'}
+                                </button>
+                            )}
                         </div>
-                    </div>
+
+                        <div className="flex-1 flex items-center justify-center min-h-[200px]">
+                            {!latestScreenshot ? (
+                                <div className="text-center space-y-2">
+                                    <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
+                                    <p className="text-xs sm:text-sm text-muted-foreground">
+                                        No screenshots available
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="relative w-full h-full flex items-center justify-center group">
+                                    <img
+                                        key={latestScreenshot.id}
+                                        src={`/api/media/${latestScreenshot.id}`}
+                                        alt="Latest screenshot"
+                                        className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
+                                        onClick={() => setSelectedImage(`/api/media/${latestScreenshot.id}`)}
+                                    />
+                                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                        Click to expand
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </>
                 )}
             </CardContent>
 
