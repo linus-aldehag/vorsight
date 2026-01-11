@@ -1,13 +1,13 @@
 import { type AgentSettings, VorsightApi } from '@/api/client';
+import { Card } from '@/components/ui/card';
 import { HealthStats } from './HealthStats';
-import { ActivityStats } from './ActivityStats';
 import { ActivityMonitor } from './ActivityMonitor';
 import { AuditAlert } from './AuditAlert';
-import { SystemControls } from '../controls/SystemControls';
 import { ScreenshotViewer } from './ScreenshotViewer';
 import { FeaturesWidget } from './FeaturesWidget';
+import { useActivitySummary, ActivityTimelineCard, TopProcessesCard } from './ActivityStats';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import { useMachine } from '@/context/MachineContext';
 import { socketService } from '@/services/socket';
@@ -21,6 +21,9 @@ export function Dashboard() {
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [machineVersion, setMachineVersion] = useState<string | null>(null);
     const [isLogsOpen, setIsLogsOpen] = useState(false);
+
+    // Fetch activity data here to pass to cards
+    const activitySummary = useActivitySummary(selectedMachine?.id);
 
     const loadSettings = () => {
         if (selectedMachine) {
@@ -56,48 +59,65 @@ export function Dashboard() {
     }, [selectedMachine]);
 
     return (
-        <div className="flex flex-col gap-4 sm:gap-6 h-full pb-4"> {/* Add padding bottom */}
-            {/* Top Section: Main grid - Mobile-first */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
-                {/* Main View - stack on mobile, 8/12 cols on large */}
-                <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-6">
-                    {/* Row 1: Health & Current Activity - side by side on small screens and up */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                        <HealthStats
-                            version={machineVersion}
-                            onToggleLogs={() => setIsLogsOpen(prev => !prev)}
-                        />
-                        <ActivityMonitor isDisabled={!settings?.isActivityEnabled} />
-                    </div>
+        <div className="flex flex-col gap-4 sm:gap-6 h-full pb-4">
 
-                    {/* Row 2: Activity Stats - Expand to fill space */}
-                    <div className="flex-1 min-h-0">
-                        <ActivityStats isDisabled={!settings?.isActivityEnabled} />
-                    </div>
+            {/* Main Grid: 2 Rows, 3 Columns on Large Screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 auto-rows-fr">
+
+                {/* --- Row 1 --- */}
+
+                {/* 1. System Status */}
+                <div className="min-h-[300px]">
+                    <HealthStats
+                        version={machineVersion}
+                        onToggleLogs={() => setIsLogsOpen(prev => !prev)}
+                    />
                 </div>
 
-                {/* Side Panel - full width on mobile, 4/12 cols on large */}
-                <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-6">
-                    {/* Screenshot Viewer */}
-                    <div className="min-h-[300px] lg:min-h-0 lg:flex-1">
-                        <ScreenshotViewer isDisabled={!settings?.isScreenshotEnabled} />
-                    </div>
-
-                    {/* Features Widget */}
+                {/* 2. System Features (Moved Up) */}
+                <div className="min-h-[300px]">
                     <FeaturesWidget settings={settings} />
-
-                    {/* System Controls - hide on mobile, show on large screens */}
-                    <Card variant="glass" className="hidden lg:block">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-semibold tracking-wide uppercase">
-                                System Control
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <SystemControls />
-                        </CardContent>
-                    </Card>
                 </div>
+
+                {/* 3. Latest Screenshot */}
+                <div className="min-h-[300px] flex flex-col">
+                    <ScreenshotViewer isDisabled={!settings?.isScreenshotEnabled} />
+                </div>
+
+
+                {/* --- Row 2 (Activity Related) --- */}
+
+                {/* 4. Activity Timeline */}
+                <div className="min-h-[300px]">
+                    <ActivityTimelineCard
+                        summary={activitySummary}
+                        isDisabled={!settings?.isActivityEnabled}
+                    />
+                    {!activitySummary && selectedMachine && (
+                        <Card variant="glass" className="h-full flex items-center justify-center p-6 opacity-60">
+                            <div className="text-muted-foreground text-sm">Loading Timeline...</div>
+                        </Card>
+                    )}
+                </div>
+
+                {/* 5. Top Processes */}
+                <div className="min-h-[300px]">
+                    <TopProcessesCard
+                        summary={activitySummary}
+                        isDisabled={!settings?.isActivityEnabled}
+                    />
+                    {!activitySummary && selectedMachine && (
+                        <Card variant="glass" className="h-full flex items-center justify-center p-6 opacity-60">
+                            <div className="text-muted-foreground text-sm">Loading Processes...</div>
+                        </Card>
+                    )}
+                </div>
+
+                {/* 6. Current Activity (Activity Monitor) */}
+                <div className="min-h-[300px]">
+                    <ActivityMonitor isDisabled={!settings?.isActivityEnabled} />
+                </div>
+
             </div>
 
             {/* Bottom Section: Audit Log */}
@@ -112,17 +132,7 @@ export function Dashboard() {
                 </CardContent>
             </Card>
 
-            {/* Mobile-only: System Controls at bottom */}
-            <Card variant="glass" className="lg:hidden mb-12"> {/* Add margin bottom for status bar */}
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold tracking-wide uppercase">
-                        System Control
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                    <SystemControls />
-                </CardContent>
-            </Card>
+
 
 
             {selectedMachine && (

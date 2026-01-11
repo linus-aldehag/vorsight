@@ -7,7 +7,8 @@ import useSWR from 'swr';
 import { memo } from 'react';
 import { useMachineLogs } from '../machines/components/MachineLogs/useMachineLogs';
 import { cn } from '@/lib/utils';
-import { AlertCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, LogOut, Power } from 'lucide-react';
+import { VorsightApi } from '@/api/client';
 
 
 interface HealthStatsProps {
@@ -59,9 +60,21 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     // Determine effective status for the badge (override if log issues)
     const effectiveStatus = (logHealth?.type || machineStatus) as any;
 
+    const handleSystem = async (action: 'shutdown' | 'logout') => {
+        if (!selectedMachine) return;
+        if (!window.confirm(`Are you sure you want to ${action} this machine?`)) return;
+
+        try {
+            await VorsightApi.systemAction(action, selectedMachine.id);
+            // Optional: Show toast or status update
+        } catch (e) {
+            console.error(`Failed to ${action}:`, e);
+        }
+    };
+
     return (
-        <Card variant="glass" className="h-full">
-            <CardContent className="p-4 space-y-4">
+        <Card variant="glass" className="h-full flex flex-col">
+            <CardContent className="p-4 space-y-4 flex-1">
                 {/* Header: Machine Name & Status */}
                 <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -107,6 +120,26 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                     />
                 </div>
             </CardContent>
+
+            {/* System Actions Footer */}
+            <div className="px-4 pb-4 pt-0 grid grid-cols-2 gap-2">
+                <button
+                    onClick={() => handleSystem('logout')}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-warning/20 bg-warning/5 text-warning hover:bg-warning/10 transition-colors"
+                    title="Log Out User"
+                >
+                    <LogOut size={14} />
+                    <span>Log Out</span>
+                </button>
+                <button
+                    onClick={() => handleSystem('shutdown')}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Shutdown Machine"
+                >
+                    <Power size={14} />
+                    <span>Shutdown</span>
+                </button>
+            </div>
         </Card>
     );
 });
