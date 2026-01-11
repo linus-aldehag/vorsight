@@ -138,4 +138,4 @@ deploy/pi/*.tar.gz
 *.db-wal
 
 # Build output assets
-node/server/public/assets/
+node/server/public/
