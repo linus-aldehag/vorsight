@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { UIStateProvider } from './context/UIStateContext';
 import { useMachine, MachineProvider } from './context/MachineContext';
 import { LoginPage } from './features/auth/LoginPage';
 import { MainLayout } from './components/Layout/MainLayout';
@@ -10,11 +11,13 @@ import { SettingsLayout } from './components/Layout/SettingsLayout';
 export function App() {
     return (
         <AuthProvider>
-            <SettingsProvider>
-                <MachineProvider>
-                    <AppContent />
-                </MachineProvider>
-            </SettingsProvider>
+            <UIStateProvider>
+                <SettingsProvider>
+                    <MachineProvider>
+                        <AppContent />
+                    </MachineProvider>
+                </SettingsProvider>
+            </UIStateProvider>
         </AuthProvider>
     );
 }

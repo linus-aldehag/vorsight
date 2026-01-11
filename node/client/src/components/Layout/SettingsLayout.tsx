@@ -14,11 +14,13 @@ export function SettingsLayout() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col font-mono selection:bg-primary/20">
             <AppHeader
-                onSettingsClick={() => navigate('/dashboard')}
+                onSettingsClick={() => navigate(-1)}
                 onMachineSelectorClick={() => {
                     setManagerStartTab(machines.length === 0 && pendingMachines.length > 0 ? 'pending' : 'active');
                     setManagerOpen(true);
                 }}
+                isSettingsPage={true}
+                showSelector={false}
             />
 
             {/* Main Content */}
