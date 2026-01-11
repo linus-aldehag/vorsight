@@ -248,39 +248,43 @@ public class ServerConnection : IServerConnection
                 var data = response.GetValue<JsonElement>();
                 
                 // Handle credential errors
-                if (data.TryGetProperty("error", out var errorProp) && 
-                    errorProp.GetString()?.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase) == true)
+                if (data.TryGetProperty("error", out var errorProp))
                 {
-                    _logger.LogWarning("Server rejected credentials. Flushing stored keys and re-registering...");
-                    
-                    try 
+                    var error = errorProp.GetString();
+                    if (error?.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase) == true ||
+                        error?.Equals("Missing credentials", StringComparison.OrdinalIgnoreCase) == true)
                     {
-                        // 1. Delete bad credentials
-                        await _credentialStore.DeleteCredentialsAsync();
+                        _logger.LogWarning("Server rejected credentials ({Error}). Flushing stored keys and re-registering...", error);
                         
-                        // 2. Clear local state
-                        _apiKey = null;
-                        
-                        // 3. Re-register (generates new ID)
-                        await RegisterMachineAsync();
-                        
-                        // 4. Re-connect
-                        if (!string.IsNullOrEmpty(_apiKey)) {
-                             _logger.LogInformation("Re-acquired credentials. Retrying authentication...");
-                             await _socket.EmitAsync("machine:connect", new {
-                                machineId = _machineId,
-                                apiKey = _apiKey
-                             });
+                        try 
+                        {
+                            // 1. Delete bad credentials
+                            await _credentialStore.DeleteCredentialsAsync();
+                            
+                            // 2. Clear local state
+                            _apiKey = null;
+                            
+                            // 3. Re-register (generates new ID)
+                            await RegisterMachineAsync();
+                            
+                            // 4. Re-connect
+                            if (!string.IsNullOrEmpty(_apiKey)) {
+                                 _logger.LogInformation("Re-acquired credentials. Retrying authentication...");
+                                 await _socket.EmitAsync("machine:connect", new {
+                                    machineId = _machineId,
+                                    apiKey = _apiKey
+                                 });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Critical failure during credential recovery.");
                         }
                     }
-                    catch (Exception ex)
+                    else 
                     {
-                        _logger.LogError(ex, "Critical failure during credential recovery.");
+                        _logger.LogError("Server reported error: {Error}", data.GetRawText());
                     }
-                }
-                else 
-                {
-                    _logger.LogError("Server reported error: {Error}", data.GetRawText());
                 }
             });
             
