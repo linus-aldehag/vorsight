@@ -454,7 +454,11 @@ public class ServerConnection : IServerConnection
             fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
             content.Add(fileContent, "file", fileName);
 
-            var response = await _httpClient.PostAsync("/api/media/upload", content);
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/media/upload");
+            request.Headers.Add("x-api-key", _apiKey);
+            request.Content = content;
+
+            var response = await _httpClient.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<JsonElement>();
@@ -545,7 +549,11 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/logs", logs);
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/logs");
+            request.Headers.Add("x-api-key", _apiKey);
+            request.Content = JsonContent.Create(logs);
+
+            var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                // Do not log here to avoid recursive logging loops if the sink uses this
@@ -564,13 +572,17 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var request = new
+            var payload = new
             {
                 machineId = _machineId,
                 settings = settingsJson
             };
-            
-            var response = await _httpClient.PostAsJsonAsync("/api/settings/applied", request);
+
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/machine/settings");
+            request.Headers.Add("x-api-key", _apiKey);
+            request.Content = JsonContent.Create(payload);
+
+            var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to report settings application: {Status}", response.StatusCode);
@@ -578,7 +590,7 @@ public class ServerConnection : IServerConnection
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to report settings application");
+            _logger.LogError(ex, "Error reporting applied settings");
         }
     }
     
