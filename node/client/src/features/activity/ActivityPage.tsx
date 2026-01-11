@@ -12,13 +12,20 @@ import { ConfigSection } from "@/components/common/ConfigSection";
 import { ActivityConfig } from "./ActivityConfig";
 import { settingsEvents } from "@/lib/settingsEvents";
 
+import { useUIState } from "@/context/UIStateContext";
+
 export function ActivityPage() {
     const { selectedMachine } = useMachine();
     const { activities, isLoading, isError } = useActivity(selectedMachine?.id);
-    const [activeTab, setActiveTab] = useState("timeline");
+    const {
+        activityViewMode: activeTab,
+        setActivityViewMode: setActiveTab,
+        activityDateRange: dateRangeFilter,
+        setActivityDateRange: setDateRangeFilter
+    } = useUIState();
+
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [saving, setSaving] = useState(false);
-    const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
 
     useEffect(() => {
         if (selectedMachine) {
@@ -27,11 +34,13 @@ export function ActivityPage() {
     }, [selectedMachine]);
 
     // Auto-switch to timeline view on mobile
+    // Auto-switch to timeline view on mobile
     useEffect(() => {
-        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        const mediaQuery = window.matchMedia('(min-width: 768px)'); // Match Tailwind 'md' breakpoint
 
         const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-            if (e.matches && activeTab === 'table') {
+            // If strictly mobile (< 768px) and in table view, switch to timeline
+            if (!e.matches && activeTab === 'table') {
                 setActiveTab('timeline');
             }
         };
@@ -117,7 +126,7 @@ export function ActivityPage() {
                 onDateRangeFilterChange={setDateRangeFilter}
             />
 
-            <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+            <Tabs defaultValue={activeTab} onValueChange={(val) => setActiveTab(val as 'timeline' | 'table')}>
                 <div className="hidden md:block mb-4">
                     <TabsList className="w-full grid grid-cols-1 md:grid-cols-2">
                         <TabsTrigger value="timeline">Timeline View</TabsTrigger>

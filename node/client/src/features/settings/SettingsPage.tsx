@@ -30,7 +30,12 @@ export function SettingsPage() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                             {availableThemes
-                                .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                                .sort((a, b) => {
+                                    const orderA = a.order ?? 99;
+                                    const orderB = b.order ?? 99;
+                                    if (orderA !== orderB) return orderA - orderB;
+                                    return a.displayName.localeCompare(b.displayName);
+                                })
                                 .map((theme) => {
                                     const isActive = theme.name === currentTheme;
 

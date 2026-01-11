@@ -1,48 +1,54 @@
 @import "tailwindcss";
 
 @theme {
-  /* Theme colors are now set dynamically via JavaScript in ThemeContext */
-  /* Default fallback values (Cyberpunk theme) */
-  --color-background: #050505;
-  --color-surface: #0D1117;
-  --color-foreground: #ffffff;
-  --color-primary: #00D1FF;
-  --color-primary-foreground: #050505;
-  --color-secondary: #0D1117;
-  --color-secondary-foreground: #ffffff;
-  --color-muted: #1e293b;
-  --color-muted-foreground: #94a3b8;
-  --color-accent: #0D1117;
-  --color-accent-foreground: #ffffff;
-  --color-destructive: #ef4444;
-  --color-destructive-foreground: #ffffff;
-  --color-card: #050505;
-  --color-card-foreground: #ffffff;
-  --color-popover: #050505;
-  --color-popover-foreground: #ffffff;
-  --color-border: #00D1FF;
-  --color-input: #0D1117;
-  --color-ring: #00D1FF;
-  --color-warning: #FFB800;
-  --color-success: #00FF41;
+  /* Theme colors are dynamically injected by ThemeContext */
+  /* These defaults prevent flash of unstyled content */
+  --color-background: #2e3440;
+  --color-surface: #3b4252;
+  --color-foreground: #eceff4;
+  --color-primary: #88c0d0;
+  --color-primary-foreground: #2e3440;
+  --color-secondary: #4c566a;
+  --color-secondary-foreground: #eceff4;
+  --color-muted: #4c566a;
+  --color-muted-foreground: #d8dee9;
+  --color-accent: #5e81ac;
+  --color-accent-foreground: #eceff4;
+  --color-destructive: #bf616a;
+  --color-destructive-foreground: #eceff4;
+  --color-card: #2e3440;
+  --color-card-foreground: #eceff4;
+  --color-popover: #2e3440;
+  --color-popover-foreground: #eceff4;
+  --color-border: #4c566a;
+  --color-input: #3b4252;
+  --color-ring: #88c0d0;
+  --color-warning: #ebcb8b;
+  --color-success: #a3be8c;
 
-  /* Theme style defaults (Cyberpunk theme) */
-  --theme-border-radius: 0px;
-  --theme-font-family: 'JetBrains Mono', 'IBM Plex Mono', 'Roboto Mono', monospace;
-  --theme-font-weight: 500;
-  --theme-animation-duration: 100ms;
-  --theme-animation-timing: linear;
+  /* Theme Style Defaults */
+  --theme-border-radius: 0.5rem;
+  --theme-font-family: 'IBM Plex Sans', sans-serif;
+  --theme-font-weight: 400;
+  --theme-animation-duration: 200ms;
+  --theme-animation-timing: ease-in-out;
+  --theme-shadow-style: sm;
 
-  --font-mono: var(--theme-font-family);
+  /* Map Theme Variables to Tailwind Utilities */
+  --font-sans: var(--theme-font-family);
+  --font-mono: 'JetBrains Mono', monospace;
 
-  /* Use theme border radius */
   --radius-lg: var(--theme-border-radius);
-  --radius-md: var(--theme-border-radius);
-  --radius-sm: calc(var(--theme-border-radius) * 0.75);
-  /* Glass effect tokens */
-  --glass-bg: rgba(5, 5, 5, 0.5);
-  --glass-border: rgba(0, 209, 255, 0.5);
-  --glass-blur: 4px;
+  --radius-md: calc(var(--theme-border-radius) - 2px);
+  --radius-sm: calc(var(--theme-border-radius) - 4px);
+
+  --animate-duration: var(--theme-animation-duration);
+  --animate-ease: var(--theme-animation-timing);
+
+  /* Glass Tokens (Mapped to Surface) */
+  --glass-bg: color-mix(in srgb, var(--color-surface), transparent 40%);
+  --glass-border: color-mix(in srgb, var(--color-border), transparent 60%);
+  --glass-blur: 8px;
 }
 
 /* Custom Utilities */
@@ -56,14 +62,19 @@
     background-size: 100% 4px;
     pointer-events: none;
   }
+
+  /* Glass Utility that respects theme surface color opacity if needed */
+  .glass {
+    background: color-mix(in srgb, var(--color-surface), transparent 30%);
+    backdrop-filter: blur(8px);
+    border: 1px solid color-mix(in srgb, var(--color-border), transparent 50%);
+  }
 }
 
 /* Base Styles */
 @layer base {
   :root {
-    /* Use theme animation timing */
-    transition: background-color var(--theme-animation-duration) var(--theme-animation-timing), 
-                color var(--theme-animation-duration) var(--theme-animation-timing);
+    transition: all var(--theme-animation-duration) var(--theme-animation-timing);
   }
 
   body {
@@ -72,12 +83,20 @@
     font-family: var(--theme-font-family);
     font-weight: var(--theme-font-weight);
     -webkit-font-smoothing: antialiased;
+    transition: background-color var(--theme-animation-duration) var(--theme-animation-timing),
+      color var(--theme-animation-duration) var(--theme-animation-timing);
   }
 
-  * {
-    /* Use theme animation timing for all transitions */
-    transition: background-color var(--theme-animation-duration) var(--theme-animation-timing), 
-                border-color var(--theme-animation-duration) var(--theme-animation-timing), 
-                color var(--theme-animation-duration) var(--theme-animation-timing);
+  /* Reset border color to theme border */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  /* Focus ring style shared */
+  *:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 }

@@ -16,40 +16,42 @@ interface ActivityTableProps {
 
 export function ActivityTable({ activities }: ActivityTableProps) {
     const { formatTimestamp } = useSettings();
-
     const mergedActivities = mergeSequentialActivities(activities);
 
     return (
-        <div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Time</TableHead>
+        <div className="h-full w-full">
+            <Table variant="glass">
+                <TableHeader className="bg-[var(--glass-bg)] backdrop-blur sticky top-0 z-10 border-b border-[var(--glass-border)]">
+                    <TableRow className="hover:bg-transparent border-b-[var(--glass-border)]">
+                        <TableHead className="w-[180px]">Time</TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Process</TableHead>
                         <TableHead>Window Title</TableHead>
-                        <TableHead>Duration</TableHead>
+                        <TableHead className="text-right">Duration</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {mergedActivities.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                 No activity recorded.
                             </TableCell>
                         </TableRow>
                     ) : (
                         mergedActivities.map((activity) => (
-                            <TableRow key={activity.id}>
-                                <TableCell>
+                            <TableRow
+                                key={activity.id}
+                                className="border-b-[var(--glass-border)] hover:bg-muted/10 transition-colors"
+                            >
+                                <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                                     {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
                                 </TableCell>
                                 <TableCell className="font-medium">{activity.username || '-'}</TableCell>
-                                <TableCell className="font-medium">{activity.process_name}</TableCell>
-                                <TableCell className="max-w-[300px] truncate" title={activity.active_window}>
+                                <TableCell className="font-medium text-primary">{activity.process_name}</TableCell>
+                                <TableCell className="max-w-[300px] truncate text-muted-foreground" title={activity.active_window}>
                                     {activity.active_window}
                                 </TableCell>
-                                <TableCell>{formatDuration(activity.duration)}</TableCell>
+                                <TableCell className="text-right font-mono text-xs">{formatDuration(activity.duration)}</TableCell>
                             </TableRow>
                         ))
                     )}

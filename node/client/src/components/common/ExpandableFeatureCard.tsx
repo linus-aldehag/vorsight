@@ -30,7 +30,7 @@ export function ExpandableFeatureCard({ icon, title, description, enabled, onTog
                             <div className="flex items-center gap-2">
                                 <h4 className="font-semibold">{title}</h4>
                                 {enabled ? (
-                                    <CheckCircle2 size={16} className="text-green-500" />
+                                    <CheckCircle2 size={16} className="text-success" />
                                 ) : (
                                     <Circle size={16} className="text-muted-foreground" />
                                 )}

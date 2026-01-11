@@ -84,7 +84,8 @@ export function AuditTable({
 
     return (
         <div className="space-y-4">
-            <div className="rounded-md border border-border/50 overflow-hidden">
+            {/* Desktop Table View */}
+            <div className="hidden md:block rounded-md border border-border/50 overflow-hidden">
                 <Table>
                     <TableHeader className="bg-muted/50">
                         <TableRow className="hover:bg-transparent border-b-border/50">
@@ -99,61 +100,37 @@ export function AuditTable({
                     <TableBody>
                         {paginatedEvents.map(event => {
                             const isExpanded = expandedIds.has(event.id);
-
-                            // Map audit state to shared variants
-                            // If flagged -> "flagged" variant (red border/bg)
-                            // If acknowledged -> default (muted)
-                            // If unacknowledged -> "warning" or "error" depending on severity? For now let's use "warning" style for unacked.
                             let variantLevel: "default" | "flagged" | "warning" = "default";
-
-                            if (event.is_flagged) {
-                                variantLevel = "flagged";
-                            } else if (!event.acknowledged) {
-                                variantLevel = "warning";
-                            }
+                            if (event.is_flagged) variantLevel = "flagged";
+                            else if (!event.acknowledged) variantLevel = "warning";
 
                             return (
                                 <TableRow
                                     key={event.id}
-                                    className={cn(
-                                        logRowVariants({ level: variantLevel }),
-                                        "group"
-                                    )}
+                                    className={cn(logRowVariants({ level: variantLevel }), "group")}
                                 >
-                                    {/* Timestamp */}
                                     <TableCell className="py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
                                         {formatTimestamp(event.timestamp, { includeDate: true, includeSeconds: true })}
                                     </TableCell>
-
-                                    {/* Type */}
                                     <TableCell className="py-2">
                                         <div className="flex items-center gap-2">
-                                            {event.is_flagged && (
-                                                <Flag size={12} className="text-destructive fill-destructive" />
-                                            )}
+                                            {event.is_flagged && <Flag size={12} className="text-destructive fill-destructive" />}
                                             <span className="font-medium text-xs">{event.event_type}</span>
                                         </div>
                                     </TableCell>
-
-                                    {/* User */}
                                     <TableCell className="py-2 text-xs">
                                         <div className="flex flex-col">
                                             <span>{event.username}</span>
                                             <span className="text-[10px] text-muted-foreground font-mono">ID: {event.event_id}</span>
                                         </div>
                                     </TableCell>
-
-                                    {/* Details */}
                                     <TableCell className="py-2 max-w-[400px]">
                                         <div className="text-xs">
-                                            {/* Source Badge */}
                                             {event.source_log_name && (
                                                 <Badge variant="outline" className="text-[10px] h-4 px-1 mr-2 mb-1 inline-flex">
                                                     {event.source_log_name}
                                                 </Badge>
                                             )}
-
-                                            {/* Detail Content */}
                                             {event.details && (
                                                 <div className="inline">
                                                     <span className={isExpanded ? '' : 'line-clamp-1 break-all'}>
@@ -161,57 +138,45 @@ export function AuditTable({
                                                     </span>
                                                 </div>
                                             )}
-
-                                            {/* Expand Button inside details cell */}
                                             {event.details && (typeof event.details === 'string' ? event.details : JSON.stringify(event.details)).length > 60 && (
                                                 <button
                                                     onClick={() => toggleExpand(event.id)}
                                                     className="inline-flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary ml-1 font-medium hover:underline focus:outline-none"
                                                 >
-                                                    {isExpanded ? (
-                                                        <><ChevronUp size={10} /> Show less</>
-                                                    ) : (
-                                                        <><ChevronDown size={10} /> More</>
-                                                    )}
+                                                    {isExpanded ? <><ChevronUp size={10} /> Less</> : <><ChevronDown size={10} /> More</>}
                                                 </button>
                                             )}
                                         </div>
                                     </TableCell>
-
-                                    {/* Status */}
                                     <TableCell className="py-2 text-right">
                                         {event.acknowledged ? (
-                                            <Badge variant="outline" className="text-[10px] bg-green-500/5 text-green-600 border-green-200">
-                                                Ack
-                                            </Badge>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-green-500/10 text-green-500 ring-1 ring-green-500/20">
+                                                Resolved
+                                            </span>
                                         ) : (
-                                            <Badge variant="outline" className="text-[10px] bg-amber-500/5 text-amber-600 border-amber-200 animate-pulse">
-                                                New
-                                            </Badge>
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-500 ring-1 ring-amber-500/20 animate-pulse">
+                                                Attention
+                                            </span>
                                         )}
                                     </TableCell>
-
-                                    {/* Actions */}
                                     <TableCell className="py-2 text-right pr-4">
                                         {event.acknowledged ? (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => onAcknowledge(event.id, false)}
-                                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                                                title="Mark as Unacknowledged"
+                                                className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                                             >
-                                                <RefreshCw size={12} />
+                                                Undo
                                             </Button>
                                         ) : (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => onAcknowledge(event.id, true)}
-                                                className="h-6 w-6 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-100/20"
-                                                title="Acknowledge"
+                                                className="h-8 px-2 text-xs bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                                             >
-                                                <CheckCircle size={14} />
+                                                Acknowledge
                                             </Button>
                                         )}
                                     </TableCell>
@@ -222,9 +187,74 @@ export function AuditTable({
                 </Table>
             </div>
 
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+                {paginatedEvents.map(event => {
+                    return (
+                        <div key={event.id} className="bg-card border border-border/50 rounded-lg overflow-hidden shadow-sm">
+                            {/* Card Header: Time & Status */}
+                            <div className="flex items-center justify-between p-3 bg-muted/30 border-b border-border/50">
+                                <span className="font-mono text-xs text-muted-foreground">
+                                    {formatTimestamp(event.timestamp, { includeDate: true, includeSeconds: false })}
+                                </span>
+                                {event.acknowledged ? (
+                                    <span className="text-[10px] font-medium text-green-500 flex items-center gap-1">
+                                        <CheckCircle size={12} /> Resolved
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] font-medium text-amber-500 flex items-center gap-1 animate-pulse">
+                                        <AlertTriangle size={12} /> Attention
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Card Body: Content */}
+                            <div className="p-3 space-y-3">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-2">
+                                        {event.is_flagged && <Flag size={14} className="text-destructive fill-destructive" />}
+                                        <span className="font-semibold text-sm text-foreground">{event.event_type}</span>
+                                    </div>
+                                    <Badge variant="outline" className="text-[10px] h-5 break-all max-w-[120px]">
+                                        {event.username}
+                                    </Badge>
+                                </div>
+
+                                <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded-md font-mono text-xs break-all">
+                                    {typeof event.details === 'object' ? JSON.stringify(event.details) : event.details}
+                                </div>
+                            </div>
+
+                            {/* Card Footer: Action */}
+                            {!event.acknowledged ? (
+                                <button
+                                    onClick={() => onAcknowledge(event.id, true)}
+                                    className="w-full p-3 text-center text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors border-t border-primary/20"
+                                >
+                                    Acknowledge Event
+                                </button>
+                            ) : (
+                                <div className="flex justify-end p-2 border-t border-border/50">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onAcknowledge(event.id, false)}
+                                        className="text-xs text-muted-foreground hover:text-foreground h-8 gap-1.5"
+                                    >
+                                        <RefreshCw size={12} />
+                                        Undo
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-between px-2">
+                <div className="flex items-center justify-between px-2 pt-2">
+
                     <div className="text-xs text-muted-foreground">
                         Showing {startIndex + 1}-{endIndex} of {totalItems} events
                     </div>

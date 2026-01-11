@@ -1,13 +1,20 @@
-import { Settings } from 'lucide-react';
+import { Settings, X } from 'lucide-react';
 import { MachineSelector } from '../MachineSelector/MachineSelector';
 import { Button } from '../ui/button';
 
 interface AppHeaderProps {
     onSettingsClick: () => void;
     onMachineSelectorClick: () => void;
+    isSettingsPage?: boolean;
+    showSelector?: boolean;
 }
 
-export function AppHeader({ onSettingsClick, onMachineSelectorClick }: AppHeaderProps) {
+export function AppHeader({
+    onSettingsClick,
+    onMachineSelectorClick,
+    isSettingsPage = false,
+    showSelector = true
+}: AppHeaderProps) {
     return (
         <header className="border-b border-border/10 min-h-16 flex items-center px-4 md:px-6 shrink-0 bg-surface/50 backdrop-blur-sm z-50">
             <div className="flex items-center justify-between w-full gap-2 md:gap-4">
@@ -16,7 +23,7 @@ export function AppHeader({ onSettingsClick, onMachineSelectorClick }: AppHeader
                 </h1>
 
                 <div className="flex-1 flex justify-center min-w-0 px-2">
-                    <MachineSelector onClick={onMachineSelectorClick} />
+                    {showSelector && <MachineSelector onClick={onMachineSelectorClick} />}
                 </div>
 
                 <Button
@@ -24,8 +31,9 @@ export function AppHeader({ onSettingsClick, onMachineSelectorClick }: AppHeader
                     size="icon"
                     onClick={onSettingsClick}
                     className="shrink-0"
+                    title={isSettingsPage ? "Close Settings" : "Settings"}
                 >
-                    <Settings size={18} />
+                    {isSettingsPage ? <X size={20} /> : <Settings size={18} />}
                 </Button>
             </div>
         </header>

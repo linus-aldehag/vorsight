@@ -32,8 +32,10 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                 ) : (
                     sortedKeys.map((key) => (
                         <div key={key} className="relative">
-                            <div className="sticky top-0 z-10 bg-background/95 pb-4 pt-2 font-semibold backdrop-blur-sm">
-                                {format(new Date(key), "EEEE, MMMM d, yyyy")}
+                            <div className="sticky top-0 z-10 flex justify-center pb-6 pt-2 pointer-events-none">
+                                <span className="bg-background/80 backdrop-blur-md border border-border/50 text-xs font-medium px-4 py-1.5 rounded-full shadow-sm text-muted-foreground">
+                                    {format(new Date(key), "EEEE, MMMM d, yyyy")}
+                                </span>
                             </div>
                             <div className="ml-4 space-y-4 border-l-2 pl-4">
                                 {groupedActivities[key].map((activity) => (
