@@ -30,14 +30,22 @@ router.get('/', async (req: Request, res: Response) => {
 
         const screenshots = await prisma.screenshot.findMany(queryOptions);
 
+        const validScreenshots = screenshots.map(s => ({
+            ...s,
+            name: `Screenshot ${s.captureTime.toISOString().split('T')[0]}`,
+            createdTime: s.captureTime.toISOString(),
+            webViewLink: `/api/web/v1/media/view/${s.id}`,
+            thumbnailLink: `/api/web/v1/media/thumbnail/${s.id}`
+        }));
+
         let nextCursor: string | undefined = undefined;
-        if (screenshots.length > take) {
-            const nextItem = screenshots.pop(); // Remove the extra item
+        if (validScreenshots.length > take) {
+            const nextItem = validScreenshots.pop(); // Remove the extra item
             nextCursor = nextItem?.id;
         }
 
         return res.json({
-            screenshots: screenshots,
+            screenshots: validScreenshots,
             cursor: nextCursor,
             hasMore: !!nextCursor
         });

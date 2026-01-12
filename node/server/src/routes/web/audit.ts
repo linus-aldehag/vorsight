@@ -23,7 +23,14 @@ router.get('/', async (req: Request, res: Response) => {
         // Parse details if JSON string
         const formatted = events.map((e: any) => ({
             ...e,
-            details: typeof e.details === 'string' ? JSON.parse(e.details) : e.details
+            details: (() => {
+                if (typeof e.details !== 'string') return e.details;
+                try {
+                    return JSON.parse(e.details);
+                } catch {
+                    return e.details; // Return raw string if parse fails
+                }
+            })()
         }));
 
         return res.json(formatted);

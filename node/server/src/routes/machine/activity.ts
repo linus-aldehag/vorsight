@@ -4,18 +4,11 @@ import { authenticateMachine } from '../../middleware/auth';
 
 const router = express.Router();
 
-interface ActivityBody {
-    timestamp: number | null;
-    activeWindow: string;
-    processName: string;
-    username: string;
-    pingIntervalSeconds?: number;
-}
 
 // Add activity heartbeat (authenticated) - processes into sessions
 router.post('/', authenticateMachine, async (req: Request, res: Response) => {
     try {
-        const { timestamp, activeWindow, processName, username, pingIntervalSeconds = 30 } = req.body as ActivityBody;
+        const { timestamp, activeWindow, processName, username, pingIntervalSeconds = 30 } = req.body;
 
         if (!req.machine) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -23,7 +16,17 @@ router.post('/', authenticateMachine, async (req: Request, res: Response) => {
 
         const machineId = req.machine.id;
         const currentTime = Math.floor(Date.now() / 1000);
-        const heartbeatTime = new Date((timestamp || currentTime) * 1000);
+
+        let heartbeatTime: Date;
+        let timeSeconds: number;
+
+        if (typeof timestamp === 'string') {
+            heartbeatTime = new Date(timestamp);
+            timeSeconds = Math.floor(heartbeatTime.getTime() / 1000);
+        } else {
+            timeSeconds = timestamp || currentTime;
+            heartbeatTime = new Date(timeSeconds * 1000);
+        }
 
         // Store raw heartbeat for debugging (optional, short retention via jobs/heartbeatCleanup)
         await prisma.activityHistory.create({
@@ -42,7 +45,7 @@ router.post('/', authenticateMachine, async (req: Request, res: Response) => {
             orderBy: { endTime: 'desc' }
         });
 
-        const timeSeconds = timestamp || currentTime;
+        // timeSeconds is computed above
 
         // Determine if we should extend existing session or create new one
         const shouldExtend = recentSession &&
