@@ -78,7 +78,7 @@ export function AuditPage() {
 
 
     // Get unique event types from data
-    const eventTypes = Array.from(new Set((auditEvents || []).map(e => e.event_type))).sort();
+    const eventTypes = Array.from(new Set((auditEvents || []).map(e => e.eventType))).sort();
 
     // Apply filters
     const filteredEvents = (auditEvents || []).filter(event => {
@@ -87,7 +87,7 @@ export function AuditPage() {
         if (statusFilter === 'unacknowledged' && event.acknowledged) return false;
 
         // Event type filter
-        if (eventTypeFilter.length > 0 && !eventTypeFilter.includes(event.event_type)) return false;
+        if (eventTypeFilter.length > 0 && !eventTypeFilter.includes(event.eventType)) return false;
 
         // Date range filter
         if (dateRangeFilter !== 'all') {

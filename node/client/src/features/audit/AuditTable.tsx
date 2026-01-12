@@ -101,7 +101,7 @@ export function AuditTable({
                         {paginatedEvents.map(event => {
                             const isExpanded = expandedIds.has(event.id);
                             let variantLevel: "default" | "flagged" | "warning" = "default";
-                            if (event.is_flagged) variantLevel = "flagged";
+                            if (event.isFlagged) variantLevel = "flagged";
                             else if (!event.acknowledged) variantLevel = "warning";
 
                             return (
@@ -114,21 +114,21 @@ export function AuditTable({
                                     </TableCell>
                                     <TableCell className="py-2">
                                         <div className="flex items-center gap-2">
-                                            {event.is_flagged && <Flag size={12} className="text-destructive fill-destructive" />}
-                                            <span className="font-medium text-xs">{event.event_type}</span>
+                                            {event.isFlagged && <Flag size={12} className="text-destructive fill-destructive" />}
+                                            <span className="font-medium text-xs">{event.eventType}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-2 text-xs">
                                         <div className="flex flex-col">
                                             <span>{event.username}</span>
-                                            <span className="text-[10px] text-muted-foreground font-mono">ID: {event.event_id}</span>
+                                            <span className="text-[10px] text-muted-foreground font-mono">ID: {event.eventId}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-2 max-w-[400px]">
                                         <div className="text-xs">
-                                            {event.source_log_name && (
+                                            {event.sourceLogName && (
                                                 <Badge variant="outline" className="text-[10px] h-4 px-1 mr-2 mb-1 inline-flex">
-                                                    {event.source_log_name}
+                                                    {event.sourceLogName}
                                                 </Badge>
                                             )}
                                             {event.details && (
@@ -212,8 +212,8 @@ export function AuditTable({
                             <div className="p-3 space-y-3">
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-2">
-                                        {event.is_flagged && <Flag size={14} className="text-destructive fill-destructive" />}
-                                        <span className="font-semibold text-sm text-foreground">{event.event_type}</span>
+                                        {event.isFlagged && <Flag size={14} className="text-destructive fill-destructive" />}
+                                        <span className="font-semibold text-sm text-foreground">{event.eventType}</span>
                                     </div>
                                     <Badge variant="outline" className="text-[10px] h-5 break-all max-w-[120px]">
                                         {event.username}

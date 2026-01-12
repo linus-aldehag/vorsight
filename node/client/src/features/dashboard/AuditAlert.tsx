@@ -101,7 +101,7 @@ export const AuditAlert = memo(function AuditAlert() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="font-medium text-sm">
-                                                {event.event_type}
+                                                {event.eventType}
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <div className="text-xs text-muted-foreground whitespace-nowrap">
@@ -118,7 +118,7 @@ export const AuditAlert = memo(function AuditAlert() {
                                             </div>
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-1">
-                                            User: {event.username} • Event ID: {event.event_id}
+                                            User: {event.username} • Event ID: {event.eventId}
                                         </div>
                                         {event.details && (
                                             <>

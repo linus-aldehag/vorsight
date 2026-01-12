@@ -3,16 +3,16 @@ import { fetcher } from '@/lib/api';
 
 export interface AuditEvent {
     id: number;
-    machine_id: string;
-    event_id: string;
-    event_type: string;
+    machineId: string;
+    eventId: string;
+    eventType: string;
     username: string;
     timestamp: string;
-    details: string;
-    source_log_name: string;
-    is_flagged: boolean;
+    details: string | Record<string, any>;
+    sourceLogName: string;
+    isFlagged: boolean;
     acknowledged: boolean;
-    created_at: string;
+    createdAt: string;
 }
 
 export function useRecentAuditEvents(machineId: string) {
