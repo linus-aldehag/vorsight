@@ -406,8 +406,8 @@ namespace Vorsight.Infrastructure.Scheduling
                 {
                     ScheduleId = data.ScheduleId ?? Guid.NewGuid().ToString(),
                     IsActive = data.IsActive,
-                    StartTime = TimeSpan.Parse(window.StartTime),
-                    EndTime = TimeSpan.Parse(window.EndTime),
+                    StartTime = ParseTime(window.StartTime),
+                    EndTime = ParseTime(window.EndTime),
                     TimeZoneId = TimeZoneInfo.Local.Id
                 };
             }
@@ -416,6 +416,19 @@ namespace Vorsight.Infrastructure.Scheduling
                 _logger.LogError(ex, "Error converting schedule data");
                 return null;
             }
+        }
+
+        private TimeSpan ParseTime(string? timeStr)
+        {
+            if (string.IsNullOrWhiteSpace(timeStr)) return TimeSpan.Zero;
+            
+            // Handle "HH" or "H" format which TimeSpan.Parse treats as days
+            if (int.TryParse(timeStr, out int hours) && !timeStr.Contains(":"))
+            {
+                return TimeSpan.FromHours(hours);
+            }
+            
+            return TimeSpan.Parse(timeStr);
         }
 
         /// <summary>
