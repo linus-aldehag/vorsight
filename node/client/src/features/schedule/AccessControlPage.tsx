@@ -100,11 +100,48 @@ export function AccessControlPage() {
 
     return (
         <div className="space-y-6">
+            {/* Current Schedule Summary */}
+            {schedule && (
+                <div className="p-4 rounded-lg bg-muted/30 border border-border/50 text-sm space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="font-semibold text-muted-foreground uppercase text-xs tracking-wider">Current Schedule</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${schedule.isActive ? 'bg-green-500/10 text-green-500' : 'bg-muted text-muted-foreground'}`}>
+                            {schedule.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                    {/* Simplified display - in reality we might want to iterate days if they differ */}
+                    <div className="font-mono text-lg">
+                        {schedule.allowedTimeWindows?.length > 0
+                            ? (
+                                <>
+                                    <div className="flex flex-col gap-1">
+                                        {/* Group by time for simpler display if possible, or just show range of first */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-muted-foreground w-16 text-xs">Mon-Sun</span>
+                                            <span>
+                                                <span className="text-foreground">{getStartTime(schedule)}</span> - <span className="text-foreground">{getEndTime(schedule)}</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            )
+                            : <span className="text-muted-foreground italic">No restrictions set</span>
+                        }
+                    </div>
+                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30 mt-2 flex items-center gap-2">
+                        <span>Policy:</span>
+                        <span className={schedule.violationAction === 'shutdown' ? 'text-red-500 font-medium' : 'text-foreground'}>
+                            {schedule.violationAction === 'logoff' ? 'Force Logoff' : 'Shutdown System'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
             {/* Configuration Section with Header */}
             {settings && schedule && (
                 <ConfigSection
                     icon={<Sliders size={24} />}
-                    title="Access Control"
+                    title="Access Control Configuration"
                     badge={!settings.isAccessControlEnabled && (
                         <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
                             Enforcement Disabled

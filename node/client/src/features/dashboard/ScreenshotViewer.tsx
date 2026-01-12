@@ -32,7 +32,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
     };
 
     const { data: screenshotData, mutate } = useSWR(
-        selectedMachine && !isDisabled ? `/api/web/v1/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
+        selectedMachine ? `/api/web/v1/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
         fetcher,
         {
             refreshInterval: 30000, // Poll every 30 seconds for new screenshots
@@ -93,74 +93,75 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
     };
 
     return (
-        <Card variant="glass" className={cn(
-            "flex flex-col",
-            isDisabled ? "h-auto opacity-70" : "h-full"
-        )}>
-            <CardContent className={cn("p-4", isDisabled ? "py-3" : "flex-1 flex flex-col")}>
-                {isDisabled ? (
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <ImageIcon size={16} />
-                            <span className="text-xs font-semibold uppercase tracking-wide">Screenshot Monitor</span>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] bg-muted/50">Disabled</Badge>
+        <Card variant="glass" className="h-full flex flex-col">
+            <CardContent className="flex-1 flex flex-col p-4">
+                <div className="flex items-center justify-between mb-3">
+                    {/* Standard Header Content */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold tracking-wide uppercase">Latest Screenshot</span>
+                        {isDisabled && (
+                            <Badge variant="outline" className="text-[10px] bg-muted/50 text-muted-foreground border-border/50">
+                                Offline
+                            </Badge>
+                        )}
+                        {!isMonitoringEnabled && !isDisabled && (
+                            <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20" title="Automatic capture disabled">
+                                Manual Only
+                            </Badge>
+                        )}
+                        {latestScreenshot && (
+                            <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
+                                {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
+                            </Badge>
+                        )}
                     </div>
-                ) : (
-                    <>
-                        <div className="flex items-center justify-between mb-3">
-                            {/* Standard Header Content */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold tracking-wide uppercase">Latest Screenshot</span>
-                                {!isMonitoringEnabled && (
-                                    <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20" title="Automatic capture disabled">
-                                        Manual Only
-                                    </Badge>
-                                )}
-                                {latestScreenshot && (
-                                    <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
-                                        {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
-                                    </Badge>
-                                )}
-                            </div>
-                            {selectedMachine && (
-                                <button
-                                    onClick={handleCapture}
-                                    disabled={isRequesting || isWaitingForUpdate}
-                                    className="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                                    title="Request a new screenshot immediately"
-                                >
-                                    {isRequesting || isWaitingForUpdate ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
-                                    {isRequesting ? 'Capturing...' : isWaitingForUpdate ? 'Waiting...' : 'Capture'}
-                                </button>
+                    {selectedMachine && (
+                        <button
+                            onClick={handleCapture}
+                            disabled={isDisabled || isRequesting || isWaitingForUpdate}
+                            className={cn(
+                                "text-xs px-2 py-1 rounded transition-colors flex items-center gap-1",
+                                isDisabled
+                                    ? "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                                    : "bg-primary/10 hover:bg-primary/20 text-primary"
                             )}
-                        </div>
+                            title={isDisabled ? "Machine is offline" : "Request a new screenshot immediately"}
+                        >
+                            {isRequesting || isWaitingForUpdate ? <Loader2 size={12} className="animate-spin" /> : <ImageIcon size={12} />}
+                            {isRequesting ? 'Capturing...' : isWaitingForUpdate ? 'Waiting...' : 'Capture'}
+                        </button>
+                    )}
+                </div>
 
-                        <div className="flex-1 flex items-center justify-center min-h-[200px]">
-                            {!latestScreenshot ? (
-                                <div className="text-center space-y-2">
-                                    <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground" />
-                                    <p className="text-xs sm:text-sm text-muted-foreground">
-                                        No screenshots available
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="relative w-full h-full flex items-center justify-center group">
-                                    <img
-                                        key={latestScreenshot.id}
-                                        src={`/api/web/v1/media/view/${latestScreenshot.id}`}
-                                        alt="Latest screenshot"
-                                        className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                                        onClick={() => setSelectedImage(`/api/web/v1/media/view/${latestScreenshot.id}`)}
-                                    />
-                                    <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                        Click to expand
-                                    </div>
-                                </div>
-                            )}
+                <div className="flex-1 flex items-center justify-center min-h-[200px]">
+                    {!latestScreenshot ? (
+                        <div className="text-center space-y-2">
+                            <ImageIcon className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                                No screenshots available
+                            </p>
                         </div>
-                    </>
-                )}
+                    ) : (
+                        <div className="relative w-full h-full flex items-center justify-center group">
+                            <img
+                                key={latestScreenshot.id}
+                                src={`/api/web/v1/media/view/${latestScreenshot.id}`}
+                                alt="Latest screenshot"
+                                className={cn(
+                                    "max-w-full max-h-full object-contain rounded border border-border/50 shadow-sm transition-all",
+                                    !isDisabled && "cursor-pointer hover:border-primary/50"
+                                )}
+                                onClick={() => setSelectedImage(`/api/web/v1/media/view/${latestScreenshot.id}`)}
+                                style={{
+                                    filter: isDisabled ? 'grayscale(100%) opacity(0.7)' : 'none'
+                                }}
+                            />
+                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                Click to expand
+                            </div>
+                        </div>
+                    )}
+                </div>
             </CardContent>
 
             {/* Full-size image modal */}
