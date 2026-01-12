@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
-import { prisma } from '../db/database';
-import { MachineSettings } from '../types';
+import { prisma } from '../../db/database';
+import { MachineSettings } from '../../types';
 
 const router = express.Router();
 
-// GET /api/schedule?machineId=xxx
+// GET /api/web/v1/schedule?machineId=xxx
 router.get('/', async (req: Request, res: Response) => {
     try {
         const { machineId } = req.query;
@@ -30,7 +30,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// POST /api/schedule
+// POST /api/web/v1/schedule
 router.post('/', async (req: Request, res: Response) => {
     try {
         const { machineId, ...schedule } = req.body;
