@@ -305,15 +305,22 @@ export default (io: Server) => {
                     return;
                 }
 
+                // Extract fields with casing fallback
+                const timestampVal = activity.timestamp || activity.Timestamp;
+                const activeWindow = activity.activeWindow || activity.ActiveWindow;
+                const processName = activity.processName || activity.ProcessName;
+                const duration = activity.duration || activity.Duration;
+                const username = activity.username || activity.Username;
+
                 // 1. Store raw heartbeat
                 await prisma.activityHistory.create({
                     data: {
                         machineId,
-                        timestamp: new Date(activity.timestamp),
-                        activeWindow: activity.activeWindow,
-                        processName: activity.processName,
-                        duration: activity.duration,
-                        username: activity.username || null
+                        timestamp: new Date(timestampVal),
+                        activeWindow: activeWindow,
+                        processName: processName,
+                        duration: duration,
+                        username: username || null
                     }
                 });
 
@@ -327,13 +334,13 @@ export default (io: Server) => {
                 });
 
                 // Handle timestamp format (C# sends ISO string)
-                const activityTime = new Date(activity.timestamp);
+                const activityTime = new Date(timestampVal);
                 const timeSeconds = Math.floor(activityTime.getTime() / 1000);
 
                 // Determine if we should extend existing session or create new one
                 const shouldExtend = recentSession &&
-                    recentSession.processName === activity.processName &&
-                    recentSession.activeWindow === activity.activeWindow &&
+                    recentSession.processName === processName &&
+                    recentSession.activeWindow === activeWindow &&
                     (timeSeconds - recentSession.endTime) <= (pingIntervalSeconds * 2);
 
                 if (shouldExtend) {
@@ -359,16 +366,22 @@ export default (io: Server) => {
                             startTime: timeSeconds,
                             endTime: timeSeconds,
                             durationSeconds: 0,
-                            processName: activity.processName,
-                            activeWindow: activity.activeWindow,
-                            username: activity.username || null,
+                            processName: processName,
+                            activeWindow: activeWindow,
+                            username: username || null,
                             heartbeatCount: 1
                         }
                     });
                 }
 
                 // Broadcast to web clients watching this machine
-                io.to(`machine:${machineId}`).emit('activity:update', activity);
+                io.to(`machine:${machineId}`).emit('activity:update', {
+                    timestamp: timestampVal,
+                    activeWindow,
+                    processName,
+                    duration,
+                    username
+                });
             } catch (error) {
                 console.error('Activity error:', error);
             }
@@ -384,34 +397,53 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status === 'archived') return;
 
+                // Extract with fallback
+                const eventId = auditEvent.eventId || auditEvent.EventId;
+                const eventType = auditEvent.eventType || auditEvent.EventType;
+                const username = auditEvent.username || auditEvent.Username;
+                const timestamp = auditEvent.timestamp || auditEvent.Timestamp;
+                const details = auditEvent.details || auditEvent.Details;
+                const sourceLogName = auditEvent.sourceLogName || auditEvent.SourceLogName;
+                const isFlagged = auditEvent.isFlagged || auditEvent.IsFlagged;
+
                 // Deduplicate based on eventId
                 const existingEvent = await prisma.auditEvent.findFirst({
                     where: {
                         machineId,
-                        eventId: auditEvent.eventId
+                        eventId: eventId
                     }
                 });
 
                 if (existingEvent) {
-                    console.log(`Skipping duplicate audit event: ${auditEvent.eventId}`);
+                    // console.log(`Skipping duplicate audit event: ${eventId}`);
                     return;
                 }
 
                 await prisma.auditEvent.create({
                     data: {
                         machineId,
-                        eventId: auditEvent.eventId,
-                        eventType: auditEvent.eventType,
-                        username: auditEvent.username,
-                        timestamp: new Date(auditEvent.timestamp),
-                        details: typeof auditEvent.details === 'string' ? auditEvent.details : JSON.stringify(auditEvent.details),
-                        sourceLogName: auditEvent.sourceLogName,
-                        isFlagged: !!auditEvent.isFlagged
+                        eventId: eventId,
+                        eventType: eventType,
+                        username: username,
+                        timestamp: new Date(timestamp),
+                        details: typeof details === 'string' ? details : JSON.stringify(details),
+                        sourceLogName: sourceLogName,
+                        isFlagged: !!isFlagged
                     }
                 });
 
-                io.to(`machine:${machineId}`).emit('audit:alert', auditEvent);
-                io.emit('audit:global', { machineId, auditEvent, timestamp: new Date().toISOString() });
+                const normalizedEvent = {
+                    eventId,
+                    eventType,
+                    username,
+                    timestamp,
+                    details,
+                    sourceLogName,
+                    isFlagged
+                };
+
+                io.to(`machine:${machineId}`).emit('audit:alert', normalizedEvent);
+                io.emit('audit:global', { machineId, auditEvent: normalizedEvent, timestamp: new Date().toISOString() });
             } catch (error) {
                 console.error('Audit event processing error:', error);
             }
@@ -427,18 +459,31 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status === 'archived') return;
 
+                // Extract Fallback
+                const id = screenshot.id || screenshot.Id;
+                const captureTime = screenshot.captureTime || screenshot.CaptureTime;
+                const triggerType = screenshot.triggerType || screenshot.TriggerType;
+                const googleDriveFileId = screenshot.googleDriveFileId || screenshot.GoogleDriveFileId;
+                const isUploaded = screenshot.isUploaded || screenshot.IsUploaded;
+
                 await prisma.screenshot.create({
                     data: {
-                        id: screenshot.id,
+                        id: id,
                         machineId,
-                        captureTime: new Date(screenshot.captureTime),
-                        triggerType: screenshot.triggerType,
-                        googleDriveFileId: screenshot.googleDriveFileId,
-                        isUploaded: !!screenshot.isUploaded
+                        captureTime: new Date(captureTime),
+                        triggerType: triggerType,
+                        googleDriveFileId: googleDriveFileId,
+                        isUploaded: !!isUploaded
                     }
                 });
 
-                io.to(`machine:${machineId}`).emit('screenshot:new', screenshot);
+                io.to(`machine:${machineId}`).emit('screenshot:new', {
+                    id,
+                    captureTime,
+                    triggerType,
+                    googleDriveFileId,
+                    isUploaded
+                });
             } catch (error) {
                 console.error('Screenshot error:', error);
             }
