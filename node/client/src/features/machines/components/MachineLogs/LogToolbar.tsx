@@ -23,7 +23,6 @@ interface LogToolbarProps {
 
 const levelLabels: Record<string, string> = {
     all: 'All Levels',
-    information: 'Information',
     warning: 'Warning',
     error: 'Error'
 };

@@ -41,13 +41,26 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     const checkLogHealth = () => {
         if (!logs || logs.length === 0) return null;
 
-        // Check last 5 mins or last few logs
-        const recentLogs = logs.slice(0, 5);
-        const error = recentLogs.find(l => l.level.toLowerCase() === 'error' || l.level.toLowerCase() === 'fatal');
-        const warning = recentLogs.find(l => l.level.toLowerCase() === 'warning');
+        // Get last viewed timestamp
+        const lastViewedStr = localStorage.getItem('lastLogsViewed');
+        const lastViewedTime = lastViewedStr ? new Date(lastViewedStr).getTime() : 0;
 
-        if (error) return { type: 'error' as const, message: 'Recent Errors' };
-        if (warning) return { type: 'warning' as const, message: 'Recent Warnings' };
+        // Check last 5 mins or last few logs
+        const recentLogs = logs.slice(0, 10); // Check slightly more to be safe
+
+        // Filter for NEW logs only (newer than last viewed)
+        const newError = recentLogs.find(l => {
+            const logTime = new Date(l.timestamp).getTime();
+            return logTime > lastViewedTime && (l.level.toLowerCase() === 'error' || l.level.toLowerCase() === 'fatal');
+        });
+
+        const newWarning = recentLogs.find(l => {
+            const logTime = new Date(l.timestamp).getTime();
+            return logTime > lastViewedTime && l.level.toLowerCase() === 'warning';
+        });
+
+        if (newError) return { type: 'error' as const, message: 'New Errors' };
+        if (newWarning) return { type: 'warning' as const, message: 'New Warnings' };
         return null;
     };
 

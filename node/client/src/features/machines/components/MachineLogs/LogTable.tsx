@@ -10,9 +10,10 @@ import { logRowVariants } from '@/components/ui/variants/log';
 interface LogTableProps {
     logs: LogEntry[];
     loading: boolean;
+    lastViewedTimestamp?: number;
 }
 
-export function LogTable({ logs, loading }: LogTableProps) {
+export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) {
 
     const getLevelBadge = (level: string) => {
         const normalizedLevel = level.toLowerCase();
@@ -47,6 +48,9 @@ export function LogTable({ logs, loading }: LogTableProps) {
         );
     }
 
+    // Sort logs descending just in case, though they likely come sorted
+    // Assuming logs are sorted DESC (newest first)
+
     return (
         <ScrollArea className="h-full w-full">
             {/* Desktop Table View */}
@@ -61,36 +65,66 @@ export function LogTable({ logs, loading }: LogTableProps) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {logs.map((log) => {
+                        {logs.map((log, index) => {
                             const level = log.level.toLowerCase() as any;
+                            const logTime = new Date(log.timestamp).getTime();
+                            const isNew = lastViewedTimestamp && logTime > lastViewedTimestamp;
+
+                            // Check if next log (older) is OLD while this one is NEW -> Separator after this one?
+                            // Wait, if sorting is DESC, newest is at top. 
+                            // If logTime > lastViewed, it is NEW.
+                            // Separator should be displayed when we transition from NEW to OLD.
+                            // i.e., current is NEW, next is OLD.
+                            // OR if all are NEW, no separator? Or separator at bottom?
+                            // Let's allow separator if we encounter the boundary.
+
+                            const nextLog = logs[index + 1];
+                            const nextLogTime = nextLog ? new Date(nextLog.timestamp).getTime() : 0;
+                            const showSeparator = isNew && nextLog && (!lastViewedTimestamp || nextLogTime <= lastViewedTimestamp);
+
                             return (
-                                <TableRow
-                                    key={log.id}
-                                    className={cn(
-                                        logRowVariants({ level }),
-                                        "border-b-[var(--glass-border)]"
-                                    )}
-                                >
-                                    <TableCell className="font-mono text-muted-foreground whitespace-nowrap py-2 text-xs">
-                                        {format(new Date(log.timestamp), 'HH:mm:ss.SSS')}
-                                    </TableCell>
-                                    <TableCell className="py-2">
-                                        {getLevelBadge(log.level)}
-                                    </TableCell>
-                                    <TableCell className="py-2 max-w-[500px]">
-                                        <div className="break-words font-medium text-foreground/90 text-sm">{log.message}</div>
-                                        {log.exception && (
-                                            <div className="mt-1.5 p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 overflow-x-auto">
-                                                <pre className="text-[10px] font-mono text-red-400 leading-relaxed">
-                                                    {log.exception}
-                                                </pre>
-                                            </div>
+                                <>
+                                    <TableRow
+                                        key={log.id}
+                                        className={cn(
+                                            logRowVariants({ level }),
+                                            "border-b-[var(--glass-border)]",
+                                            isNew && "bg-blue-500/5 hover:bg-blue-500/10"
                                         )}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground truncate text-right font-mono text-[10px] py-2 pr-6" title={log.sourceContext}>
-                                        {log.sourceContext?.split('.').pop()}
-                                    </TableCell>
-                                </TableRow>
+                                    >
+                                        <TableCell className="font-mono text-muted-foreground whitespace-nowrap py-2 text-xs">
+                                            {format(new Date(log.timestamp), 'HH:mm:ss.SSS')}
+                                            {isNew && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse" title="New Log" />}
+                                        </TableCell>
+                                        <TableCell className="py-2">
+                                            {getLevelBadge(log.level)}
+                                        </TableCell>
+                                        <TableCell className="py-2 max-w-[500px]">
+                                            <div className="break-words font-medium text-foreground/90 text-sm">{log.message}</div>
+                                            {log.exception && (
+                                                <div className="mt-1.5 p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 overflow-x-auto">
+                                                    <pre className="text-[10px] font-mono text-red-400 leading-relaxed whitespace-pre-wrap break-all">
+                                                        {log.exception}
+                                                    </pre>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground truncate text-right font-mono text-[10px] py-2 pr-6" title={log.sourceContext}>
+                                            {log.sourceContext?.split('.').pop()}
+                                        </TableCell>
+                                    </TableRow>
+                                    {showSeparator && (
+                                        <TableRow className="bg-muted/10 hover:bg-muted/10">
+                                            <TableCell colSpan={4} className="py-1 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <div className="h-[1px] flex-1 bg-border/50"></div>
+                                                    <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Last Viewed</span>
+                                                    <div className="h-[1px] flex-1 bg-border/50"></div>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </>
                             );
                         })}
                     </TableBody>
@@ -117,7 +151,7 @@ export function LogTable({ logs, loading }: LogTableProps) {
 
                             {log.exception && (
                                 <div className="p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 mt-2 overflow-x-auto">
-                                    <pre className="text-[10px] font-mono text-red-400">
+                                    <pre className="text-[10px] font-mono text-red-400 whitespace-pre-wrap break-all">
                                         {log.exception}
                                     </pre>
                                 </div>

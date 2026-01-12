@@ -10,6 +10,7 @@ namespace Vorsight.Infrastructure.Audit;
 /// Implementation of audit manager for Windows Event Log monitoring.
 /// Detects and logs security events indicating admin tampering.
 /// </summary>
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
 public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 {
     private bool _disposed;

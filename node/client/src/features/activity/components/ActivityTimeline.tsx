@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
 import { Monitor, Terminal, FileText } from "lucide-react";
@@ -25,7 +24,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
     const sortedKeys = Object.keys(groupedActivities).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     return (
-        <ScrollArea className="h-[600px] w-full p-4">
+        <div className="w-full">
             <div className="space-y-8">
                 {mergedActivities.length === 0 ? (
                     <div className="text-center text-muted-foreground p-8">No activity recorded.</div>
@@ -72,7 +71,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                     ))
                 )}
             </div>
-        </ScrollArea>
+        </div>
     );
 }
 

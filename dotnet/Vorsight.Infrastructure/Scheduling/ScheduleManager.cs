@@ -394,22 +394,38 @@ namespace Vorsight.Infrastructure.Scheduling
         /// </summary>
         private AccessSchedule? ConvertToAccessSchedule(ScheduleDataDto? data)
         {
-            if (data == null || data.AllowedTimeWindows == null || data.AllowedTimeWindows.Count == 0)
+            if (data == null)
                 return null;
                 
             try
             {
-                // Use first time window (simplified schedule - single daily window)
-                var window = data.AllowedTimeWindows[0];
-                
-                return new AccessSchedule
+                var schedule = new AccessSchedule
                 {
                     ScheduleId = data.ScheduleId ?? Guid.NewGuid().ToString(),
                     IsActive = data.IsActive,
-                    StartTime = ParseTime(window.StartTime),
-                    EndTime = ParseTime(window.EndTime),
-                    TimeZoneId = TimeZoneInfo.Local.Id
+                    TimeZoneId = TimeZoneInfo.Local.Id,
+                    AllowedTimeWindows = new List<AccessWindow>()
                 };
+
+                if (data.AllowedTimeWindows != null)
+                {
+                    foreach (var window in data.AllowedTimeWindows)
+                    {
+                        // Map DayOfWeek (assuming server sends 0-6 matching DayOfWeek enum or similar)
+                        // If window.DayOfWeek is int, cast it.
+                        if (Enum.IsDefined(typeof(DayOfWeek), window.DayOfWeek))
+                        {
+                            schedule.AllowedTimeWindows.Add(new AccessWindow
+                            {
+                                DayOfWeek = (DayOfWeek)window.DayOfWeek,
+                                StartTime = ParseTime(window.StartTime),
+                                EndTime = ParseTime(window.EndTime)
+                            });
+                        }
+                    }
+                }
+                
+                return schedule;
             }
             catch (Exception ex)
             {
@@ -442,10 +458,9 @@ namespace Vorsight.Infrastructure.Scheduling
                 if (scheduleData != null)
                 {
                     _currentSchedule = ConvertToAccessSchedule(scheduleData);
-                    _logger.LogInformation("Schedule reloaded from server (Active: {IsActive}, {Start}-{End})",
+                    _logger.LogInformation("Schedule reloaded from server (Active: {IsActive}, {WindowCount} windows)",
                         _currentSchedule?.IsActive ?? false,
-                        _currentSchedule?.StartTime,
-                        _currentSchedule?.EndTime);
+                        _currentSchedule?.AllowedTimeWindows?.Count ?? 0);
                 }
             }
             catch (Exception ex)
