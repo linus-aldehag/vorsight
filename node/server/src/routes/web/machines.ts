@@ -1,54 +1,11 @@
 import express, { Request, Response } from 'express';
-import { authenticateMachine, authenticateBrowser } from '../middleware/auth';
-import { machineService, RegisterDTO } from '../services/machineService';
+// Auth is handled by the router mount in server.ts (authenticateBrowser)
+import { machineService } from '../../services/machineService';
 
 const router = express.Router();
 
-// Register a new machine (Public)
-router.post('/register', async (req: Request, res: Response) => {
-    try {
-        const { machineId, name, hostname, metadata } = req.body as RegisterDTO;
-
-        if (!machineId || !name) {
-            return res.status(400).json({ error: 'machineId and name are required' });
-        }
-
-        const result = await machineService.register({ machineId, name, hostname, metadata });
-
-        if (!result.isNew) {
-            return res.json({
-                success: true,
-                apiKey: result.apiKey,
-                machineId: result.machineId,
-                message: 'Machine already registered'
-            });
-        }
-
-        // Emit WebSocket event for new machine discovery
-        const io = req.app.get('io');
-        if (io) {
-            io.emit('machine:discovered', {
-                machineId,
-                name,
-                hostname,
-                timestamp: new Date().toISOString()
-            });
-            console.log(`🔍 New machine discovered: ${name} (${machineId})`);
-        }
-
-        return res.json({
-            success: true,
-            apiKey: result.apiKey,
-            machineId
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        return res.status(500).json({ error: 'Registration failed' });
-    }
-});
-
-// Get all machines (Browser Auth)
-router.get('/', authenticateBrowser, async (req: Request, res: Response) => {
+// Get all machines
+router.get('/', async (req: Request, res: Response) => {
     try {
         const { status, includeArchived } = req.query;
         const machines = await machineService.getAll(
@@ -62,8 +19,8 @@ router.get('/', authenticateBrowser, async (req: Request, res: Response) => {
     }
 });
 
-// Get single machine (Browser Auth)
-router.get('/:id', authenticateBrowser, async (req: Request, res: Response) => {
+// Get single machine
+router.get('/:id', async (req: Request, res: Response) => {
     try {
         const machine = await machineService.getById(req.params.id as string);
         if (!machine) {
@@ -76,8 +33,8 @@ router.get('/:id', authenticateBrowser, async (req: Request, res: Response) => {
     }
 });
 
-// Get machine state (Browser Auth)
-router.get('/:id/state', authenticateBrowser, async (req: Request, res: Response) => {
+// Get machine state
+router.get('/:id/state', async (req: Request, res: Response) => {
     try {
         const state = await machineService.getState(req.params.id as string);
         return res.json(state || {});
@@ -87,19 +44,8 @@ router.get('/:id/state', authenticateBrowser, async (req: Request, res: Response
     }
 });
 
-// Update machine (Machine Auth)
-router.put('/:id', authenticateMachine, async (req: Request, res: Response) => {
-    try {
-        await machineService.update(req.params.id as string, req.body);
-        return res.json({ success: true });
-    } catch (error) {
-        console.error('Update machine error:', error);
-        return res.status(500).json({ error: 'Update failed' });
-    }
-});
-
-// Update machine display name (Browser Auth)
-router.patch('/:id/display-name', authenticateBrowser, async (req: Request, res: Response) => {
+// Update machine display name
+router.patch('/:id/display-name', async (req: Request, res: Response) => {
     try {
         const { displayName } = req.body;
         const machineId = req.params.id as string;
@@ -123,8 +69,8 @@ router.patch('/:id/display-name', authenticateBrowser, async (req: Request, res:
     }
 });
 
-// Adopt a pending machine (Browser Auth)
-router.post('/:id/adopt', authenticateBrowser, async (req: Request, res: Response) => {
+// Adopt a pending machine
+router.post('/:id/adopt', async (req: Request, res: Response) => {
     try {
         const {
             displayName,
@@ -179,8 +125,8 @@ router.post('/:id/adopt', authenticateBrowser, async (req: Request, res: Respons
     }
 });
 
-// Archive a machine (Browser Auth)
-router.patch('/:id/archive', authenticateBrowser, async (req: Request, res: Response) => {
+// Archive a machine
+router.patch('/:id/archive', async (req: Request, res: Response) => {
     try {
         const machineId = req.params.id as string;
         const machine = await machineService.archive(machineId);
@@ -214,8 +160,8 @@ router.patch('/:id/archive', authenticateBrowser, async (req: Request, res: Resp
     }
 });
 
-// Un-archive a machine (Browser Auth)
-router.patch('/:id/unarchive', authenticateBrowser, async (req: Request, res: Response) => {
+// Un-archive a machine
+router.patch('/:id/unarchive', async (req: Request, res: Response) => {
     try {
         const machineId = req.params.id as string;
         const machine = await machineService.unarchive(machineId);

@@ -12,22 +12,31 @@ import { prisma } from './db/database';
 // Import authentication middleware
 import { authenticateBrowser } from './middleware/auth';
 
-// Import routers
-import machinesRouter from './routes/machines';
-import activityRouter from './routes/activity';
-import screenshotsRouter from './routes/screenshots';
-import statusRouter from './routes/status';
-import systemRouter from './routes/system';
-import scheduleRouter from './routes/schedule';
-import settingsRouter from './routes/settings';
-import analyticsRouter from './routes/analytics';
-import auditRouter from './routes/audit';
-import cleanupRouter from './routes/cleanup';
-import pingRouter from './routes/ping';
-import oauthRouter from './routes/oauth';
-import authRouter from './routes/auth';
-import mediaRouter from './routes/media';
-import logsRouter from './routes/logs';
+// Import Machine Routes (formerly Agent)
+import machineMachinesRouter from './routes/machine/machines';
+import machineConfigurationRouter from './routes/machine/configuration';
+import machineScheduleRouter from './routes/machine/schedule';
+import machineLogsRouter from './routes/machine/logs';
+import machineActivityRouter from './routes/machine/activity';
+import machineMediaRouter from './routes/machine/media';
+
+// Import Web Routes
+import webMachinesRouter from './routes/web/machines';
+import webSettingsRouter from './routes/web/settings';
+import webScheduleRouter from './routes/web/schedule';
+import webActivityRouter from './routes/web/activity';
+import webLogsRouter from './routes/web/logs';
+import webScreenshotsRouter from './routes/web/screenshots';
+import webAuditRouter from './routes/web/audit';
+import webAnalyticsRouter from './routes/web/analytics';
+import webCleanupRouter from './routes/web/cleanup';
+import webStatusRouter from './routes/web/status';
+import webPingRouter from './routes/web/ping';
+import webSystemRouter from './routes/web/system';
+import webAuthRouter from './routes/web/auth';
+import webOAuthRouter from './routes/web/oauth';
+import webMediaRouter from './routes/web/media';
+import webActionsRouter from './routes/web/actions';
 
 // Import jobs
 import { scheduleCleanup } from './jobs/cleanup';
@@ -36,8 +45,6 @@ import { scheduleHeartbeatCleanup } from './jobs/heartbeatCleanup';
 
 // Import Socket Handler
 import socketHandler from './websocket/socketHandler';
-
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
@@ -53,35 +60,49 @@ app.set('io', io);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Increase limit if needed
 
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Public routes (no authentication required)
-app.use('/api/auth', authRouter);
-app.use('/api/media', mediaRouter);
+// ==========================================
+// MACHINE API (Machine Service Authentication)
+// Base Path: /api/machine/v1
+// ==========================================
+app.use('/api/machine/v1/machines', machineMachinesRouter); // Register (Public), Update (Auth)
+app.use('/api/machine/v1/configuration', machineConfigurationRouter);
+app.use('/api/machine/v1/schedule', machineScheduleRouter);
+app.use('/api/machine/v1/logs', machineLogsRouter);
+app.use('/api/machine/v1/activity', machineActivityRouter);
+app.use('/api/machine/v1/media', machineMediaRouter);
 
-// Protected routes
-// Note: machinesRouter handles its own auth internally to allow public /register
-app.use('/api/machines', machinesRouter);
+// ==========================================
+// WEB API (Browser Authentication)
+// Base Path: /api/web/v1
+// ==========================================
 
-// Protected routes (require browser authentication OR machine API key)
-import { authenticateAny } from './middleware/auth';
+// Public Web Routes
+app.use('/api/web/v1/auth', webAuthRouter);
+app.use('/api/web/v1/oauth', webOAuthRouter);
+app.use('/api/web/v1/media', webMediaRouter); // Public for img tags
 
-app.use('/api/activity', authenticateBrowser, activityRouter);
-app.use('/api/screenshots', authenticateBrowser, screenshotsRouter);
-app.use('/api/status', authenticateBrowser, statusRouter);
-app.use('/api/system', authenticateBrowser, systemRouter);
-app.use('/api/schedule', authenticateAny, scheduleRouter);
-app.use('/api/settings', authenticateAny, settingsRouter);
-app.use('/api/analytics', authenticateBrowser, analyticsRouter);
-app.use('/api/audit', authenticateBrowser, auditRouter);
-app.use('/api/cleanup', authenticateBrowser, cleanupRouter);
-app.use('/api/ping', authenticateBrowser, pingRouter);
-app.use('/api/logs', logsRouter);
+// Protected Web Routes (Require JWT)
+app.use('/api/web/v1/machines', authenticateBrowser, webMachinesRouter);
+app.use('/api/web/v1/settings', authenticateBrowser, webSettingsRouter);
+app.use('/api/web/v1/schedule', authenticateBrowser, webScheduleRouter);
+app.use('/api/web/v1/activity', authenticateBrowser, webActivityRouter);
+app.use('/api/web/v1/logs', authenticateBrowser, webLogsRouter);
+app.use('/api/web/v1/screenshots', authenticateBrowser, webScreenshotsRouter);
+app.use('/api/web/v1/audit', authenticateBrowser, webAuditRouter);
+app.use('/api/web/v1/analytics', authenticateBrowser, webAnalyticsRouter);
+app.use('/api/web/v1/cleanup', authenticateBrowser, webCleanupRouter);
+app.use('/api/web/v1/status', authenticateBrowser, webStatusRouter);
+app.use('/api/web/v1/ping', authenticateBrowser, webPingRouter);
+app.use('/api/web/v1/system', authenticateBrowser, webSystemRouter);
+app.use('/api/web/v1/actions', authenticateBrowser, webActionsRouter);
 
-// OAuth has its own auth flow
-app.use('/api/oauth', oauthRouter);
+// ==========================================
+// OTHER
+// ==========================================
 
 // Health check
 app.get('/api/health', (_req, res) => {

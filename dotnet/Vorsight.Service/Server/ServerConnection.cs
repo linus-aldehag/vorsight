@@ -179,7 +179,7 @@ public class ServerConnection : IServerConnection
                 }
             };
             
-            var response = await _httpClient.PostAsJsonAsync("/api/machines/register", registrationData);
+            var response = await _httpClient.PostAsJsonAsync("/api/machine/v1/machines/register", registrationData);
             response.EnsureSuccessStatusCode();
             
             var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>(_jsonOptions);
@@ -454,7 +454,7 @@ public class ServerConnection : IServerConnection
             fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
             content.Add(fileContent, "file", fileName);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/media/upload");
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/media/upload"));
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = content;
 
@@ -482,7 +482,7 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/schedule?machineId={_machineId}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/machine/v1/schedule");
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
@@ -515,7 +515,7 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/settings?machineId={_machineId}");
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/machine/v1/configuration");
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
@@ -549,7 +549,7 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/logs");
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/logs"));
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = JsonContent.Create(logs);
 
@@ -578,7 +578,7 @@ public class ServerConnection : IServerConnection
                 settings = settingsJson
             };
 
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/machine/settings");
+            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/configuration/applied"));
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = JsonContent.Create(payload);
 

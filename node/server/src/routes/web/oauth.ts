@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { google } from 'googleapis';
-import { prisma } from '../db/database';
+import { prisma } from '../../db/database';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.get('/google', async (_req: Request, res: Response) => {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/oauth/google/callback'
+            process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/web/v1/oauth/google/callback'
         );
 
         const authUrl = oauth2Client.generateAuthUrl({
@@ -42,7 +42,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/oauth/google/callback'
+            process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/web/v1/oauth/google/callback'
         );
 
         const { tokens } = await oauth2Client.getToken(code);
@@ -52,10 +52,6 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         }
 
         // Store tokens in database
-        // We only support one Google Drive account for now, so we use upsert with a fixed ID or provider key
-        // Using provider='google' as unique key if schema supports it, but schema has id Int @id.
-        // We will findFirst to get ID, or create.
-
         const existing = await prisma.oAuthToken.findFirst({
             where: { provider: 'google' }
         });
@@ -65,7 +61,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
                 where: { id: existing.id },
                 data: {
                     accessToken: tokens.access_token,
-                    refreshToken: tokens.refresh_token || existing.refreshToken, // Keep old refresh token if new one not provided
+                    refreshToken: tokens.refresh_token || existing.refreshToken, // Keep old refresh token
                     expiresAt: new Date(tokens.expiry_date),
                     updatedAt: new Date()
                 }
@@ -112,7 +108,6 @@ router.get('/status', async (_req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('OAuth Status Error:', error);
-        // Ensure we send JSON even on error
         return res.status(200).json({ connected: false, error: 'Check failed' });
     }
 });

@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { prisma } from '../db/database';
+import { prisma } from '../../db/database';
 
 const router = express.Router();
 
@@ -18,8 +18,7 @@ router.get('/thumbnail/:id', async (req: Request, res: Response) => {
             return res.status(404).send('Not found');
         }
 
-        // Redirect to Google Drive thumbnail (using a small trick with the ID)
-        // Usually: https://drive.google.com/thumbnail?id=XXX
+        // Redirect to Google Drive thumbnail
         return res.redirect(`https://drive.google.com/thumbnail?id=${screenshot.googleDriveFileId}`);
     } catch (error) {
         console.error('Thumbnail error:', error);
@@ -27,7 +26,7 @@ router.get('/thumbnail/:id', async (req: Request, res: Response) => {
     }
 });
 
-// View full image (Redirect to Google Drive webContentLink or webViewLink)
+// View full image (Redirect to Google Drive)
 router.get('/view/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -42,7 +41,6 @@ router.get('/view/:id', async (req: Request, res: Response) => {
         }
 
         // Using direct link format
-        // https://drive.google.com/uc?id=FILE_ID
         return res.redirect(`https://drive.google.com/uc?id=${screenshot.googleDriveFileId}`);
     } catch (error) {
         console.error('View error:', error);

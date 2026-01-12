@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
-import { prisma } from '../db/database';
+import { prisma } from '../../db/database';
+import crypto from 'crypto'; // Imported just in case
 
 const router = express.Router();
 

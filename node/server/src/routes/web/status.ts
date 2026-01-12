@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
-import { prisma } from '../db/database';
-import { getConnectionStatus, getStatusText } from '../utils/statusHelper';
-import { MachineSettings } from '../types';
+import { prisma } from '../../db/database';
+import { getConnectionStatus, getStatusText } from '../../utils/statusHelper';
+import { MachineSettings } from '../../types';
 
 const router = express.Router();
 
@@ -35,16 +35,8 @@ router.get('/:machineId', async (req: Request, res: Response) => {
             name: machine.name,
             displayName: machine.displayName,
             lastSeen: machine.lastSeen,
-            settings: machine.state?.settings // string or object? Helper handles both?
-            // Actually statusHelper expects it to be whatever it handles.
-            // Let's pass the raw string if that's what we have, or parsed?
-            // Checking statusHelper.ts usage in socketHandler: it passed parsed settings OR raw?
-            // In socketHandler I passed `settings: m.settings` (string).
-            // Let's pass query result.
+            settings: machine.state?.settings
         };
-
-        // We need to inject connectionStatus into machineData for getStatusText?
-        // getStatusText uses `machine.isOnline` and `machine.settings` (for monitoring check).
 
         const statusText = getStatusText({
             ...machineData,

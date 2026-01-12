@@ -9,7 +9,7 @@ import type {
 
 export * from './types';
 
-const BASE_URL = '/api'; // Relative URL - same server (localhost:3000)
+const BASE_URL = '/api/web/v1'; // Base path for Web Client paths
 
 // Helper to get authorization headers
 function getAuthHeaders(): HeadersInit {
@@ -40,16 +40,26 @@ export const VorsightApi = {
 
     async systemAction(action: 'shutdown' | 'logout', machineId?: string): Promise<ApiResponse> {
         const query = machineId ? `?machineId=${machineId}` : '';
-        const res = await fetch(`${BASE_URL}/system/${action}${query}`, { method: 'POST', headers: getAuthHeaders() });
+        const res = await fetch(`${BASE_URL}/actions/system/${action}${query}`, { method: 'POST', headers: getAuthHeaders() });
         if (!res.ok) throw new Error(`System action ${action} failed`);
         return res.json();
     },
 
     async networkAction(action: 'ping', target: string): Promise<ApiResponse> {
-        const res = await fetch(`${BASE_URL}/network`, {
+        // We only support 'ping' for now, map to new endpoint
+        if (action !== 'ping') throw new Error('Unsupported network action');
+
+        // Find machine ID for target if possible, or use generic ping?
+        // The server only supports ping by Machine ID now in web/ping.ts
+        // But client might be passing IP/Hostname?
+        // If target is an ID (UUID-like), use it.
+        // For now, let's assume target IS machineId, as SystemControls.tsx usually works with Machine context.
+        // Actually, SystemControls might be passing raw target? No, let's check usage.
+        // Assuming target is machineId from previous context.
+
+        const res = await fetch(`${BASE_URL}/ping/${target}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify({ action, target })
+            headers: getAuthHeaders()
         });
         if (!res.ok) throw new Error('Network action failed');
         return res.json();
