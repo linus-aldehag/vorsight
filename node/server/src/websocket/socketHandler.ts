@@ -305,17 +305,67 @@ export default (io: Server) => {
                     return;
                 }
 
+                // 1. Store raw heartbeat
                 await prisma.activityHistory.create({
                     data: {
                         machineId,
                         timestamp: new Date(activity.timestamp),
                         activeWindow: activity.activeWindow,
                         processName: activity.processName,
-                        duration: activity.duration, // Optional in schema? Schema says Int?
-                        // Prisma schema: duration Int?
+                        duration: activity.duration,
                         username: activity.username || null
                     }
                 });
+
+                // 2. Aggregate into Sessions
+                const pingIntervalSeconds = 30; // Default or fetch from settings if needed
+
+                // Get most recent session for this machine
+                const recentSession = await prisma.activitySession.findFirst({
+                    where: { machineId: machineId },
+                    orderBy: { endTime: 'desc' }
+                });
+
+                // Handle timestamp format (C# sends ISO string)
+                const activityTime = new Date(activity.timestamp);
+                const timeSeconds = Math.floor(activityTime.getTime() / 1000);
+
+                // Determine if we should extend existing session or create new one
+                const shouldExtend = recentSession &&
+                    recentSession.processName === activity.processName &&
+                    recentSession.activeWindow === activity.activeWindow &&
+                    (timeSeconds - recentSession.endTime) <= (pingIntervalSeconds * 2);
+
+                if (shouldExtend) {
+                    // Extend existing session
+                    const newEndTime = timeSeconds;
+                    const newDuration = newEndTime - recentSession.startTime;
+                    const newHeartbeatCount = recentSession.heartbeatCount + 1;
+
+                    await prisma.activitySession.update({
+                        where: { id: recentSession.id },
+                        data: {
+                            endTime: newEndTime,
+                            durationSeconds: newDuration,
+                            heartbeatCount: newHeartbeatCount,
+                            updatedAt: new Date()
+                        }
+                    });
+                } else {
+                    // Create new session
+                    await prisma.activitySession.create({
+                        data: {
+                            machineId: machineId,
+                            startTime: timeSeconds,
+                            endTime: timeSeconds,
+                            durationSeconds: 0,
+                            processName: activity.processName,
+                            activeWindow: activity.activeWindow,
+                            username: activity.username || null,
+                            heartbeatCount: 1
+                        }
+                    });
+                }
 
                 // Broadcast to web clients watching this machine
                 io.to(`machine:${machineId}`).emit('activity:update', activity);
@@ -333,6 +383,19 @@ export default (io: Server) => {
 
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status === 'archived') return;
+
+                // Deduplicate based on eventId
+                const existingEvent = await prisma.auditEvent.findFirst({
+                    where: {
+                        machineId,
+                        eventId: auditEvent.eventId
+                    }
+                });
+
+                if (existingEvent) {
+                    console.log(`Skipping duplicate audit event: ${auditEvent.eventId}`);
+                    return;
+                }
 
                 await prisma.auditEvent.create({
                     data: {
