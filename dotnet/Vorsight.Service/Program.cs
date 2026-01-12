@@ -43,7 +43,7 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
     // Add Server Sink for remote logging (Warning+ by default)
     .WriteTo.Sink(new PeriodicBatchingSink(
-        new ServerSink(LogEventLevel.Warning),
+        new ServerSink(LogEventLevel.Information),
         new PeriodicBatchingSinkOptions 
         { 
             BatchSizeLimit = 50, 
