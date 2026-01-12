@@ -151,7 +151,8 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 EventType = eventRecord.TaskDisplayName ?? $"{logName} Event",
                 SourceLogName = logName,
                 Username = "System", // Default, extraction logic could be improved
-                Details = eventRecord.FormatDescription() ?? "No description available"
+                Details = eventRecord.FormatDescription() ?? "No description available",
+                IsFlagged = false // Default to Unflagged (History). Explicitly flag tampering events.
             };
             
             // Check for duplicates before processing
@@ -162,9 +163,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             }
             
             ProcessEvent(evt, eventRecord.Id, logName);
-            
-            // Log capture for debug
-            // logger.LogDebug("Captured {LogName} Event {Id}: {Type}", logName, eventRecord.Id, evt.EventType);
         }
         catch (Exception ex)
         {
@@ -187,7 +185,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 break;
                 
             case 4672: // Admin login
-                // Optionally filter admin noise
                 break;
                 
             case 4697: // Service installed (Security log)
@@ -200,8 +197,9 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 NotifyCriticalEvent(evt, "New scheduled task created");
                 break;
                 
-            case 4699: // Scheduled task deleted
+            case 4699: // Scheduled task deleted - Potentially suspicious if unexpected
                 evt.EventType = "Scheduled Task Deleted";
+                // evt.IsFlagged = true; // Uncomment to flag deletions
                 NotifyCriticalEvent(evt, "Scheduled task deleted");
                 break;
                 
@@ -222,12 +220,14 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 
             case 1102: // Audit log cleared - CRITICAL!
                 evt.EventType = "Audit Log Cleared";
+                evt.IsFlagged = true; // Tampering
                 logger.LogCritical("CRITICAL: Audit log tampering detected! EventID={EventId}", evt.EventId);
                 NotifyCriticalEvent(evt, "CRITICAL: Audit log cleared - tampering detected!");
                 break;
                 
             case 4719: // Audit policy changed
                 evt.EventType = "Audit Policy Changed";
+                evt.IsFlagged = true; // Tampering risk
                 NotifyCriticalEvent(evt, "System audit policy modified");
                 break;
 
@@ -243,7 +243,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 break;
                 
             default:
-                // For other events (captured by wildcard or app log), just log or generic notify if critical
                 if (logName == "Application" && (evt.Details.Contains("Critical") || evt.Details.Contains("Error")))
                 {
                     NotifyCriticalEvent(evt, $"Application Error: {evt.EventType}");

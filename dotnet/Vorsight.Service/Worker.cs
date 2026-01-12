@@ -175,18 +175,14 @@ public class Worker : BackgroundService
             // Hook up audit events
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {
-                if (args.Event.EventId == "7045")
+                if (args.Event.IsFlagged)
                 {
-                    _logger.LogWarning(
-                        "SECURITY WARNING: Service installation detected - Event ID {EventId}, Description: {Description} at {Time}",
-                        args.Event.EventId, args.Description, args.DetectedTime);
+                    _logger.LogInformation(
+                        "Audit Alert (Flagged): [{EventId}] {Description} - Check Audit Log for details.",
+                        args.Event.EventId, args.Description);
                 }
-                else
-                {
-                    _logger.LogCritical(
-                        "SECURITY ALERT: Critical audit event detected - Event ID {EventId}, Description: {Description} at {Time}",
-                        args.Event.EventId, args.Description, args.DetectedTime);
-                }
+                // Routine audit events (IsFlagged=false) are not logged locally to keep logs clean
+                // They are still sent to the server in the block below
                 
                 // Send to server
                 _logger.LogInformation("Server connection status: {Status}", _serverConnection.IsConnected);
