@@ -47,7 +47,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                         <div className="rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md">
                                             <div className="flex items-center gap-2">
                                                 <AppIcon name={activity.process_name} />
-                                                <span className="font-semibold">{activity.process_name}</span>
+                                                <span className="font-semibold">{activity.process_name || 'Unknown Process'}</span>
                                             </div>
                                             {activity.active_window && (
                                                 <div className="mt-1 text-sm text-foreground/80 truncate" title={activity.active_window}>
@@ -77,7 +77,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
 }
 
 function AppIcon({ name }: { name: string }) {
-    const n = name.toLowerCase();
+    const n = (name || '').toLowerCase();
     if (n.includes("chrome") || n.includes("edge") || n.includes("firefox")) return <Monitor className="h-4 w-4 text-blue-500" />;
     if (n.includes("code") || n.includes("visual")) return <Terminal className="h-4 w-4 text-cyan-500" />;
     return <FileText className="h-4 w-4 text-slate-500" />;

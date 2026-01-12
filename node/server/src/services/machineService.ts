@@ -105,8 +105,8 @@ export class MachineService {
 
         return machines.map(row => {
             const lastSeen = row.lastSeen;
-            // 90 seconds timeout (3x default ping interval of 30s)
-            const isOnline = lastSeen && (Date.now() - lastSeen.getTime() < 90000);
+            // 300 seconds timeout (5 minutes) to avoid flickering
+            const isOnline = lastSeen && (Date.now() - lastSeen.getTime() < 300000);
 
             return {
                 id: row.id,
