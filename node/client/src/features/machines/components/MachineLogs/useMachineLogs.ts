@@ -13,7 +13,7 @@ export function useMachineLogs(machineId: string, pollingInterval = 10000) {
 
             try {
                 // Fetch latest 100 logs
-                const res = await fetch(`/api/logs/${machineId}?limit=100`, {
+                const res = await fetch(`/api/web/v1/logs/${machineId}?limit=100`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 

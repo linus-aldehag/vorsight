@@ -37,7 +37,7 @@ export function DataRetention() {
     const fetchSettings = async () => {
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/cleanup', {
+            const response = await fetch('/api/web/v1/cleanup', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -62,7 +62,7 @@ export function DataRetention() {
         setIsSaving(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/cleanup', {
+            const response = await fetch('/api/web/v1/cleanup', {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -96,7 +96,7 @@ export function DataRetention() {
         setIsRunningCleanup(true);
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/cleanup/run', {
+            const response = await fetch('/api/web/v1/cleanup/run', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`

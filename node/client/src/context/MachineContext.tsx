@@ -171,7 +171,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
 
         // Fallback: also do initial HTTP fetch in case socket isn't ready
         const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
-        fetch(`/api/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
+        fetch(`/api/web/v1/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
             .then(res => res.json())
             .then((data: Machine[]) => {
                 handleMachinesList(data);
@@ -224,7 +224,7 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         } else {
             // Fallback to HTTP if socket not connected
             const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
-            fetch(`/api/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
+            fetch(`/api/web/v1/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
                 .then(res => res.json())
                 .then((data: Machine[]) => setMachines(data))
                 .catch(err => console.error('Failed to refresh machines:', err));

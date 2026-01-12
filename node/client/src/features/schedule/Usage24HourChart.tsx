@@ -37,7 +37,7 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const res = await fetch(`/api/activity/sessions?machineId=${machineId}&hoursAgo=${hoursAgo}`, { headers });
+            const res = await fetch(`/api/web/v1/activity/sessions?machineId=${machineId}&hoursAgo=${hoursAgo}`, { headers });
             if (!res.ok) throw new Error('Failed to load activity');
             const sessions: ActivitySession[] = await res.json();
 

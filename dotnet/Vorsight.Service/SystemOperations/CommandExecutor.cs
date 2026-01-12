@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Vorsight.Interop;
 
 namespace Vorsight.Service.SystemOperations;
@@ -46,6 +47,16 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
 
             if (userProcess == null)
             {
+                // Check if LogonUI is present (User at login screen)
+                var isLoginScreen = Process.GetProcessesByName("LogonUI")
+                    .Any(p => p.SessionId == sessionId);
+
+                if (isLoginScreen)
+                {
+                    logger.LogInformation("Session {SessionId} is at login screen (LogonUI detected). Skipping command execution.", sessionId);
+                    return false;
+                }
+
                 // Log all processes in the session for diagnostics
                 var sessionProcesses = System.Diagnostics.Process.GetProcesses()
                     .Where(p => p.SessionId == sessionId)

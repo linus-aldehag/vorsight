@@ -56,7 +56,7 @@ export function AuditPage() {
 
     const handleAcknowledge = async (eventId: number, acknowledge: boolean) => {
         try {
-            const response = await fetch(`/api/audit/${eventId}/acknowledge`, {
+            const response = await fetch(`/api/web/v1/audit/${eventId}/acknowledge`, {
                 method: 'PATCH',
                 headers: {
                     ...getAuthHeaders(),

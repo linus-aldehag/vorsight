@@ -34,7 +34,7 @@ function AppContent() {
         const checkOAuth = async () => {
             try {
                 const token = localStorage.getItem('auth_token');
-                const response = await fetch('/api/oauth/status', {
+                const response = await fetch('/api/web/v1/oauth/status', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
