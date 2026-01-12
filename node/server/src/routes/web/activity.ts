@@ -56,7 +56,7 @@ router.get('/:machineId', async (req: Request, res: Response) => {
         const formatted = sessions.map(s => ({
             id: s.id,
             machine_id: s.machineId,
-            timestamp: s.startTime,
+            timestamp: new Date(s.startTime * 1000).toISOString(), // Convert Unix seconds to ISO
             active_window: s.activeWindow,
             process_name: s.processName,
             duration: s.durationSeconds,

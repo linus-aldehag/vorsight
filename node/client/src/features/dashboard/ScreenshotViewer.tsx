@@ -142,10 +142,10 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
                                 <div className="relative w-full h-full flex items-center justify-center group">
                                     <img
                                         key={latestScreenshot.id}
-                                        src={`/api/web/v1/media/${latestScreenshot.id}`}
+                                        src={`/api/web/v1/media/view/${latestScreenshot.id}`}
                                         alt="Latest screenshot"
                                         className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                                        onClick={() => setSelectedImage(`/api/web/v1/media/${latestScreenshot.id}`)}
+                                        onClick={() => setSelectedImage(`/api/web/v1/media/view/${latestScreenshot.id}`)}
                                     />
                                     <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                         Click to expand

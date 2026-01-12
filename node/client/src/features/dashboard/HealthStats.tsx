@@ -1,6 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMachine } from '@/context/MachineContext';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { UptimeDisplay } from './components/UptimeDisplay';
 import { useHealthStats } from './hooks/useHealthStats';
 import useSWR from 'swr';
@@ -9,6 +8,7 @@ import { useMachineLogs } from '../machines/components/MachineLogs/useMachineLog
 import { cn } from '@/lib/utils';
 import { AlertCircle, AlertTriangle, LogOut, Power } from 'lucide-react';
 import { VorsightApi } from '@/api/client';
+import { LiveStatusText } from './components/LiveStatusText';
 
 
 interface HealthStatsProps {
@@ -60,6 +60,9 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     // Determine effective status for the badge (override if log issues)
     const effectiveStatus = (logHealth?.type || machineStatus) as any;
 
+    // Last seen timestamp for "Offline for X" calculation
+    const lastSeenTime = status?.lastPingTime || status?.lastActivityTime || selectedMachine?.lastSeen;
+
     const handleSystem = async (action: 'shutdown' | 'logout') => {
         if (!selectedMachine) return;
         if (!window.confirm(`Are you sure you want to ${action} this machine?`)) return;
@@ -90,10 +93,11 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
 
                     <div className="flex flex-col gap-1.5">
                         <div className="flex items-center gap-3">
-                            <StatusBadge
+                            <LiveStatusText
                                 status={effectiveStatus}
                                 statusText={statusText}
                                 icon={logHealth?.type === 'error' ? AlertCircle : logHealth?.type === 'warning' ? AlertTriangle : undefined}
+                                timestamp={lastSeenTime}
                             />
                         </div>
 
@@ -125,7 +129,8 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
             <div className="px-4 pb-4 pt-0 grid grid-cols-2 gap-2">
                 <button
                     onClick={() => handleSystem('logout')}
-                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-warning/20 bg-warning/5 text-warning hover:bg-warning/10 transition-colors"
+                    disabled={effectiveStatus === 'offline'}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-warning/20 bg-warning/5 text-warning hover:bg-warning/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Log Out User"
                 >
                     <LogOut size={14} />
@@ -133,7 +138,8 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                 </button>
                 <button
                     onClick={() => handleSystem('shutdown')}
-                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 transition-colors"
+                    disabled={effectiveStatus === 'offline'}
+                    className="flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium border border-destructive/20 bg-destructive/5 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Shutdown Machine"
                 >
                     <Power size={14} />
