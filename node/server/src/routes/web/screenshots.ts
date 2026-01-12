@@ -86,7 +86,7 @@ router.post('/request', async (req: Request, res: Response) => {
         const io = req.app.get('io');
         if (io) {
             io.to(`machine:${machineId}`).emit('server:command', {
-                type: 'screenshot_request',
+                type: 'screenshot',
                 timestamp: new Date().toISOString()
             });
             return res.json({ success: true, message: 'Screenshot requested' });
