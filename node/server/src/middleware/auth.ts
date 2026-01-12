@@ -53,3 +53,38 @@ export const authenticateBrowser = (req: Request, res: Response, next: NextFunct
         return;
     }
 };
+
+// Middleware that accepts EITHER a valid Browser JWT OR a valid Machine API Key
+export const authenticateAny = async (req: Request, res: Response, next: NextFunction) => {
+    // 1. Try API Key (Machine)
+    const apiKey = req.header('X-API-Key');
+    if (apiKey) {
+        try {
+            const machine = await prisma.machine.findFirst({
+                where: { apiKey: apiKey }
+            });
+            if (machine) {
+                req.machine = machine;
+                return next();
+            }
+        } catch (e) {
+            // Ignore error, try next method
+        }
+    }
+
+    // 2. Try JWT (Browser)
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+        try {
+            const secret = (process.env.SERVICE_KEY || 'vorsight-secret-key-change-me').trim();
+            const decoded = jwt.verify(token, secret);
+            req.user = decoded as any;
+            return next();
+        } catch (e) {
+            // Token invalid
+        }
+    }
+
+    // 3. Failed both
+    res.status(401).json({ error: 'Unauthorized. Valid API Key or JWT Token required.' });
+};

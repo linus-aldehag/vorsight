@@ -65,13 +65,15 @@ app.use('/api/media', mediaRouter);
 // Note: machinesRouter handles its own auth internally to allow public /register
 app.use('/api/machines', machinesRouter);
 
-// Protected routes (require browser authentication)
+// Protected routes (require browser authentication OR machine API key)
+import { authenticateAny } from './middleware/auth';
+
 app.use('/api/activity', authenticateBrowser, activityRouter);
 app.use('/api/screenshots', authenticateBrowser, screenshotsRouter);
 app.use('/api/status', authenticateBrowser, statusRouter);
 app.use('/api/system', authenticateBrowser, systemRouter);
-app.use('/api/schedule', authenticateBrowser, scheduleRouter);
-app.use('/api/settings', authenticateBrowser, settingsRouter);
+app.use('/api/schedule', authenticateAny, scheduleRouter);
+app.use('/api/settings', authenticateAny, settingsRouter);
 app.use('/api/analytics', authenticateBrowser, analyticsRouter);
 app.use('/api/audit', authenticateBrowser, auditRouter);
 app.use('/api/cleanup', authenticateBrowser, cleanupRouter);
