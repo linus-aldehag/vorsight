@@ -173,6 +173,13 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                             strokeWidth={2}
                             strokeDasharray="3 3"
                             strokeOpacity={0.8}
+                            label={{
+                                value: `Start: ${allowedStart}`,
+                                position: 'top',
+                                fill: allowedColor,
+                                fontSize: 10,
+                                dy: -10
+                            }}
                         />
                         <ReferenceLine
                             x={endHour}
@@ -180,6 +187,13 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
                             strokeWidth={2}
                             strokeDasharray="3 3"
                             strokeOpacity={0.8}
+                            label={{
+                                value: `End: ${allowedEnd}`,
+                                position: 'top',
+                                fill: allowedColor,
+                                fontSize: 10,
+                                dy: -10
+                            }}
                         />
 
                         {/* Actual usage bars */}
