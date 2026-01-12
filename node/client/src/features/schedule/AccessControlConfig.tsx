@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { TimeInput } from '@/components/ui/time-input';
 import type { AccessSchedule } from '@/api/client';
@@ -39,6 +39,25 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
     const [violationAction, setViolationAction] = useState<'logoff' | 'shutdown'>(
         schedule?.violationAction || 'logoff'
     );
+
+    // Sync state when schedule prop updates (e.g. after load or save)
+    useEffect(() => {
+        if (schedule) {
+            setSimpleStart(schedule.allowedTimeWindows?.[0]?.startTime || '08:00');
+            setSimpleEnd(schedule.allowedTimeWindows?.[0]?.endTime || '22:00');
+            setViolationAction(schedule.violationAction || 'logoff');
+
+            setCustomWindows(Array.from({ length: 7 }, (_, i) => {
+                const existing = schedule.allowedTimeWindows?.find(w => w.dayOfWeek === i);
+                return {
+                    day: i,
+                    start: existing?.startTime || '08:00',
+                    end: existing?.endTime || '22:00',
+                    enabled: !!existing
+                };
+            }));
+        }
+    }, [schedule]);
 
     const isValidTime = (time: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
 

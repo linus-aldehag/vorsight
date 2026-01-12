@@ -95,10 +95,10 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
     return (
         <Card variant="glass" className="h-full flex flex-col">
             <CardContent className="flex-1 flex flex-col p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 gap-2">
                     {/* Standard Header Content */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold tracking-wide uppercase">Latest Screenshot</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold tracking-wide uppercase whitespace-nowrap">Latest Screenshot</span>
                         {isDisabled && (
                             <Badge variant="outline" className="text-[10px] bg-muted/50 text-muted-foreground border-border/50">
                                 Offline
@@ -120,7 +120,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
                             onClick={handleCapture}
                             disabled={isDisabled || isRequesting || isWaitingForUpdate}
                             className={cn(
-                                "text-xs px-2 py-1 rounded transition-colors flex items-center gap-1",
+                                "text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 whitespace-nowrap",
                                 isDisabled
                                     ? "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
                                     : "bg-primary/10 hover:bg-primary/20 text-primary"
