@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (token) {
             // Verify token is still valid
-            fetch('/api/auth/status', {
+            fetch('/api/web/v1/auth/status', {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
                 .then(res => res.json())
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [token]);
 
     const login = async (passphrase: string) => {
-        const res = await fetch('/api/auth/login', {
+        const res = await fetch('/api/web/v1/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ passphrase })

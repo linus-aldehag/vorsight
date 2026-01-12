@@ -17,7 +17,7 @@ export interface AuditEvent {
 
 export function useRecentAuditEvents(machineId: string) {
     const { data, error, isLoading, mutate } = useSWR<AuditEvent[]>(
-        machineId ? `/api/audit?machineId=${machineId}&limit=5&flaggedOnly=true` : null,
+        machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=5&flaggedOnly=true` : null,
         fetcher,
         {
             refreshInterval: 10000, // Refresh every 10 seconds
@@ -35,7 +35,7 @@ export function useRecentAuditEvents(machineId: string) {
 
 export function useAuditEvents(machineId: string, limit = 100, offset = 0) {
     const { data, error, isLoading, mutate } = useSWR<AuditEvent[]>(
-        machineId ? `/api/audit?machineId=${machineId}&limit=${limit}&offset=${offset}` : null,
+        machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=${limit}&offset=${offset}` : null,
         fetcher
     );
 

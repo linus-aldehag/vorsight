@@ -31,7 +31,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
     };
 
     const { data: screenshotData, mutate } = useSWR(
-        selectedMachine && !isDisabled ? `/api/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
+        selectedMachine && !isDisabled ? `/api/web/v1/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
         fetcher,
         {
             refreshInterval: 30000, // Poll every 30 seconds for new screenshots
@@ -61,7 +61,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
             setTimeout(() => setIsWaitingForUpdate(false), 30000);
 
             const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/screenshots/request?machineId=${selectedMachine.id}`, {
+            const res = await fetch(`/api/web/v1/screenshots/request?machineId=${selectedMachine.id}`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -142,10 +142,10 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
                                 <div className="relative w-full h-full flex items-center justify-center group">
                                     <img
                                         key={latestScreenshot.id}
-                                        src={`/api/media/${latestScreenshot.id}`}
+                                        src={`/api/web/v1/media/${latestScreenshot.id}`}
                                         alt="Latest screenshot"
                                         className="max-w-full max-h-full object-contain rounded border border-border/50 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                                        onClick={() => setSelectedImage(`/api/media/${latestScreenshot.id}`)}
+                                        onClick={() => setSelectedImage(`/api/web/v1/media/${latestScreenshot.id}`)}
                                     />
                                     <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                         Click to expand

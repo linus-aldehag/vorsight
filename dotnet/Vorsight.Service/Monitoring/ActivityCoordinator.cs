@@ -210,9 +210,14 @@ public class ActivityCoordinator(
                         _healthMonitor.RecordAgentCommandFailure();
                         _consecutiveAgentCommandFailures++;
                         
-                        monitorLogger.LogWarning(
-                            "Agent command failed (attempt {Attempts}). This may indicate explorer.exe is not running or session access issues.",
-                            _consecutiveAgentCommandFailures);
+                        monitorLogger.LogDebug("Agent command failed (attempt {Attempts})", _consecutiveAgentCommandFailures);
+
+                        if (_consecutiveAgentCommandFailures >= 5)
+                        {
+                            monitorLogger.LogWarning(
+                                "Agent command failed {Attempts} consecutive times. This may indicate explorer.exe is not running or session access issues.",
+                                _consecutiveAgentCommandFailures);
+                        }
                         
                         // After 3 consecutive failures, invalidate cached agent path to force re-resolution
                         if (_consecutiveAgentCommandFailures >= 3)

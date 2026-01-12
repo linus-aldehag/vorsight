@@ -292,7 +292,7 @@ public class GoogleDriveService : IGoogleDriveService
         }
 
         using var httpClient = _httpClientFactory.CreateClient();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{serverUrl.TrimEnd('/')}/api/oauth/google/credentials");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"{serverUrl.TrimEnd('/')}/api/machine/v1/oauth/google/credentials");
         request.Headers.Add("x-api-key", apiKey);
 
         var response = await httpClient.SendAsync(request, cancellationToken);

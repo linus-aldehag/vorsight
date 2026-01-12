@@ -23,7 +23,7 @@ export function GoogleDriveConnection() {
 
     const checkStatus = async () => {
         try {
-            const response = await fetch('/api/oauth/status');
+            const response = await fetch('/api/web/v1/oauth/status');
             const data = await response.json();
             setStatus(data);
         } catch (err) {
@@ -36,13 +36,13 @@ export function GoogleDriveConnection() {
 
     const handleConnect = () => {
         // Redirect to OAuth flow
-        window.location.href = '/api/oauth/google';
+        window.location.href = '/api/web/v1/oauth/google';
     };
 
     const handleDisconnect = async () => {
         try {
             setLoading(true);
-            await fetch('/api/oauth/google/disconnect', { method: 'POST' });
+            await fetch('/api/web/v1/oauth/google/disconnect', { method: 'POST' });
             await checkStatus();
         } catch (err) {
             setError('Failed to disconnect');

@@ -23,7 +23,7 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
     };
 
     const { data: status } = useSWR(
-        selectedMachine ? `/api/status/${selectedMachine.id}` : null,
+        selectedMachine ? `/api/web/v1/status/${selectedMachine.id}` : null,
         fetcher,
         { refreshInterval: 10000, revalidateOnFocus: false }
     );

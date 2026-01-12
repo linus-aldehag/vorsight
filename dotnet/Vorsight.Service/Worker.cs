@@ -175,9 +175,18 @@ public class Worker : BackgroundService
             // Hook up audit events
             _auditManager.CriticalEventDetected += async (sender, args) =>
             {
-                _logger.LogCritical(
-                    "SECURITY ALERT: Critical audit event detected - Event ID {EventId}, Description: {Description} at {Time}",
-                    args.Event.EventId, args.Description, args.DetectedTime);
+                if (args.Event.EventId == "7045")
+                {
+                    _logger.LogWarning(
+                        "SECURITY WARNING: Service installation detected - Event ID {EventId}, Description: {Description} at {Time}",
+                        args.Event.EventId, args.Description, args.DetectedTime);
+                }
+                else
+                {
+                    _logger.LogCritical(
+                        "SECURITY ALERT: Critical audit event detected - Event ID {EventId}, Description: {Description} at {Time}",
+                        args.Event.EventId, args.Description, args.DetectedTime);
+                }
                 
                 // Send to server
                 _logger.LogInformation("Server connection status: {Status}", _serverConnection.IsConnected);

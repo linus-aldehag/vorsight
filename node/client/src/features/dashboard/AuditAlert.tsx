@@ -25,7 +25,7 @@ export const AuditAlert = memo(function AuditAlert() {
 
     const handleDismiss = async (id: number) => {
         try {
-            const response = await fetch(`/api/audit/${id}/acknowledge`, {
+            const response = await fetch(`/api/web/v1/audit/${id}/acknowledge`, {
                 method: 'PATCH',
                 headers: {
                     ...getAuthHeaders(),
