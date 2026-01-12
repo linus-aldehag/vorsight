@@ -172,6 +172,14 @@ class GoogleDriveService {
             return false;
         }
     }
+
+    async getFileStream(fileId: string) {
+        const drive = await this.getDriveClient();
+        return drive.files.get({
+            fileId: fileId,
+            alt: 'media'
+        }, { responseType: 'stream' });
+    }
 }
 
 export default new GoogleDriveService();

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../db/database';
+import googleDriveService from '../../services/googleDriveService';
 
 const router = express.Router();
 
@@ -40,8 +41,13 @@ router.get('/view/:id', async (req: Request, res: Response) => {
             return res.status(404).send('Not found');
         }
 
-        // Using direct link format
-        return res.redirect(`https://drive.google.com/uc?id=${screenshot.googleDriveFileId}`);
+        // Proxy file content using server credentials
+        const response = await googleDriveService.getFileStream(screenshot.googleDriveFileId);
+
+        res.setHeader('Content-Type', 'image/jpeg');
+        // @ts-ignore - Gaxios stream types are compatible with pipe
+        response.data.pipe(res);
+        return; // Ensure void return
     } catch (error) {
         console.error('View error:', error);
         return res.status(500).send('Error');
