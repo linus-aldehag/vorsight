@@ -34,7 +34,7 @@ function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, 
                     </div>
                 ) : (
                     <img
-                        src={`/api/media/${screenshot.id}`}
+                        src={screenshot.webViewLink || `/api/web/v1/media/view/${screenshot.id}`}
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
                         alt={screenshot.name}
                         onError={() => onImageError(screenshot.id)}
@@ -316,7 +316,7 @@ export function ScreenshotGallery() {
                                 </div>
                             ) : (
                                 <img
-                                    src={`/api/media/${selectedImage.id}`}
+                                    src={selectedImage.webViewLink || `/api/web/v1/media/view/${selectedImage.id}`}
                                     className="max-w-full max-h-[85vh] object-contain"
                                     alt="Full screenshot"
                                     onError={() => handleImageError(selectedImage.id)}
