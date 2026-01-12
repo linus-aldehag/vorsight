@@ -81,7 +81,10 @@ export function Dashboard() {
 
                 {/* 3. Latest Screenshot */}
                 <div className="min-h-[300px] flex flex-col">
-                    <ScreenshotViewer isDisabled={!settings?.isScreenshotEnabled} />
+                    <ScreenshotViewer
+                        isDisabled={!selectedMachine || selectedMachine.connectionStatus === 'offline'}
+                        isMonitoringEnabled={settings?.isScreenshotEnabled}
+                    />
                 </div>
 
 

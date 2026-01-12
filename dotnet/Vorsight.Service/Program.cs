@@ -173,9 +173,10 @@ try
             sp.GetRequiredService<ILogger<ScheduleManager>>(),
             sp.GetRequiredService<IHttpClientFactory>(),
             sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
-#pragma warning restore CA1416
 
     builder.Services.AddSingleton<IAuditManager, AuditManager>();
+#pragma warning restore CA1416
+
     builder.Services.AddSingleton<IHealthAuditManager, HealthAuditManager>();
 
     // Screenshot Upload Services (Direct to Drive with server credentials)

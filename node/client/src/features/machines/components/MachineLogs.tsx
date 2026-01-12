@@ -9,9 +9,10 @@ interface MachineLogsProps {
     machineId: string;
     className?: string; // Allow overriding height/style
     minimal?: boolean;
+    lastViewedTimestamp?: number;
 }
 
-export function MachineLogs({ machineId, className, minimal = false }: MachineLogsProps) {
+export function MachineLogs({ machineId, className, minimal = false, lastViewedTimestamp }: MachineLogsProps) {
     const { logs, loading } = useMachineLogs(machineId);
     const [filterLevel, setFilterLevel] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +35,7 @@ export function MachineLogs({ machineId, className, minimal = false }: MachineLo
                 minimal={minimal}
             />
             <CardContent className="flex-1 p-0 overflow-hidden">
-                <LogTable logs={filteredLogs} loading={loading} />
+                <LogTable logs={filteredLogs} loading={loading} lastViewedTimestamp={lastViewedTimestamp} />
             </CardContent>
         </Card>
     );

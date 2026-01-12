@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
 
 interface ScreenshotViewerProps {
     isDisabled?: boolean;
+    isMonitoringEnabled?: boolean;
 }
 
-export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: ScreenshotViewerProps) {
+export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isMonitoringEnabled = true }: ScreenshotViewerProps) {
     const { selectedMachine } = useMachine();
     const { formatTimestamp } = useSettings();
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -111,6 +112,11 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled }: S
                             {/* Standard Header Content */}
                             <div className="flex items-center gap-2">
                                 <span className="text-sm font-semibold tracking-wide uppercase">Latest Screenshot</span>
+                                {!isMonitoringEnabled && (
+                                    <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-500 border-amber-500/20" title="Automatic capture disabled">
+                                        Manual Only
+                                    </Badge>
+                                )}
                                 {latestScreenshot && (
                                     <Badge variant="outline" className="text-xs font-mono hidden sm:inline-flex">
                                         {formatTimestamp(getSafeTimestamp(latestScreenshot.createdTime), { includeSeconds: true })}
