@@ -14,13 +14,22 @@ interface MachineLogsProps {
 
 export function MachineLogs({ machineId, className, minimal = false, lastViewedTimestamp }: MachineLogsProps) {
     const { logs, loading } = useMachineLogs(machineId);
-    const [filterLevel, setFilterLevel] = useState<string>('all');
+    // Default to Warning and Error only, as requested
+    const [filterLevels, setFilterLevels] = useState<string[]>(['warning', 'error']);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const handleFilterToggle = (level: string) => {
+        setFilterLevels(prev =>
+            prev.includes(level)
+                ? prev.filter(l => l !== level)
+                : [...prev, level]
+        );
+    };
 
     const filteredLogs = logs.filter(log => {
         const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.sourceContext?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesLevel = filterLevel === 'all' || log.level.toLowerCase() === filterLevel;
+        const matchesLevel = filterLevels.includes(log.level.toLowerCase());
         return matchesSearch && matchesLevel;
     });
 
@@ -30,8 +39,8 @@ export function MachineLogs({ machineId, className, minimal = false, lastViewedT
                 totalEvents={filteredLogs.length}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
-                filterLevel={filterLevel}
-                onFilterChange={setFilterLevel}
+                filterLevels={filterLevels}
+                onFilterToggle={handleFilterToggle}
                 minimal={minimal}
             />
             <CardContent className="flex-1 p-0 overflow-hidden">
