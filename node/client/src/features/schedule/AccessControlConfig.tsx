@@ -40,13 +40,23 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
         schedule?.violationAction || 'logoff'
     );
 
+    const isValidTime = (time: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
+
     const handleSave = async () => {
         if (!schedule) return;
+
+        // Validate Simple Mode times
+        if (mode === 'simple') {
+            if (!isValidTime(simpleStart) || !isValidTime(simpleEnd)) {
+                console.error("Invalid time format in simple mode");
+                return;
+            }
+        }
 
         let newWindows;
 
         if (mode === 'simple') {
-            // Apple to all days 0-6
+            // Apply to all days 0-6
             const days = [0, 1, 2, 3, 4, 5, 6];
             newWindows = days.map(day => ({
                 dayOfWeek: day,
@@ -54,6 +64,13 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
                 endTime: simpleEnd
             }));
         } else {
+            // Validate Custom Mode times
+            const invalidWindow = customWindows.find(w => w.enabled && (!isValidTime(w.start) || !isValidTime(w.end)));
+            if (invalidWindow) {
+                console.error("Invalid time format in custom mode");
+                return;
+            }
+
             // Filter only enabled days
             newWindows = customWindows
                 .filter(w => w.enabled)
@@ -80,14 +97,26 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
 
     const weekDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+    const handleModeChange = (newMode: 'simple' | 'custom') => {
+        setMode(newMode);
+        if (newMode === 'custom') {
+            // Sync custom windows with current simple settings
+            setCustomWindows(prev => prev.map(w => ({
+                ...w,
+                start: simpleStart,
+                end: simpleEnd,
+                enabled: true
+            })));
+        }
+    };
+
     return (
         <div className="space-y-6">
-
             <div className="flex items-center space-x-4 bg-muted/20 p-2 rounded-lg w-fit">
                 <Button
                     variant={mode === 'simple' ? 'secondary' : 'ghost'}
                     size="sm"
-                    onClick={() => setMode('simple')}
+                    onClick={() => handleModeChange('simple')}
                     className="text-xs"
                 >
                     Simple (Every Day)
@@ -95,33 +124,11 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
                 <Button
                     variant={mode === 'custom' ? 'secondary' : 'ghost'}
                     size="sm"
-                    onClick={() => setMode('custom')}
+                    onClick={() => handleModeChange('custom')}
                     className="text-xs"
                 >
                     Custom (Per Weekday)
                 </Button>
-            </div>
-
-            <div className="space-y-3">
-                <label className="text-sm font-medium">Action on Violation</label>
-                <div className="grid grid-cols-2 gap-3">
-                    <Button
-                        variant={violationAction === 'logoff' ? 'default' : 'outline'}
-                        onClick={() => setViolationAction('logoff')}
-                        className="w-full transition-all"
-                        type="button"
-                    >
-                        Log Off
-                    </Button>
-                    <Button
-                        variant={violationAction === 'shutdown' ? 'destructive' : 'outline'}
-                        onClick={() => setViolationAction('shutdown')}
-                        className="w-full transition-all"
-                        type="button"
-                    >
-                        Shut Down
-                    </Button>
-                </div>
             </div>
 
             {mode === 'simple' ? (
@@ -192,6 +199,28 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
                 </div>
             )}
 
+            <div className="space-y-3 pt-4 border-t border-border/50">
+                <label className="text-sm font-medium">Action on Violation</label>
+                <div className="grid grid-cols-2 gap-3">
+                    <Button
+                        variant={violationAction === 'logoff' ? 'default' : 'outline'}
+                        onClick={() => setViolationAction('logoff')}
+                        className="w-full transition-all"
+                        type="button"
+                    >
+                        Log Off
+                    </Button>
+                    <Button
+                        variant={violationAction === 'shutdown' ? 'destructive' : 'outline'}
+                        onClick={() => setViolationAction('shutdown')}
+                        className="w-full transition-all"
+                        type="button"
+                    >
+                        Shut Down
+                    </Button>
+                </div>
+            </div>
+
             <div className="pt-2">
                 <Button
                     onClick={handleSave}
@@ -202,6 +231,6 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
                     {saving ? 'Saving...' : 'Save Configuration'}
                 </Button>
             </div>
-        </div >
+        </div>
     );
 }
