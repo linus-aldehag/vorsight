@@ -202,7 +202,7 @@ public class Worker : BackgroundService
             {
                 try
                 {
-                    _logger.LogDebug("Service health check: OK");
+                    _logger.LogTrace("Service health check: OK");
                     
                     // Ensure server connection
                     await _serverConnection.EnsureConnectedAsync(cancellationToken);
