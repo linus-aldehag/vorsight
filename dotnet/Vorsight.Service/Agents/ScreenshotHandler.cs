@@ -58,7 +58,7 @@ public class ScreenshotHandler
                 var settings = await _settingsManager.GetSettingsAsync();
                 var machineId = _serverConnection.MachineId ?? "unknown";
                 
-                if (settings.FilterDuplicateScreenshots)
+                if (settings.Screenshots.FilterDuplicates)
                 {
                     // Calculate perceptual hash
                     string currentHash;

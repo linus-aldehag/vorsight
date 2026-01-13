@@ -46,7 +46,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     private readonly List<EventLogWatcher> _activeWatchers = new();
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    public async Task StartMonitoringAsync(AgentSettings settings)
+    public async Task StartMonitoringAsync(MachineSettings settings)
     {
         ThrowIfDisposed();
 
@@ -59,19 +59,19 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         try
         {
             // 1. Security Log Watcher (High Priority)
-            if (settings.AuditLogSecurityEnabled)
+            if (settings.Audit.Filters.Security)
             {
                 StartWatcher("Security", BuildSecurityQuery());
             }
 
             // 2. System Log Watcher (Services, Startups)
-            if (settings.AuditLogSystemEnabled)
+            if (settings.Audit.Filters.System)
             {
                 StartWatcher("System", BuildSystemQuery());
             }
 
             // 3. Application Log Watcher (Optional/Future use)
-            if (settings.AuditLogApplicationEnabled)
+            if (settings.Audit.Filters.Application)
             {
                 // Basic application audit - can be expanded later
                 StartWatcher("Application", "*[System[Level<=3]]"); // Error, Warning, Critical

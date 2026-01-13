@@ -5,7 +5,7 @@ namespace Vorsight.Infrastructure.Contracts
     public interface ISettingsManager
     {
         Task InitializeAsync();
-        Task<AgentSettings> GetSettingsAsync();
-        Task UpdateSettingsAsync(AgentSettings settings);
+        Task<MachineSettings> GetSettingsAsync();
+        Task UpdateSettingsAsync(MachineSettings settings);
     }
 }

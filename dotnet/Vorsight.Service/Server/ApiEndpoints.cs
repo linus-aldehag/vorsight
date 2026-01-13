@@ -197,7 +197,7 @@ public static class ApiEndpoints
         });
 
         app.MapPost("/api/settings", async (
-            [FromBody] Vorsight.Contracts.Settings.AgentSettings settings,
+            [FromBody] Vorsight.Contracts.Settings.MachineSettings settings,
             ISettingsManager settingsManager) =>
         {
             try

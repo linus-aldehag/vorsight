@@ -198,38 +198,45 @@ export class MachineService {
             const start = accessControlStartTime || "09:00";
             const end = accessControlEndTime || "17:00";
 
-            schedule = {
-                isActive: true,
-                scheduleId: crypto.randomUUID(),
-                childUsername: "User", // Default placeholder
-                allowedTimeWindows: [
-                    { dayOfWeek: 1, startTime: start, endTime: end }, // Mon
-                    { dayOfWeek: 2, startTime: start, endTime: end }, // Tue
-                    { dayOfWeek: 3, startTime: start, endTime: end }, // Wed
-                    { dayOfWeek: 4, startTime: start, endTime: end }, // Thu
-                    { dayOfWeek: 5, startTime: start, endTime: end }, // Fri
-                    { dayOfWeek: 6, startTime: start, endTime: end }, // Sat
-                    { dayOfWeek: 0, startTime: start, endTime: end }, // Sun
-                ],
-                dailyTimeLimitMinutes: 0,
-                weekendBonusMinutes: 0,
-                violationAction: accessControlAction || 'logoff',
-                createdUtc: new Date().toISOString(),
-                modifiedUtc: new Date().toISOString()
-            };
+            // Create default TimeWindow[] instead of complex AccessSchedule object
+            schedule = [
+                { dayOfWeek: 1, startTime: start, endTime: end }, // Mon
+                { dayOfWeek: 2, startTime: start, endTime: end }, // Tue
+                { dayOfWeek: 3, startTime: start, endTime: end }, // Wed
+                { dayOfWeek: 4, startTime: start, endTime: end }, // Thu
+                { dayOfWeek: 5, startTime: start, endTime: end }, // Fri
+                { dayOfWeek: 6, startTime: start, endTime: end }, // Sat
+                { dayOfWeek: 0, startTime: start, endTime: end }, // Sun
+            ];
         }
 
         // Create settings
         const initialSettings: MachineSettings = {
-            screenshotIntervalSeconds: enableScreenshots ? 300 : 0,
-            pingIntervalSeconds: enableActivity ? 30 : 0,
-            isMonitoringEnabled: enableScreenshots || enableActivity,
-            isAuditEnabled: !!enableAudit,
-            auditLogSecurityEnabled: !!enableAudit,
-            auditLogSystemEnabled: !!enableAudit,
-            auditLogApplicationEnabled: !!enableAudit,
-            isAccessControlEnabled: !!enableAccessControl,
-            schedule: schedule
+            screenshots: {
+                enabled: enableScreenshots,
+                intervalSeconds: enableScreenshots ? 300 : 0,
+                filterDuplicates: true
+            },
+            network: {
+                pingIntervalSeconds: enableActivity ? 300 : 0
+            },
+            activity: {
+                enabled: enableActivity,
+                intervalSeconds: 10
+            },
+            audit: {
+                enabled: !!enableAudit,
+                filters: {
+                    security: !!enableAudit,
+                    system: !!enableAudit,
+                    application: !!enableAudit
+                }
+            },
+            accessControl: {
+                enabled: !!enableAccessControl,
+                violationAction: accessControlAction || 'logoff',
+                schedule: schedule || []
+            }
         };
 
         // Store settings

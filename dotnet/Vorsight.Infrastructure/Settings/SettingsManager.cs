@@ -16,7 +16,7 @@ namespace Vorsight.Infrastructure.Settings
     {
         private readonly ILogger<SettingsManager> _logger;
         private readonly string _settingsPath;
-        private AgentSettings _currentSettings = new();
+        private MachineSettings _currentSettings = new();
 
         public SettingsManager(ILogger<SettingsManager> logger)
         {
@@ -33,7 +33,7 @@ namespace Vorsight.Infrastructure.Settings
                 if (File.Exists(_settingsPath))
                 {
                     var json = await File.ReadAllTextAsync(_settingsPath);
-                    var loaded = JsonSerializer.Deserialize<AgentSettings>(json);
+                    var loaded = JsonSerializer.Deserialize<MachineSettings>(json);
                     if (loaded != null)
                     {
                         _currentSettings = loaded;
@@ -48,16 +48,36 @@ namespace Vorsight.Infrastructure.Settings
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading settings");
+                _logger.LogError(ex, "Error loading settings - configuration may be corrupted");
+
+                try 
+                {
+                    // Backup broken file
+                    if (File.Exists(_settingsPath))
+                    {
+                        var backupPath = _settingsPath + ".bak";
+                        File.Copy(_settingsPath, backupPath, true);
+                        _logger.LogWarning("Corrupted settings backed up to {BackupPath}", backupPath);
+                    }
+
+                    // Reset to defaults
+                    _currentSettings = new MachineSettings();
+                    await SaveSettingsAsync();
+                    _logger.LogWarning("Settings reset to defaults due to load error");
+                }
+                catch (Exception resetEx)
+                {
+                    _logger.LogError(resetEx, "Failed to reset settings after load error");
+                }
             }
         }
 
-        public Task<AgentSettings> GetSettingsAsync()
+        public Task<MachineSettings> GetSettingsAsync()
         {
             return Task.FromResult(_currentSettings);
         }
 
-        public async Task UpdateSettingsAsync(AgentSettings settings)
+        public async Task UpdateSettingsAsync(MachineSettings settings)
         {
             _currentSettings = settings;
             await SaveSettingsAsync();

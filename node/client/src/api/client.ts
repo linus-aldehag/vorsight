@@ -109,13 +109,31 @@ export const VorsightApi = {
         if (res.status === 404) {
             // Return defaults if settings don't exist yet - all features disabled
             return {
-                screenshotIntervalSeconds: 300,
-                pingIntervalSeconds: 30,
-                isMonitoringEnabled: false,
-                isAuditEnabled: false,
-                isScreenshotEnabled: false,
-                isActivityEnabled: false,
-                isAccessControlEnabled: false
+                screenshots: {
+                    enabled: false,
+                    intervalSeconds: 300,
+                    filterDuplicates: true
+                },
+                monitoring: {
+                    enabled: false,
+                    pingIntervalSeconds: 30
+                },
+                audit: {
+                    enabled: false,
+                    filters: {
+                        security: true,
+                        system: true,
+                        application: true
+                    }
+                },
+                activity: {
+                    enabled: false
+                },
+                accessControl: {
+                    enabled: false,
+                    violationAction: 'logoff',
+                    schedule: []
+                }
             };
         }
         if (!res.ok) throw new Error(`Failed to fetch settings: ${res.statusText}`);

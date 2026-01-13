@@ -31,7 +31,7 @@ namespace Vorsight.Infrastructure.Contracts
         /// <summary>
         /// Starts the real-time Event Log monitoring.
         /// </summary>
-        Task StartMonitoringAsync(AgentSettings settings);
+        Task StartMonitoringAsync(MachineSettings settings);
 
         /// <summary>
         /// Stops real-time Event Log monitoring.

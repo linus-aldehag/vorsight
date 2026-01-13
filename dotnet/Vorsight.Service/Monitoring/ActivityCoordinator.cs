@@ -162,7 +162,7 @@ public class ActivityCoordinator(
                 // Get current settings
                 var settings = await _settingsManager.GetSettingsAsync();
                 
-                if (!settings.IsMonitoringEnabled)
+                if (!settings.Activity.Enabled)
                 {
                     // Monitoring disabled, just wait
                     await Task.Delay(5000, cancellationToken);
@@ -177,8 +177,8 @@ public class ActivityCoordinator(
                 }
 
                 var now = DateTime.UtcNow;
-                var pollInterval = TimeSpan.FromSeconds(settings.PingIntervalSeconds);
-                var screenshotInterval = TimeSpan.FromSeconds(settings.ScreenshotIntervalSeconds);
+                var pollInterval = TimeSpan.FromSeconds(settings.Activity.IntervalSeconds);
+                var screenshotInterval = TimeSpan.FromSeconds(settings.Screenshots.IntervalSeconds);
 
                 // Log current settings every 5 minutes for diagnostics
                 if (_lastPollTime == DateTime.MinValue || (now - _lastPollTime).TotalMinutes > 5)
@@ -186,8 +186,8 @@ public class ActivityCoordinator(
                     var healthStatus = _healthMonitor.GetActivityHealthStatus();
                     monitorLogger.LogInformation(
                         "Activity monitoring: Screenshot={Screenshot}s, Ping={Ping}s, Health={Health}, ConsecutiveFailures={Failures}", 
-                        settings.ScreenshotIntervalSeconds, 
-                        settings.PingIntervalSeconds,
+                        settings.Screenshots.IntervalSeconds, 
+                        settings.Activity.IntervalSeconds,
                         healthStatus,
                         _consecutiveAgentCommandFailures);
                 }
@@ -244,16 +244,16 @@ public class ActivityCoordinator(
                             version = version,  // Add version
                             health = new
                             {
-                                isMonitoring = settings.IsMonitoringEnabled,
-                                screenshotInterval = settings.ScreenshotIntervalSeconds,
-                                pingInterval = settings.PingIntervalSeconds
+                                isMonitoring = settings.Activity.Enabled,
+                                screenshotInterval = settings.Screenshots.IntervalSeconds,
+                                pingInterval = settings.Activity.IntervalSeconds
                             }
                         });
                     }
                 }
 
                 // Check for Timed Screenshot (only if enabled)
-                if (settings.ScreenshotIntervalSeconds > 0 && now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
+                if (settings.Screenshots.IntervalSeconds > 0 && now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
                 {
                     monitorLogger.LogDebug("Timed interval elapsed");
                     _lastTimedScreenshot = now;

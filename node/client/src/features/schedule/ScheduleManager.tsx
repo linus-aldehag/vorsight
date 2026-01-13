@@ -12,13 +12,11 @@ export function ScheduleManager() {
     const { selectedMachine } = useMachine();
     const [schedule, setSchedule] = useState<AccessSchedule | null>(null);
     const [agentSettings, setAgentSettings] = useState<AgentSettings>({
-        screenshotIntervalSeconds: 300,
-        pingIntervalSeconds: 30,
-        isMonitoringEnabled: true,
-        isAuditEnabled: true,
-        isScreenshotEnabled: false,
-        isActivityEnabled: false,
-        isAccessControlEnabled: false
+        screenshots: { enabled: false, intervalSeconds: 300, filterDuplicates: true },
+        monitoring: { enabled: true, pingIntervalSeconds: 30 },
+        audit: { enabled: true, filters: { security: true, system: true, application: true } },
+        activity: { enabled: false },
+        accessControl: { enabled: false, violationAction: 'logoff', schedule: [] }
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -27,7 +25,7 @@ export function ScheduleManager() {
     // Feature toggles
     const [screenshotEnabled, setScreenshotEnabled] = useState(true);
     const [activityTrackingEnabled, setActivityTrackingEnabled] = useState(true);
-    const [scheduleEnforcementEnabled, setScheduleEnforcementEnabled] = useState(true);
+
 
     useEffect(() => {
         if (selectedMachine) {
@@ -51,9 +49,9 @@ export function ScheduleManager() {
             setAgentSettings(settings);
 
             // Initialize toggles
-            setScreenshotEnabled(settings.screenshotIntervalSeconds > 0);
-            setActivityTrackingEnabled(settings.pingIntervalSeconds > 0);
-            setScheduleEnforcementEnabled(schedule?.isActive ?? true);
+            setScreenshotEnabled(settings.screenshots.intervalSeconds > 0);
+            setActivityTrackingEnabled(settings.monitoring.pingIntervalSeconds > 0);
+            setActivityTrackingEnabled(settings.monitoring.pingIntervalSeconds > 0);
         } catch (err) {
             console.error('Failed to load agent settings', err);
             setError('Failed to load agent settings. Using defaults.');
@@ -84,15 +82,24 @@ export function ScheduleManager() {
                 return;
             }
 
-            const updatedSchedule = { ...schedule, isActive: scheduleEnforcementEnabled };
+            const updatedSchedule = { ...schedule, isActive: true };
             await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
 
-            const updatedSettings = {
+            const updatedSettings: AgentSettings = {
                 ...agentSettings,
-                screenshotIntervalSeconds: screenshotEnabled ? agentSettings.screenshotIntervalSeconds : 0,
-                pingIntervalSeconds: activityTrackingEnabled ? agentSettings.pingIntervalSeconds : 0,
-                isMonitoringEnabled: screenshotEnabled || activityTrackingEnabled,
-                isAuditEnabled: agentSettings.isAuditEnabled
+                screenshots: {
+                    ...agentSettings.screenshots,
+                    intervalSeconds: screenshotEnabled ? agentSettings.screenshots.intervalSeconds : 0,
+                    enabled: screenshotEnabled
+                },
+                monitoring: {
+                    ...agentSettings.monitoring,
+                    pingIntervalSeconds: activityTrackingEnabled ? agentSettings.monitoring.pingIntervalSeconds : 0,
+                    enabled: activityTrackingEnabled
+                },
+                audit: agentSettings.audit,
+                activity: agentSettings.activity,
+                accessControl: agentSettings.accessControl
             };
             await VorsightApi.saveSettings(selectedMachine.id, updatedSettings);
         } catch (err) {
@@ -187,8 +194,14 @@ export function ScheduleManager() {
                                         <label className="text-sm font-medium">Interval (minutes)</label>
                                         <Input
                                             type="number"
-                                            value={Math.round(agentSettings.screenshotIntervalSeconds / 60)}
-                                            onChange={(e) => setAgentSettings({ ...agentSettings, screenshotIntervalSeconds: (parseInt(e.target.value) || 5) * 60 })}
+                                            value={Math.round(agentSettings.screenshots.intervalSeconds / 60)}
+                                            onChange={(e) => setAgentSettings({
+                                                ...agentSettings,
+                                                screenshots: {
+                                                    ...agentSettings.screenshots,
+                                                    intervalSeconds: (parseInt(e.target.value) || 5) * 60
+                                                }
+                                            })}
                                             min={1}
                                             max={60}
                                             className="font-mono bg-background/50"
@@ -224,8 +237,14 @@ export function ScheduleManager() {
                                         <label className="text-sm font-medium">Ping Interval (seconds)</label>
                                         <Input
                                             type="number"
-                                            value={agentSettings.pingIntervalSeconds}
-                                            onChange={(e) => setAgentSettings({ ...agentSettings, pingIntervalSeconds: parseInt(e.target.value) || 30 })}
+                                            value={agentSettings.monitoring.pingIntervalSeconds}
+                                            onChange={(e) => setAgentSettings({
+                                                ...agentSettings,
+                                                monitoring: {
+                                                    ...agentSettings.monitoring,
+                                                    pingIntervalSeconds: parseInt(e.target.value) || 30
+                                                }
+                                            })}
                                             min={5}
                                             max={300}
                                             className="font-mono bg-background/50"
@@ -238,15 +257,9 @@ export function ScheduleManager() {
                     </Card>
 
                     {/* Schedule Enforcement */}
-                    {/* Schedule Enforcement */}
+                    {/* Access Control Configuration */}
                     <Card className="border-border/50 bg-card/50 backdrop-blur-sm flex flex-col lg:flex-row overflow-hidden transition-all duration-300">
-                        <div className="p-6 lg:pr-0 flex items-start">
-                            <Switch checked={scheduleEnforcementEnabled} onCheckedChange={setScheduleEnforcementEnabled} className="mt-1" />
-                        </div>
-
-                        <div className="w-full h-px lg:w-px lg:h-auto bg-white/10 lg:my-4 lg:mx-6 lg:self-stretch" />
-
-                        <div className="flex-1 py-6 px-6 lg:pr-6 lg:pl-0">
+                        <div className="flex-1 py-6 px-6">
                             <div className="space-y-1 mb-4">
                                 <h3 className="font-semibold leading-none tracking-tight flex items-center gap-2">
                                     <Clock size={16} className="text-primary" />
@@ -255,31 +268,29 @@ export function ScheduleManager() {
                                 <p className="text-sm text-muted-foreground">Time window enforcement</p>
                             </div>
 
-                            {scheduleEnforcementEnabled && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Start Time</label>
-                                            <TimeInput
-                                                value={getStartTime(schedule)}
-                                                onChange={updateStartTime}
-                                                className="font-mono bg-background/50"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">End Time</label>
-                                            <TimeInput
-                                                value={getEndTime(schedule)}
-                                                onChange={updateEndTime}
-                                                className="font-mono bg-background/50"
-                                            />
-                                        </div>
+                            <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Start Time</label>
+                                        <TimeInput
+                                            value={getStartTime(schedule)}
+                                            onChange={updateStartTime}
+                                            className="font-mono bg-background/50"
+                                        />
                                     </div>
-                                    <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-4">
-                                        Outside of these hours, the system will enforce logout policies. Ensure critical services are excluded from OS-level enforcement if necessary.
-                                    </p>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">End Time</label>
+                                        <TimeInput
+                                            value={getEndTime(schedule)}
+                                            onChange={updateEndTime}
+                                            className="font-mono bg-background/50"
+                                        />
+                                    </div>
                                 </div>
-                            )}
+                                <p className="text-xs text-muted-foreground border-l-2 border-primary/20 pl-4">
+                                    Outside of these hours, the system will enforce logout policies. Ensure critical services are excluded from OS-level enforcement if necessary.
+                                </p>
+                            </div>
                         </div>
                     </Card>
                 </div>

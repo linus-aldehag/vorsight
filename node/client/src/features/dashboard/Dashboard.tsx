@@ -83,7 +83,7 @@ export function Dashboard() {
                 <div className="min-h-[300px] flex flex-col">
                     <ScreenshotViewer
                         isDisabled={!selectedMachine || selectedMachine.connectionStatus === 'offline'}
-                        isMonitoringEnabled={settings?.isScreenshotEnabled}
+                        isMonitoringEnabled={settings?.screenshots.enabled}
                     />
                 </div>
 
@@ -94,7 +94,7 @@ export function Dashboard() {
                 <div className="min-h-[300px]">
                     <ActivityTimelineCard
                         summary={activitySummary}
-                        isDisabled={!settings?.isActivityEnabled}
+                        isDisabled={!settings?.activity.enabled}
                     />
                     {!activitySummary && selectedMachine && (
                         <Card variant="glass" className="h-full flex items-center justify-center p-6 opacity-60">
@@ -107,7 +107,7 @@ export function Dashboard() {
                 <div className="min-h-[300px]">
                     <TopProcessesCard
                         summary={activitySummary}
-                        isDisabled={!settings?.isActivityEnabled}
+                        isDisabled={!settings?.activity.enabled}
                     />
                     {!activitySummary && selectedMachine && (
                         <Card variant="glass" className="h-full flex items-center justify-center p-6 opacity-60">
@@ -118,7 +118,7 @@ export function Dashboard() {
 
                 {/* 6. Current Activity (Activity Monitor) */}
                 <div className="min-h-[300px]">
-                    <ActivityMonitor isDisabled={!settings?.isActivityEnabled} />
+                    <ActivityMonitor isDisabled={!settings?.activity.enabled} />
                 </div>
 
             </div>

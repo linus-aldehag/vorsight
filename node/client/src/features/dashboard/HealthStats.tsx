@@ -133,7 +133,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                 <div className="pt-2 border-t border-border/50">
                     <UptimeDisplay
                         currentStart={uptime.currentStart}
-                        isDisabled={settings?.pingIntervalSeconds === 0}
+                        isDisabled={settings?.monitoring.pingIntervalSeconds === 0}
                     />
                 </div>
             </CardContent>

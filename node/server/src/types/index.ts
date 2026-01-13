@@ -38,13 +38,53 @@ export interface MachineMetadata {
     [key: string]: any;
 }
 
-// Machine Settings Structure
-export interface MachineSettings {
+// Machine Settings Structure (Legacy - for migration)
+export interface LegacyMachineSettings {
     screenshotIntervalSeconds: number;
     pingIntervalSeconds: number;
     isMonitoringEnabled: boolean;
     isAuditEnabled: boolean;
     [key: string]: any;
+}
+
+export interface NetworkSettings {
+    pingIntervalSeconds: number;
+}
+
+export interface ScreenshotSettings {
+    enabled: boolean;
+    intervalSeconds: number;
+    filterDuplicates: boolean;
+}
+
+export interface ActivitySettings {
+    enabled: boolean;
+    intervalSeconds: number;
+}
+
+export interface AuditFilters {
+    security: boolean;
+    system: boolean;
+    application: boolean;
+}
+
+export interface AuditSettings {
+    enabled: boolean;
+    filters: AuditFilters;
+}
+
+export interface AccessControlSettings {
+    enabled: boolean;
+    violationAction: 'logoff' | 'shutdown';
+    schedule: any[]; // define stricter if needed
+}
+
+export interface MachineSettings {
+    network: NetworkSettings;
+    screenshots: ScreenshotSettings;
+    activity: ActivitySettings;
+    audit: AuditSettings;
+    accessControl: AccessControlSettings;
 }
 
 // Health Status Structure

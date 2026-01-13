@@ -217,7 +217,7 @@ export function ScreenshotGallery() {
                 <ConfigSection
                     icon={<Eye size={24} />}
                     title="Screenshot Gallery"
-                    badge={!settings.isScreenshotEnabled && (
+                    badge={!settings.screenshots.enabled && (
                         <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
                             Capture Disabled
                         </span>

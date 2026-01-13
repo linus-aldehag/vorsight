@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { VorsightApi, type AgentSettings, type AccessSchedule } from '@/api/client';
+import { VorsightApi, type AgentSettings } from '@/api/client';
 import { useMachine } from '@/context/MachineContext';
 import { Eye, Activity, Shield, Sliders, Loader2, AlertCircle } from 'lucide-react';
 import { ExpandableFeatureCard } from '@/components/common/ExpandableFeatureCard';
@@ -12,7 +12,7 @@ import { settingsEvents } from '@/lib/settingsEvents';
 export function FeaturesPage() {
     const { selectedMachine } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
-    const [schedule, setSchedule] = useState<AccessSchedule | null>(null);
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -20,7 +20,6 @@ export function FeaturesPage() {
     useEffect(() => {
         if (selectedMachine) {
             loadSettings();
-            loadSchedule();
         }
     }, [selectedMachine?.id]);
 
@@ -39,15 +38,7 @@ export function FeaturesPage() {
         }
     };
 
-    const loadSchedule = async () => {
-        if (!selectedMachine) return;
-        try {
-            const data = await VorsightApi.getSchedule(selectedMachine.id);
-            setSchedule(data);
-        } catch (err) {
-            console.warn('No schedule found, using defaults');
-        }
-    };
+
 
     const updateFeature = async (featureName: string, updatedSettings: Partial<AgentSettings>) => {
         if (!selectedMachine || !settings) return;
@@ -71,8 +62,9 @@ export function FeaturesPage() {
     };
 
     const handleScreenshotsToggle = async (enabled: boolean) => {
+        if (!settings) return;
         await updateFeature('Screenshot Capture', {
-            isScreenshotEnabled: enabled
+            screenshots: { ...settings.screenshots, enabled }
         });
     };
 
@@ -81,8 +73,9 @@ export function FeaturesPage() {
     };
 
     const handleActivityToggle = async (enabled: boolean) => {
+        if (!settings) return;
         await updateFeature('Activity Tracking', {
-            isActivityEnabled: enabled
+            activity: { ...settings.activity, enabled }
         });
     };
 
@@ -91,8 +84,9 @@ export function FeaturesPage() {
     };
 
     const handleAuditToggle = async (enabled: boolean) => {
+        if (!settings) return;
         await updateFeature('Audit Logging', {
-            isAuditEnabled: enabled
+            audit: { ...settings.audit, enabled }
         });
     };
 
@@ -101,27 +95,13 @@ export function FeaturesPage() {
     };
 
     const handleAccessControlToggle = async (enabled: boolean) => {
+        if (!settings) return;
         await updateFeature('Access Control', {
-            isAccessControlEnabled: enabled
+            accessControl: { ...settings.accessControl, enabled }
         });
     };
 
-    const handleScheduleSave = async (updatedSchedule: AccessSchedule) => {
-        if (!selectedMachine) return;
 
-        setSaving('Access Control Schedule');
-        setError(null);
-
-        try {
-            await VorsightApi.saveSchedule(selectedMachine.id, updatedSchedule);
-            setSchedule(updatedSchedule);
-        } catch (err) {
-            console.error('Failed to save schedule:', err);
-            setError('Failed to save schedule');
-        } finally {
-            setSaving(null);
-        }
-    };
 
     if (loading) {
         return (
@@ -160,11 +140,12 @@ export function FeaturesPage() {
             <div className="space-y-4">
                 {/* Screenshot Capture */}
                 {/* Screenshot Capture */}
+                {/* Screenshot Capture */}
                 <ExpandableFeatureCard
                     icon={<Eye size={24} />}
                     title="Screenshot Capture"
                     description="Automatically capture screenshots at regular intervals"
-                    enabled={!!settings.isScreenshotEnabled}
+                    enabled={!!settings.screenshots?.enabled}
                     onToggle={handleScreenshotsToggle}
                     saving={saving === 'Screenshot Capture'}
                 >
@@ -180,7 +161,7 @@ export function FeaturesPage() {
                     icon={<Activity size={24} />}
                     title="Activity Tracking"
                     description="Monitor active applications and window titles"
-                    enabled={!!settings.isActivityEnabled}
+                    enabled={!!settings.activity?.enabled}
                     onToggle={handleActivityToggle}
                     saving={saving === 'Activity Tracking'}
                 >
@@ -196,7 +177,7 @@ export function FeaturesPage() {
                     icon={<Shield size={24} />}
                     title="Audit Logging"
                     description="Track security events and system modifications"
-                    enabled={!!settings.isAuditEnabled}
+                    enabled={!!settings.audit?.enabled}
                     onToggle={handleAuditToggle}
                     saving={saving === 'Audit Logging'}
                 >
@@ -211,14 +192,14 @@ export function FeaturesPage() {
                     icon={<Sliders size={24} />}
                     title="Access Control"
                     description="Schedule-based monitoring with time windows"
-                    enabled={!!settings.isAccessControlEnabled}
+                    enabled={!!settings.accessControl?.enabled}
                     onToggle={handleAccessControlToggle}
                     saving={saving === 'Access Control'}
                 >
                     <AccessControlConfig
-                        schedule={schedule}
-                        onSave={handleScheduleSave}
-                        saving={saving === 'Access Control Schedule'}
+                        settings={settings.accessControl}
+                        onSave={(newSettings) => updateFeature('Access Control', { accessControl: newSettings })}
+                        saving={saving === 'Access Control'}
                     />
                 </ExpandableFeatureCard>
             </div>

@@ -22,7 +22,7 @@ async function broadcastMachineList(io: Server) {
             try {
                 if (m.state?.settings) {
                     const settings = JSON.parse(m.state.settings);
-                    pingIntervalSeconds = settings.pingIntervalSeconds || 30;
+                    pingIntervalSeconds = settings.monitoring?.pingIntervalSeconds || settings.pingIntervalSeconds || 30;
                 }
             } catch (e) {
                 // Use default

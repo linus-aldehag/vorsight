@@ -14,10 +14,10 @@ export function NavigationTabs({ currentView, hasMachines, settings, onNavigate 
     // Filter out disabled features completely
     const visibleTabs = navigationTabs.filter(tab => {
         switch (tab.id) {
-            case 'gallery': return settings?.isScreenshotEnabled === true;
-            case 'activity': return settings?.isActivityEnabled === true;
-            case 'audit': return settings?.isAuditEnabled === true;
-            case 'control': return settings?.isAccessControlEnabled === true;
+            case 'gallery': return settings?.screenshots.enabled === true;
+            case 'activity': return settings?.activity.enabled === true;
+            case 'audit': return settings?.audit.enabled === true;
+            case 'control': return settings?.accessControl.enabled === true;
             default: return true; // Dashboard always visible
         }
     });

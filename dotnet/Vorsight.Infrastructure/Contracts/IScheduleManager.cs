@@ -94,14 +94,9 @@ namespace Vorsight.Infrastructure.Contracts
         bool IsEnforcementRunning { get; }
 
         /// <summary>
-        /// Update schedule from JSON string (pushed from server connection).
+        /// Update schedule from Settings object (merged into MachineSettings).
         /// </summary>
-        Task UpdateScheduleFromJsonAsync(string json);
-
-        /// <summary>
-        /// Reloads schedule from server (for WebSocket updates).
-        /// </summary>
-        Task ReloadScheduleFromServerAsync();
+        Task UpdateScheduleFromSettingsAsync(Vorsight.Contracts.Settings.AccessControlSettings settings);
     }
 
     /// <summary>

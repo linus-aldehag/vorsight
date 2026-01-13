@@ -8,7 +8,7 @@ interface AuditConfigProps {
 }
 
 export function AuditConfig({ settings, onUpdate }: AuditConfigProps) {
-    const isEnabled = settings.isAuditEnabled;
+    const isEnabled = settings.audit.enabled;
 
     return (
         <div className="space-y-6">
@@ -22,16 +22,16 @@ export function AuditConfig({ settings, onUpdate }: AuditConfigProps) {
                 <ToggleField
                     label="Security Log"
                     description="Detects user account changes, group membership modifications, and audit tampering. (Recommended: On)"
-                    checked={settings.auditLogSecurityEnabled ?? true}
-                    onCheckedChange={(checked) => onUpdate({ auditLogSecurityEnabled: checked })}
+                    checked={settings.audit.filters.security ?? true}
+                    onCheckedChange={(checked) => onUpdate({ audit: { ...settings.audit, filters: { ...settings.audit.filters, security: checked } } })}
                     disabled={!isEnabled}
                 />
 
                 <ToggleField
                     label="System Log"
                     description="Detects service installations, start type changes, and other systemic modifications."
-                    checked={settings.auditLogSystemEnabled ?? true}
-                    onCheckedChange={(checked) => onUpdate({ auditLogSystemEnabled: checked })}
+                    checked={settings.audit.filters.system ?? true}
+                    onCheckedChange={(checked) => onUpdate({ audit: { ...settings.audit, filters: { ...settings.audit.filters, system: checked } } })}
                     disabled={!isEnabled}
                     divided
                 />
@@ -39,8 +39,8 @@ export function AuditConfig({ settings, onUpdate }: AuditConfigProps) {
                 <ToggleField
                     label="Application Log"
                     description="Monitors for critical application errors and warnings."
-                    checked={settings.auditLogApplicationEnabled ?? true}
-                    onCheckedChange={(checked) => onUpdate({ auditLogApplicationEnabled: checked })}
+                    checked={settings.audit.filters.application ?? true}
+                    onCheckedChange={(checked) => onUpdate({ audit: { ...settings.audit, filters: { ...settings.audit.filters, application: checked } } })}
                     disabled={!isEnabled}
                     divided
                 />

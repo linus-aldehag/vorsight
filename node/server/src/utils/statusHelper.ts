@@ -49,8 +49,11 @@ export function getStatusText(machine: MachineWithState): string {
         try {
             const settings: MachineSettings = machine.settings ? JSON.parse(machine.settings) : {};
 
-            if (settings.lastPingSuccess) {
-                const pingTime = new Date(settings.lastPingSuccess);
+            // Use column from MachineState if available (preferred), fallback to legacy settings blob
+            const lastPingSuccess = machine.state?.lastPingSuccess || (settings as any).lastPingSuccess;
+
+            if (lastPingSuccess) {
+                const pingTime = new Date(lastPingSuccess);
                 const elapsed = Math.floor((now.getTime() - pingTime.getTime()) / 1000);
 
                 // Recent ping (< 5 min)

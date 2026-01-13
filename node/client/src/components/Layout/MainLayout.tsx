@@ -66,10 +66,10 @@ export function MainLayout() {
 
         const isFeatureDisabled = () => {
             switch (view) {
-                case 'gallery': return !settings.isScreenshotEnabled;
-                case 'activity': return !settings.isActivityEnabled;
-                case 'audit': return !settings.isAuditEnabled;
-                case 'control': return !settings.isAccessControlEnabled;
+                case 'gallery': return !settings.screenshots.enabled;
+                case 'activity': return !settings.activity.enabled;
+                case 'audit': return !settings.audit.enabled;
+                case 'control': return !settings.accessControl.enabled;
                 default: return false;
             }
         };

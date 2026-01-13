@@ -24,7 +24,7 @@ router.get('/:machineId', async (req: Request, res: Response) => {
         try {
             if (machine.state?.settings) {
                 const settings = JSON.parse(machine.state.settings) as MachineSettings;
-                pingIntervalSeconds = settings.pingIntervalSeconds || 30;
+                pingIntervalSeconds = settings.network?.pingIntervalSeconds || (settings as any).monitoring?.pingIntervalSeconds || 300;
             }
         } catch (e) { }
 

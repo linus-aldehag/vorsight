@@ -92,25 +92,7 @@ public class Worker : BackgroundService
             await TryStartComponent("SessionSummaryManager", () => _sessionSummaryManager.InitializeAsync());
             await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
 
-            // Try to fetch initial schedule from server
-            try 
-            {
-                if (_serverConnection.ApiKey != null)
-                {
-                    _logger.LogInformation("Attempting to fetch initial schedule from server...");
-                    var scheduleJson = await _serverConnection.FetchScheduleJsonAsync();
-                    if (scheduleJson != null)
-                    {
-                        await _scheduleManager.UpdateScheduleFromJsonAsync(scheduleJson);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to fetch initial schedule");
-            }
-
-            // Try to fetch initial settings
+            // Try to fetch initial settings which includes schedule
             await FetchAndApplySettingsAsync();
 
             // Hook up IPC message received events - safe to do if IPC started or not (events are null safe)
@@ -124,22 +106,11 @@ public class Worker : BackgroundService
             // Hook up server commands
             _serverConnection.CommandReceived += OnServerCommandReceived;
 
-            // Hook up schedule updates
+            // Hook up schedule updates - Now handled via settings, but keep for fallback triggers
             _serverConnection.ScheduleUpdateReceived += async (sender, args) =>
             {
-                _logger.LogInformation("Schedule update event received - reloading from server");
-                try
-                {
-                    var json = await _serverConnection.FetchScheduleJsonAsync();
-                    if (json != null)
-                    {
-                        await _scheduleManager.UpdateScheduleFromJsonAsync(json);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to reload schedule after update event");
-                }
+                _logger.LogInformation("Schedule update event received - reloading settings to get new schedule");
+                await FetchAndApplySettingsAsync();
             };
 
             // Hook up settings updates
@@ -152,23 +123,9 @@ public class Worker : BackgroundService
             // Hook up connection restored (re-fetch everything)
             _serverConnection.ConnectionRestored += async (sender, args) =>
             {
-                _logger.LogInformation("Connection to server restored - re-fetching settings and schedule");
+                _logger.LogInformation("Connection to server restored - re-fetching settings");
                 
-                // 1. Fetch Schedule
-                try
-                {
-                    var scheduleJson = await _serverConnection.FetchScheduleJsonAsync();
-                    if (scheduleJson != null)
-                    {
-                        await _scheduleManager.UpdateScheduleFromJsonAsync(scheduleJson);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to update schedule after connection restore");
-                }
-
-                // 2. Fetch Settings
+                // Fetch Settings (includes Schedule)
                 await FetchAndApplySettingsAsync();
             };
 
@@ -230,12 +187,9 @@ public class Worker : BackgroundService
 
             // Start audit monitoring (respecting settings)
             var currentSettings = await _settingsManager.GetSettingsAsync();
-            if (currentSettings.IsAuditEnabled)
-            {
-            if (currentSettings.IsAuditEnabled)
+            if (currentSettings.Audit.Enabled)
             {
                 await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync(currentSettings));
-            }
             }
             else
             {
@@ -256,8 +210,8 @@ public class Worker : BackgroundService
                     // Update uptime
                     _uptimeMonitor.RecordHeartbeat();
 
-                    // Service health check every 30 seconds
-                    await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+                    // Service health check every 10 seconds (Heartbeat)
+                    await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -418,7 +372,7 @@ public class Worker : BackgroundService
             var json = await _serverConnection.FetchSettingsJsonAsync();
             if (json != null)
             {
-                var settings = JsonSerializer.Deserialize<AgentSettings>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var settings = JsonSerializer.Deserialize<MachineSettings>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 if (settings != null)
                 {
                     await _settingsManager.UpdateSettingsAsync(settings);
@@ -432,12 +386,12 @@ public class Worker : BackgroundService
         }
     }
 
-    private async Task ApplySettingsAsync(AgentSettings settings)
+    private async Task ApplySettingsAsync(MachineSettings settings)
     {
         try
         {
             // Apply Audit Settings
-            if (settings.IsAuditEnabled)
+            if (settings.Audit.Enabled)
             {
                 // Always call StartMonitoringAsync to ensure settings (filters) are up to date
                 // The manager handles restart if already running
@@ -452,6 +406,10 @@ public class Worker : BackgroundService
                     await _auditManager.StopMonitoringAsync();
                 }
             }
+
+            // Apply Schedule Settings
+            _logger.LogInformation("Applying Access Control settings");
+            await _scheduleManager.UpdateScheduleFromSettingsAsync(settings.AccessControl);
 
             // Report successful application to server (Settings Sync)
             var settingsJson = JsonSerializer.Serialize(settings);
