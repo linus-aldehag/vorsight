@@ -66,11 +66,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
     const parseTimeInput = (inputStr: string): string | null => {
         if (!inputStr) return null;
-        if (timeFormat === '24h') return inputStr;
+        if (timeFormat === '24h') {
+            // Validate HH:mm
+            if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(inputStr)) {
+                return inputStr;
+            }
+            // Try flexible 24h validation (e.g. 1 -> 01:00?)
+            // For now assume strict or flexible date parse if fails
+        }
 
-        // Try to parse 12h format
+        // Try to parse flexible format (12h or 24h input like '13:00')
         try {
-            // Flexible parsing (1:00 pm, 01:00 PM, etc)
+            // Flexible parsing
+            // For 24h, we want to return HH:mm
+            // For 12h, we return HH:mm (internal value)
+
+            // Hack for date-fns parsing flexible strings without rigid format:
+            // Use native Date parsing for "2000/01/01 {input}"
             const date = new Date(`2000/01/01 ${inputStr}`);
             if (isNaN(date.getTime())) return null;
 
