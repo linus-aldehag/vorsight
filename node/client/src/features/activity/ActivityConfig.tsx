@@ -9,12 +9,14 @@ interface ActivityConfigProps {
 }
 
 export function ActivityConfig({ settings, onSave, saving }: ActivityConfigProps) {
-    const [activityInterval, setActivityInterval] = useState(settings.pingIntervalSeconds);
+    const [activityInterval, setActivityInterval] = useState(settings.monitoring.pingIntervalSeconds);
 
     const handleSave = async () => {
         await onSave({
-            pingIntervalSeconds: activityInterval,
-            pingIntervalSecondsWhenEnabled: activityInterval
+            monitoring: {
+                ...settings.monitoring,
+                pingIntervalSeconds: activityInterval
+            }
         });
     };
 

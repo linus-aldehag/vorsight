@@ -91,30 +91,7 @@ namespace Vorsight.Infrastructure.Scheduling
             }
         }
 
-        public async Task UpdateScheduleFromJsonAsync(string json)
-        {
-             ThrowIfDisposed();
-             if (string.IsNullOrWhiteSpace(json) || json == "null") return;
 
-             try 
-             {
-                 var scheduleData = JsonSerializer.Deserialize<ScheduleDataDto>(json);
-                 if (scheduleData != null)
-                 {
-                     var newSchedule = ConvertToAccessSchedule(scheduleData);
-                     if (newSchedule != null)
-                     {
-                         _currentSchedule = newSchedule;
-                         await PersistScheduleAsync();
-                         _logger.LogInformation("Schedule updated from server JSON (Active: {IsActive})", _currentSchedule.IsActive);
-                     }
-                 }
-             }
-             catch (Exception ex)
-             {
-                 _logger.LogError(ex, "Error updating schedule from JSON");
-             }
-        }
 
         public async Task<AccessSchedule> CreateScheduleAsync(AccessSchedule schedule)
         {
@@ -356,119 +333,58 @@ namespace Vorsight.Infrastructure.Scheduling
             }
         }
 
-        /// <summary>
-        /// Fetches schedule from Node.js server API.
-        /// </summary>
-        private async Task<ScheduleDataDto?> FetchScheduleFromServerAsync()
+        public async Task UpdateScheduleFromSettingsAsync(Vorsight.Contracts.Settings.AccessControlSettings settings)
         {
-            if (_httpClient == null || string.IsNullOrEmpty(_machineId))
-                return null;
-                
+            ThrowIfDisposed();
+            if (settings == null) return;
+            
             try
             {
-                var url = $"/api/schedule?machineId={_machineId}";
-                var response = await _httpClient.GetAsync(url);
-                
-                if (!response.IsSuccessStatusCode)
+                var newSchedule = new AccessSchedule
                 {
-                    _logger.LogWarning("Failed to fetch schedule from server: {Status}", response.StatusCode);
-                    return null;
-                }
-                    
-                var json = await response.Content.ReadAsStringAsync();
-                if (string.IsNullOrWhiteSpace(json) || json == "null")
-                    return null;
-                    
-                var scheduleData = JsonSerializer.Deserialize<ScheduleDataDto>(json);
-                return scheduleData;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching schedule from server");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Converts server DTO format to C# AccessSchedule.
-        /// </summary>
-        private AccessSchedule? ConvertToAccessSchedule(ScheduleDataDto? data)
-        {
-            if (data == null)
-                return null;
-                
-            try
-            {
-                var schedule = new AccessSchedule
-                {
-                    ScheduleId = data.ScheduleId ?? Guid.NewGuid().ToString(),
-                    IsActive = data.IsActive,
-                    TimeZoneId = TimeZoneInfo.Local.Id,
-                    AllowedTimeWindows = new List<AccessWindow>()
+                    ScheduleId = Guid.NewGuid().ToString(), // Regenerate ID or track it in settings? Settings usually doesn't have ID.
+                    IsActive = settings.Enabled,
+                    ViolationAction = settings.ViolationAction == "shutdown" ? AccessViolationAction.ShutDown : AccessViolationAction.LogOff,
+                    AllowedTimeWindows = conversion_helper(settings.Schedule),
+                    TimeZoneId = TimeZoneInfo.Local.Id
                 };
-
-                if (data.AllowedTimeWindows != null)
-                {
-                    foreach (var window in data.AllowedTimeWindows)
-                    {
-                        // Map DayOfWeek (assuming server sends 0-6 matching DayOfWeek enum or similar)
-                        // If window.DayOfWeek is int, cast it.
-                        if (Enum.IsDefined(typeof(DayOfWeek), window.DayOfWeek))
-                        {
-                            schedule.AllowedTimeWindows.Add(new AccessWindow
-                            {
-                                DayOfWeek = (DayOfWeek)window.DayOfWeek,
-                                StartTime = ParseTime(window.StartTime),
-                                EndTime = ParseTime(window.EndTime)
-                            });
-                        }
-                    }
-                }
                 
-                return schedule;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error converting schedule data");
-                return null;
-            }
-        }
-
-        private TimeSpan ParseTime(string? timeStr)
-        {
-            if (string.IsNullOrWhiteSpace(timeStr)) return TimeSpan.Zero;
-            
-            // Handle "HH" or "H" format which TimeSpan.Parse treats as days
-            if (int.TryParse(timeStr, out int hours) && !timeStr.Contains(":"))
-            {
-                return TimeSpan.FromHours(hours);
-            }
-            
-            return TimeSpan.Parse(timeStr);
-        }
-
-        /// <summary>
-        /// Reloads schedule from server (called by WebSocket event handlers).
-        /// </summary>
-        public async Task ReloadScheduleFromServerAsync()
-        {
-            try
-            {
-                var scheduleData = await FetchScheduleFromServerAsync();
-                if (scheduleData != null)
+                _currentSchedule = newSchedule;
+                await PersistScheduleAsync();
+                
+                _logger.LogInformation("Schedule updated from Settings (Active: {IsActive})", _currentSchedule.IsActive);
+                
+                // If active, ensure enforcement is running
+                if (_currentSchedule.IsActive && !_isEnforcementRunning)
                 {
-                    _currentSchedule = ConvertToAccessSchedule(scheduleData);
-                    _logger.LogInformation("Schedule reloaded from server (Active: {IsActive}, {WindowCount} windows)",
-                        _currentSchedule?.IsActive ?? false,
-                        _currentSchedule?.AllowedTimeWindows?.Count ?? 0);
+                    await StartEnforcementAsync();
                 }
             }
-            catch (Exception ex)
+             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error reloading schedule from server");
+                _logger.LogError(ex, "Error updating schedule from settings");
             }
         }
 
+        private List<AccessWindow> conversion_helper(List<Vorsight.Contracts.Settings.AccessScheduleWindow> source)
+        {
+            var result = new List<AccessWindow>();
+            if (source == null) return result;
+
+            foreach(var w in source)
+            {
+                result.Add(new AccessWindow
+                {
+                    DayOfWeek = (DayOfWeek)w.DayOfWeek,
+                    StartTime = TimeSpan.Parse(w.StartTime),
+                    EndTime = TimeSpan.Parse(w.EndTime)
+                });
+            }
+            return result;
+        }
+
+        // Removed legacy fetch methods
+        
         private async Task PersistScheduleAsync()
         {
             try

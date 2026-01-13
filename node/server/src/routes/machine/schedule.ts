@@ -17,7 +17,7 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
 
         if (state && state.settings) {
             const settings = JSON.parse(state.settings) as MachineSettings;
-            return res.json(settings.schedule || null);
+            return res.json(settings.accessControl?.schedule || (settings as any).schedule || null);
         } else {
             return res.json(null);
         }

@@ -20,7 +20,8 @@ router.get('/', async (req: Request, res: Response) => {
 
         if (state && state.settings) {
             const settings = JSON.parse(state.settings) as MachineSettings;
-            return res.json(settings.schedule || null);
+            // Check legacy vs new
+            return res.json(settings.accessControl?.schedule || (settings as any).schedule || null);
         } else {
             return res.json(null);
         }
@@ -48,8 +49,16 @@ router.post('/', async (req: Request, res: Response) => {
         // Use type assertion to avoid "not assignable" if logic is complex
         let settings = (state && state.settings ? JSON.parse(state.settings) : {}) as MachineSettings;
 
+        // Ensure accessControl object exists
+        if (!settings.accessControl) {
+            settings.accessControl = { enabled: false, violationAction: 'logoff', schedule: [] };
+        }
+
         // Update schedule
-        settings.schedule = schedule;
+        settings.accessControl.schedule = schedule as any; // Cast if type mismatch with strict structure
+
+        // Remove legacy property if present to cleanup
+        delete (settings as any).schedule;
 
         // Save back to database
         await prisma.machineState.upsert({

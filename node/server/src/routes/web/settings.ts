@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../db/database';
-import { MachineSettings } from '../../types';
+
 
 const router = express.Router();
 
@@ -20,18 +20,32 @@ router.get('/', async (req: Request, res: Response) => {
         });
 
         // Default settings
-        const defaults: Partial<MachineSettings> = {
-            screenshotIntervalSeconds: 0,
-            pingIntervalSeconds: 0,
-            isMonitoringEnabled: false,
-            isAuditEnabled: false
+        const defaults = {
+            monitoring: { enabled: true, pingIntervalSeconds: 30 },
+            screenshots: { enabled: false, intervalSeconds: 300, filterDuplicates: true },
+            activity: { enabled: false },
+            audit: { enabled: false, filters: { security: true, system: false, application: false } },
+            accessControl: { enabled: false, violationAction: 'logoff', schedule: [] }
         };
 
         // Merge stored settings with defaults
         const storedSettings = (state && state.settings) ? JSON.parse(state.settings) : {};
-        const mergedSettings = {
-            ...defaults,
-            ...storedSettings
+
+        // Deep merge is safer here but spreading top level keys is a start
+        // Any missing keys in stored will use defaults
+        const mergedSettings = { ...defaults };
+        if (storedSettings.monitoring) mergedSettings.monitoring = { ...defaults.monitoring, ...storedSettings.monitoring };
+        if (storedSettings.screenshots) mergedSettings.screenshots = { ...defaults.screenshots, ...storedSettings.screenshots };
+        if (storedSettings.activity) mergedSettings.activity = { ...defaults.activity, ...storedSettings.activity };
+        if (storedSettings.audit) mergedSettings.audit = {
+            ...defaults.audit,
+            ...storedSettings.audit,
+            filters: { ...defaults.audit.filters, ...(storedSettings.audit?.filters || {}) }
+        };
+        if (storedSettings.accessControl) mergedSettings.accessControl = {
+            ...defaults.accessControl,
+            ...storedSettings.accessControl,
+            // schedule is an array, direct replace
         };
 
         return res.json(mergedSettings);
@@ -50,20 +64,23 @@ router.post('/', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'machineId required' });
         }
 
-        // Get existing settings to preserve schedule
+        // Get existing settings
         const state = await prisma.machineState.findUnique({
             where: { machineId: machineId },
             select: { settings: true }
         });
 
-        let existingSettings = (state && state.settings ? JSON.parse(state.settings) : {}) as MachineSettings;
+        // Current stored settings
+        let existingSettings = (state && state.settings ? JSON.parse(state.settings) : {});
 
-        // Merge new settings while preserving schedule
+        // Merge new settings on top of existing
+        // Since the structure is hierarchical, we should probably do a smarter merge or just trust the client sent the full blob?
+        // Usually Save sends the FULL settings object currently.
+        // Let's assume full object replacement if top-level keys exist.
+
         const mergedSettings = {
             ...existingSettings,
-            ...newSettings,
-            // Preserve schedule if it exists
-            schedule: existingSettings.schedule
+            ...newSettings
         };
 
         // Save to machine_state

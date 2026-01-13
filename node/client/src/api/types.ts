@@ -41,25 +41,44 @@ export interface ApiResponse {
     [key: string]: any;
 }
 
-export interface AgentSettings {
-    screenshotIntervalSeconds: number;
+export interface MonitoringSettings {
+    enabled: boolean;
     pingIntervalSeconds: number;
-    isMonitoringEnabled: boolean;
-    isAuditEnabled: boolean;
-    // Audit Log Source Filters
-    auditLogSecurityEnabled?: boolean;
-    auditLogSystemEnabled?: boolean;
-    auditLogApplicationEnabled?: boolean;
-    isScreenshotEnabled: boolean; // Separate from interval - feature on/off
-    isActivityEnabled: boolean;   // Separate from interval - feature on/off
-    isAccessControlEnabled: boolean; // Schedule-based access control
-    filterDuplicateScreenshots?: boolean; // Screenshot deduplication
-    screenshotIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
-    pingIntervalSecondsWhenEnabled?: number; // Preserves value when disabled
-    // Ping monitor data
-    lastPingTime?: string;
-    lastPingSuccess?: string;
-    pingLatency?: number;
+}
+
+export interface ScreenshotSettings {
+    enabled: boolean;
+    intervalSeconds: number;
+    filterDuplicates: boolean;
+}
+
+export interface ActivitySettings {
+    enabled: boolean;
+}
+
+export interface AuditFilters {
+    security: boolean;
+    system: boolean;
+    application: boolean;
+}
+
+export interface AuditSettings {
+    enabled: boolean;
+    filters: AuditFilters;
+}
+
+export interface AccessControlSettings {
+    enabled: boolean;
+    violationAction: 'logoff' | 'shutdown';
+    schedule: TimeWindow[];
+}
+
+export interface AgentSettings {
+    monitoring: MonitoringSettings;
+    screenshots: ScreenshotSettings;
+    activity: ActivitySettings;
+    audit: AuditSettings;
+    accessControl: AccessControlSettings;
 }
 
 export interface TimeWindow {

@@ -9,20 +9,25 @@ interface ScreenshotConfigProps {
 }
 
 export function ScreenshotConfig({ settings, onSave, saving }: ScreenshotConfigProps) {
-    const [screenshotInterval, setScreenshotInterval] = useState(Math.round(settings.screenshotIntervalSeconds / 60));
-    const [filterDuplicates, setFilterDuplicates] = useState(settings.filterDuplicateScreenshots ?? true);
+    const [screenshotInterval, setScreenshotInterval] = useState(Math.round(settings.screenshots.intervalSeconds / 60));
+    const [filterDuplicates, setFilterDuplicates] = useState(settings.screenshots.filterDuplicates ?? true);
 
     const handleIntervalSave = async () => {
         await onSave({
-            screenshotIntervalSeconds: screenshotInterval * 60,
-            screenshotIntervalSecondsWhenEnabled: screenshotInterval * 60
+            screenshots: {
+                ...settings.screenshots,
+                intervalSeconds: screenshotInterval * 60
+            }
         });
     };
 
     const handleFilterToggle = async (enabled: boolean) => {
         setFilterDuplicates(enabled);
         await onSave({
-            filterDuplicateScreenshots: enabled
+            screenshots: {
+                ...settings.screenshots,
+                filterDuplicates: enabled
+            }
         });
     };
 

@@ -1,69 +1,61 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { TimeInput } from '@/components/ui/time-input';
-import type { AccessSchedule } from '@/api/client';
+import type { AccessControlSettings } from '@/api/client';
 
 interface AccessControlConfigProps {
-    schedule: AccessSchedule | null;
-    onSave: (schedule: AccessSchedule) => Promise<void>;
+    settings: AccessControlSettings;
+    onSave: (settings: AccessControlSettings) => Promise<void>;
     saving: boolean;
 }
 
-export function AccessControlConfig({ schedule, onSave, saving }: AccessControlConfigProps) {
+export function AccessControlConfig({ settings, onSave, saving }: AccessControlConfigProps) {
     const [mode, setMode] = useState<'simple' | 'custom'>('simple');
+    const [isEnabled, setIsEnabled] = useState(settings.enabled);
+
+    // Ordered days: Mon(1), Tue(2), Wed(3), Thu(4), Fri(5), Sat(6), Sun(0)
+    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
+    const weekDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     // Simple Mode State
     const [simpleStart, setSimpleStart] = useState(
-        schedule?.allowedTimeWindows?.[0]?.startTime || '08:00'
+        settings.schedule?.[0]?.startTime || '08:00'
     );
     const [simpleEnd, setSimpleEnd] = useState(
-        schedule?.allowedTimeWindows?.[0]?.endTime || '22:00'
+        settings.schedule?.[0]?.endTime || '22:00'
     );
 
     // Custom Mode State (Initialize 7 days)
-    // 0=Sun, 1=Mon, ..., 6=Sat
-    // We'll use a map or array. Array of objects is easiest.
-    const [customWindows, setCustomWindows] = useState<{ day: number, start: string, end: string, enabled: boolean }[]>(
-        Array.from({ length: 7 }, (_, i) => {
-            // Find existing window for this day
-            const existing = schedule?.allowedTimeWindows?.find(w => w.dayOfWeek === i);
+    const [customWindows, setCustomWindows] = useState<{ day: number, start: string, end: string, enabled: boolean }[]>([]);
+
+    useEffect(() => {
+        // Initialize windows based on ordered days
+        setCustomWindows(orderedDays.map(dayIdx => {
+            const existing = settings.schedule?.find(w => w.dayOfWeek === dayIdx);
             return {
-                day: i,
+                day: dayIdx,
                 start: existing?.startTime || '08:00',
                 end: existing?.endTime || '22:00',
-                enabled: !!existing // If it exists in the list, it's enabled.
+                enabled: !!existing
             };
-        })
-    );
+        }));
+    }, [settings.schedule]); // Re-init if schedule prop changes deeply
 
     const [violationAction, setViolationAction] = useState<'logoff' | 'shutdown'>(
-        schedule?.violationAction || 'logoff'
+        settings.violationAction || 'logoff'
     );
 
-    // Sync state when schedule prop updates (e.g. after load or save)
+    // Sync state when settings prop updates
     useEffect(() => {
-        if (schedule) {
-            setSimpleStart(schedule.allowedTimeWindows?.[0]?.startTime || '08:00');
-            setSimpleEnd(schedule.allowedTimeWindows?.[0]?.endTime || '22:00');
-            setViolationAction(schedule.violationAction || 'logoff');
-
-            setCustomWindows(Array.from({ length: 7 }, (_, i) => {
-                const existing = schedule.allowedTimeWindows?.find(w => w.dayOfWeek === i);
-                return {
-                    day: i,
-                    start: existing?.startTime || '08:00',
-                    end: existing?.endTime || '22:00',
-                    enabled: !!existing
-                };
-            }));
-        }
-    }, [schedule]);
+        setIsEnabled(settings.enabled);
+        setSimpleStart(settings.schedule?.[0]?.startTime || '08:00');
+        setSimpleEnd(settings.schedule?.[0]?.endTime || '22:00');
+        setViolationAction(settings.violationAction || 'logoff');
+    }, [settings]);
 
     const isValidTime = (time: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
 
     const handleSave = async () => {
-        if (!schedule) return;
-
         // Validate Simple Mode times
         if (mode === 'simple') {
             if (!isValidTime(simpleStart) || !isValidTime(simpleEnd)) {
@@ -72,12 +64,12 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
             }
         }
 
-        let newWindows;
+        let newSchedule;
 
         if (mode === 'simple') {
             // Apply to all days 0-6
             const days = [0, 1, 2, 3, 4, 5, 6];
-            newWindows = days.map(day => ({
+            newSchedule = days.map(day => ({
                 dayOfWeek: day,
                 startTime: simpleStart,
                 endTime: simpleEnd
@@ -91,7 +83,7 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
             }
 
             // Filter only enabled days
-            newWindows = customWindows
+            newSchedule = customWindows
                 .filter(w => w.enabled)
                 .map(w => ({
                     dayOfWeek: w.day,
@@ -100,12 +92,13 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
                 }));
         }
 
-        const updatedSchedule: AccessSchedule = {
-            ...schedule,
+        const updatedSettings: AccessControlSettings = {
+            ...settings,
+            enabled: isEnabled,
             violationAction,
-            allowedTimeWindows: newWindows
+            schedule: newSchedule
         };
-        await onSave(updatedSchedule);
+        await onSave(updatedSettings);
     };
 
     const updateCustomDay = (dayIndex: number, field: 'start' | 'end' | 'enabled', value: any) => {
@@ -113,8 +106,6 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
             d.day === dayIndex ? { ...d, [field]: value } : d
         ));
     };
-
-    const weekDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
     const handleModeChange = (newMode: 'simple' | 'custom') => {
         setMode(newMode);
@@ -131,23 +122,35 @@ export function AccessControlConfig({ schedule, onSave, saving }: AccessControlC
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center space-x-4 bg-muted/20 p-2 rounded-lg w-fit">
-                <Button
-                    variant={mode === 'simple' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleModeChange('simple')}
-                    className="text-xs"
-                >
-                    Simple (Every Day)
-                </Button>
-                <Button
-                    variant={mode === 'custom' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => handleModeChange('custom')}
-                    className="text-xs"
-                >
-                    Custom (Per Weekday)
-                </Button>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4 bg-muted/20 p-2 rounded-lg w-fit">
+                    <Button
+                        variant={mode === 'simple' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleModeChange('simple')}
+                        className="text-xs"
+                    >
+                        Simple (Every Day)
+                    </Button>
+                    <Button
+                        variant={mode === 'custom' ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleModeChange('custom')}
+                        className="text-xs"
+                    >
+                        Custom (Per Weekday)
+                    </Button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Enforce Schedule</label>
+                    <input
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={e => setIsEnabled(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                </div>
             </div>
 
             {mode === 'simple' ? (
