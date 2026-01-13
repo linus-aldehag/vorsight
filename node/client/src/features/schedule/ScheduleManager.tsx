@@ -3,9 +3,10 @@ import { VorsightApi, type AccessSchedule, type AgentSettings } from '../../api/
 import { useMachine } from '../../context/MachineContext';
 import { Button } from '../../components/ui/button';
 import { Switch } from '../../components/ui/switch';
-import { Input } from '../../components/ui/input';
+
 import { TimeInput } from '../../components/ui/time-input';
 import { Card } from '../../components/ui/card';
+import { StrictNumberInput } from '../../components/common/form-fields/StrictNumberInput';
 import { Save, AlertCircle, Clock, Eye, Activity } from 'lucide-react';
 
 export function ScheduleManager() {
@@ -192,14 +193,13 @@ export function ScheduleManager() {
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Interval (minutes)</label>
-                                        <Input
-                                            type="number"
+                                        <StrictNumberInput
                                             value={Math.round(agentSettings.screenshots.intervalSeconds / 60)}
-                                            onChange={(e) => setAgentSettings({
+                                            onChange={(val) => setAgentSettings({
                                                 ...agentSettings,
                                                 screenshots: {
                                                     ...agentSettings.screenshots,
-                                                    intervalSeconds: (parseInt(e.target.value) || 5) * 60
+                                                    intervalSeconds: val * 60
                                                 }
                                             })}
                                             min={1}
@@ -235,14 +235,13 @@ export function ScheduleManager() {
                                 <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Ping Interval (seconds)</label>
-                                        <Input
-                                            type="number"
+                                        <StrictNumberInput
                                             value={agentSettings.monitoring.pingIntervalSeconds}
-                                            onChange={(e) => setAgentSettings({
+                                            onChange={(val) => setAgentSettings({
                                                 ...agentSettings,
                                                 monitoring: {
                                                     ...agentSettings.monitoring,
-                                                    pingIntervalSeconds: parseInt(e.target.value) || 30
+                                                    pingIntervalSeconds: val
                                                 }
                                             })}
                                             min={5}

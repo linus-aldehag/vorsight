@@ -11,8 +11,6 @@ interface AccessControlConfigProps {
 
 export function AccessControlConfig({ settings, onSave, saving }: AccessControlConfigProps) {
     const [mode, setMode] = useState<'simple' | 'custom'>('simple');
-    const [isEnabled, setIsEnabled] = useState(settings.enabled);
-
     // Ordered days: Mon(1), Tue(2), Wed(3), Thu(4), Fri(5), Sat(6), Sun(0)
     const orderedDays = [1, 2, 3, 4, 5, 6, 0];
     const weekDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -47,7 +45,6 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
 
     // Sync state when settings prop updates
     useEffect(() => {
-        setIsEnabled(settings.enabled);
         setSimpleStart(settings.schedule?.[0]?.startTime || '08:00');
         setSimpleEnd(settings.schedule?.[0]?.endTime || '22:00');
         setViolationAction(settings.violationAction || 'logoff');
@@ -67,8 +64,8 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
         let newSchedule;
 
         if (mode === 'simple') {
-            // Apply to all days 0-6
-            const days = [0, 1, 2, 3, 4, 5, 6];
+            // Apply to all days - Order: Mon(1) -> Sun(0)
+            const days = [1, 2, 3, 4, 5, 6, 0];
             newSchedule = days.map(day => ({
                 dayOfWeek: day,
                 startTime: simpleStart,
@@ -94,9 +91,14 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
 
         const updatedSettings: AccessControlSettings = {
             ...settings,
-            enabled: isEnabled,
+            enabled: true, // Implicitly enable when saving configuration
             violationAction,
-            schedule: newSchedule
+            schedule: newSchedule.sort((a, b) => {
+                // Custom Sort: 1-6 then 0
+                const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+                const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+                return dayA - dayB;
+            })
         };
         await onSave(updatedSettings);
     };
@@ -142,15 +144,7 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
                     </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium">Enforce Schedule</label>
-                    <input
-                        type="checkbox"
-                        checked={isEnabled}
-                        onChange={e => setIsEnabled(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                </div>
+
             </div>
 
             {mode === 'simple' ? (
