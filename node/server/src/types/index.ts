@@ -76,7 +76,13 @@ export interface AuditSettings {
 export interface AccessControlSettings {
     enabled: boolean;
     violationAction: 'logoff' | 'shutdown';
-    schedule: any[]; // define stricter if needed
+    schedule: AccessScheduleWindow[];
+}
+
+export interface AccessScheduleWindow {
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
 }
 
 export interface MachineSettings {

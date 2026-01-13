@@ -90,7 +90,6 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
         }
 
         const updatedSettings: AccessControlSettings = {
-            ...settings,
             enabled: true, // Implicitly enable when saving configuration
             violationAction,
             schedule: newSchedule.sort((a, b) => {

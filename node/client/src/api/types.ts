@@ -87,18 +87,6 @@ export interface TimeWindow {
     endTime: string;   // HH:mm
 }
 
-export interface AccessSchedule {
-    scheduleId: string;
-    childUsername: string;
-    isActive: boolean;
-    allowedTimeWindows: TimeWindow[];
-    dailyTimeLimitMinutes: number;
-    weekendBonusMinutes: number;
-    violationAction: 'logoff' | 'shutdown';
-    createdUtc: string;
-    modifiedUtc: string;
-}
-
 export interface DriveFile {
     id: string;
     name: string;
