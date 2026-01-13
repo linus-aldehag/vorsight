@@ -34,6 +34,7 @@ Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .MinimumLevel.Information() // Default if not in config
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information) 
+    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning) // Suppress verbose HTTP logs 
     .WriteTo.File(
         path: Path.Combine(PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
