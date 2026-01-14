@@ -7,6 +7,7 @@ using Vorsight.Service.Utilities;
 using Vorsight.Infrastructure.Contracts;
 using System.IO;
 using System.Collections.Concurrent;
+using Vorsight.Contracts.DTOs;
 
 namespace Vorsight.Service.Agents;
 
@@ -162,13 +163,13 @@ public class ScreenshotHandler
                         _logger.LogInformation("Screenshot uploaded to Google Drive: {DriveFileId}", driveFileId);
                         
                         // Only notify server (and save to DB) on successful upload
-                        await _serverConnection.SendScreenshotNotificationAsync(new
+                        await _serverConnection.SendScreenshotNotificationAsync(new ScreenshotPayload
                         {
-                            id = driveFileId, // Use Drive ID as screenshot ID
-                            captureTime = DateTime.UtcNow,
-                            triggerType = "Auto",
-                            googleDriveFileId = driveFileId,
-                            isUploaded = true
+                            Id = driveFileId, // Use Drive ID as screenshot ID
+                            CaptureTime = DateTimeOffset.UtcNow,
+                            TriggerType = "Auto",
+                            GoogleDriveFileId = driveFileId,
+                            IsUploaded = true
                         });
                         
                         _logger.LogInformation("Screenshot notification sent to server: DriveID={DriveFileId}", driveFileId);

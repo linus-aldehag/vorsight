@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 
 using Vorsight.Service.Storage;
 using Vorsight.Service.Logging;
+using Vorsight.Contracts.DTOs;
 
 namespace Vorsight.Service.Server;
 
@@ -14,10 +15,10 @@ public interface IServerConnection
 {
     Task InitializeAsync();
     Task EnsureConnectedAsync(CancellationToken cancellationToken);
-    Task SendHeartbeatAsync(object state);
-    Task SendActivityAsync(object activity);
-    Task SendAuditEventAsync(object auditEvent);
-    Task SendScreenshotNotificationAsync(object screenshot);
+    Task SendHeartbeatAsync(StatePayload state);
+    Task SendActivityAsync(ActivityPayload activity);
+    Task SendAuditEventAsync(AuditEventPayload auditEvent);
+    Task SendScreenshotNotificationAsync(ScreenshotPayload screenshot);
     Task<string?> UploadFileAsync(byte[] fileData, string fileName);
     Task<string?> FetchScheduleJsonAsync();
     Task<string?> FetchSettingsJsonAsync();
@@ -389,7 +390,7 @@ public class ServerConnection : IServerConnection
         }
     }
     
-    public async Task SendHeartbeatAsync(object state)
+    public async Task SendHeartbeatAsync(StatePayload state)
     {
         if (_socket?.Connected == true)
         {
@@ -401,7 +402,7 @@ public class ServerConnection : IServerConnection
         }
     }
     
-    public async Task SendActivityAsync(object activity)
+    public async Task SendActivityAsync(ActivityPayload activity)
     {
         if (_socket?.Connected == true)
         {
@@ -413,7 +414,7 @@ public class ServerConnection : IServerConnection
         }
     }
     
-    public async Task SendAuditEventAsync(object auditEvent)
+    public async Task SendAuditEventAsync(AuditEventPayload auditEvent)
     {
         _logger.LogDebug("SendAuditEventAsync called. Socket connected: {Connected}", _socket?.Connected);
         
@@ -433,7 +434,7 @@ public class ServerConnection : IServerConnection
         }
     }
     
-    public async Task SendScreenshotNotificationAsync(object screenshot)
+    public async Task SendScreenshotNotificationAsync(ScreenshotPayload screenshot)
     {
         if (_socket?.Connected == true)
         {

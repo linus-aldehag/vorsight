@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { prisma } from '../db/database';
 import { getConnectionStatus, getStatusText } from '../utils/statusHelper';
+import { StatePayload, ActivityPayload, AuditEventPayload, ScreenshotPayload } from '../types';
 // Removed unused MachineSettings import
 
 // Extend Socket interface to include machineId
@@ -219,8 +220,13 @@ export default (io: Server) => {
             }
         });
 
+
+
+        // ... (imports remain)
+
+        // Inside socketHandler
         // Heartbeat
-        socket.on('machine:heartbeat', async (data) => {
+        socket.on('machine:heartbeat', async (data: { machineId: string, state: StatePayload }) => {
             try {
                 const { machineId, state } = data;
 
@@ -280,7 +286,7 @@ export default (io: Server) => {
                     machineId,
                     state: {
                         ...state,
-                        version: state.version || data.version || null
+                        version: state.version || null
                     },
                     timestamp: new Date().toISOString()
                 });
@@ -290,7 +296,7 @@ export default (io: Server) => {
         });
 
         // Activity update
-        socket.on('machine:activity', async (data) => {
+        socket.on('machine:activity', async (data: { machineId: string, activity: ActivityPayload }) => {
             try {
                 const { machineId, activity } = data;
 
@@ -305,18 +311,14 @@ export default (io: Server) => {
                     return;
                 }
 
-                // Extract fields with casing fallback
-                const timestampVal = activity.timestamp || activity.Timestamp;
-                const activeWindow = activity.activeWindow || activity.ActiveWindow;
-                const processName = activity.processName || activity.ProcessName;
-                const duration = activity.duration || activity.Duration;
-                const username = activity.username || activity.Username;
+                // Extract fields (Strictly typed now)
+                const { timestamp, activeWindow, processName, duration, username } = activity;
 
                 // 1. Store raw heartbeat
                 await prisma.activityHistory.create({
                     data: {
                         machineId,
-                        timestamp: new Date(timestampVal),
+                        timestamp: new Date(timestamp),
                         activeWindow: activeWindow,
                         processName: processName,
                         duration: duration,
@@ -334,7 +336,7 @@ export default (io: Server) => {
                 });
 
                 // Handle timestamp format (C# sends ISO string)
-                const activityTime = new Date(timestampVal);
+                const activityTime = new Date(timestamp);
                 const timeSeconds = Math.floor(activityTime.getTime() / 1000);
 
                 // Determine if we should extend existing session or create new one
@@ -376,7 +378,7 @@ export default (io: Server) => {
 
                 // Broadcast to web clients watching this machine
                 io.to(`machine:${machineId}`).emit('activity:update', {
-                    timestamp: timestampVal,
+                    timestamp,
                     activeWindow,
                     processName,
                     duration,
@@ -388,7 +390,7 @@ export default (io: Server) => {
         });
 
         // Audit event
-        socket.on('machine:audit', async (data) => {
+        socket.on('machine:audit', async (data: { machineId: string, auditEvent: AuditEventPayload }) => {
             try {
                 const { machineId, auditEvent } = data;
 
@@ -397,14 +399,7 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status === 'archived') return;
 
-                // Extract with fallback
-                const eventId = auditEvent.eventId || auditEvent.EventId;
-                const eventType = auditEvent.eventType || auditEvent.EventType;
-                const username = auditEvent.username || auditEvent.Username;
-                const timestamp = auditEvent.timestamp || auditEvent.Timestamp;
-                const details = auditEvent.details || auditEvent.Details;
-                const sourceLogName = auditEvent.sourceLogName || auditEvent.SourceLogName;
-                const isFlagged = auditEvent.isFlagged || auditEvent.IsFlagged;
+                const { eventId, eventType, username, timestamp, details, sourceLogName, isFlagged } = auditEvent;
 
                 // Deduplicate based on eventId
                 const existingEvent = await prisma.auditEvent.findFirst({
@@ -415,7 +410,6 @@ export default (io: Server) => {
                 });
 
                 if (existingEvent) {
-                    // console.log(`Skipping duplicate audit event: ${eventId}`);
                     return;
                 }
 
@@ -432,25 +426,16 @@ export default (io: Server) => {
                     }
                 });
 
-                const normalizedEvent = {
-                    eventId,
-                    eventType,
-                    username,
-                    timestamp,
-                    details,
-                    sourceLogName,
-                    isFlagged
-                };
-
-                io.to(`machine:${machineId}`).emit('audit:alert', normalizedEvent);
-                io.emit('audit:global', { machineId, auditEvent: normalizedEvent, timestamp: new Date().toISOString() });
+                // Normalized event is now the payload itself (plus potentially parsed details if complex)
+                io.to(`machine:${machineId}`).emit('audit:alert', auditEvent);
+                io.emit('audit:global', { machineId, auditEvent, timestamp: new Date().toISOString() });
             } catch (error) {
                 console.error('Audit event processing error:', error);
             }
         });
 
         // Screenshot notification
-        socket.on('machine:screenshot', async (data) => {
+        socket.on('machine:screenshot', async (data: { machineId: string, screenshot: ScreenshotPayload }) => {
             try {
                 const { machineId, screenshot } = data;
 
@@ -459,12 +444,7 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status === 'archived') return;
 
-                // Extract Fallback
-                const id = screenshot.id || screenshot.Id;
-                const captureTime = screenshot.captureTime || screenshot.CaptureTime;
-                const triggerType = screenshot.triggerType || screenshot.TriggerType;
-                const googleDriveFileId = screenshot.googleDriveFileId || screenshot.GoogleDriveFileId;
-                const isUploaded = screenshot.isUploaded || screenshot.IsUploaded;
+                const { id, captureTime, triggerType, googleDriveFileId, isUploaded } = screenshot;
 
                 await prisma.screenshot.create({
                     data: {
@@ -477,13 +457,7 @@ export default (io: Server) => {
                     }
                 });
 
-                io.to(`machine:${machineId}`).emit('screenshot:new', {
-                    id,
-                    captureTime,
-                    triggerType,
-                    googleDriveFileId,
-                    isUploaded
-                });
+                io.to(`machine:${machineId}`).emit('screenshot:new', screenshot);
             } catch (error) {
                 console.error('Screenshot error:', error);
             }

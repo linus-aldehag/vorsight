@@ -1,0 +1,173 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "http://example.com/machine-settings.json",
+    "title": "MachineSettings",
+    "type": "object",
+    "properties": {
+        "network": {
+            "$ref": "#/definitions/NetworkSettings"
+        },
+        "screenshots": {
+            "$ref": "#/definitions/ScreenshotSettings"
+        },
+        "activity": {
+            "$ref": "#/definitions/ActivitySettings"
+        },
+        "audit": {
+            "$ref": "#/definitions/AuditSettings"
+        },
+        "accessControl": {
+            "$ref": "#/definitions/AccessControlSettings"
+        }
+    },
+    "required": [
+        "network",
+        "screenshots",
+        "activity",
+        "audit",
+        "accessControl"
+    ],
+    "definitions": {
+        "NetworkSettings": {
+            "type": "object",
+            "properties": {
+                "pingIntervalSeconds": {
+                    "type": "integer",
+                    "default": 300
+                }
+            },
+            "required": [
+                "pingIntervalSeconds"
+            ]
+        },
+        "ScreenshotSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "intervalSeconds": {
+                    "type": "integer",
+                    "default": 300
+                },
+                "filterDuplicates": {
+                    "type": "boolean",
+                    "default": true
+                }
+            },
+            "required": [
+                "enabled",
+                "intervalSeconds",
+                "filterDuplicates"
+            ]
+        },
+        "ActivitySettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "intervalSeconds": {
+                    "type": "integer",
+                    "default": 10
+                }
+            },
+            "required": [
+                "enabled",
+                "intervalSeconds"
+            ]
+        },
+        "AuditSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "filters": {
+                    "$ref": "#/definitions/AuditFilters"
+                }
+            },
+            "required": [
+                "enabled",
+                "filters"
+            ]
+        },
+        "AuditFilters": {
+            "type": "object",
+            "properties": {
+                "security": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "system": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "application": {
+                    "type": "boolean",
+                    "default": false
+                }
+            },
+            "required": [
+                "security",
+                "system",
+                "application"
+            ]
+        },
+        "AccessControlSettings": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "violationAction": {
+                    "type": "string",
+                    "enum": [
+                        "logoff",
+                        "shutdown"
+                    ],
+                    "default": "logoff"
+                },
+                "schedule": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AccessScheduleWindow"
+                    }
+                }
+            },
+            "required": [
+                "enabled",
+                "violationAction",
+                "schedule"
+            ]
+        },
+        "AccessScheduleWindow": {
+            "type": "object",
+            "properties": {
+                "dayOfWeek": {
+                    "type": "integer",
+                    "description": "0=Sunday, 1=Monday..."
+                },
+                "startTime": {
+                    "type": "string",
+                    "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+                    "default": "00:00"
+                },
+                "endTime": {
+                    "type": "string",
+                    "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+                    "default": "00:00"
+                }
+            },
+            "required": [
+                "dayOfWeek",
+                "startTime",
+                "endTime"
+            ]
+        }
+    }
+}

@@ -344,7 +344,7 @@ namespace Vorsight.Infrastructure.Scheduling
                 {
                     ScheduleId = Guid.NewGuid().ToString(), // Regenerate ID or track it in settings? Settings usually doesn't have ID.
                     Enabled = settings.Enabled,
-                    ViolationAction = settings.ViolationAction == "shutdown" ? AccessViolationAction.ShutDown : AccessViolationAction.LogOff,
+                    ViolationAction = settings.ViolationAction == Vorsight.Contracts.Settings.ViolationAction.Shutdown ? AccessViolationAction.ShutDown : AccessViolationAction.LogOff,
                     AllowedTimeWindows = conversion_helper(settings.Schedule),
                     TimeZoneId = TimeZoneInfo.Local.Id
                 };

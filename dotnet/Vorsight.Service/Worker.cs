@@ -12,6 +12,7 @@ using Vorsight.Service.Server;
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.Storage;
 using Vorsight.Service.SystemOperations;
+using Vorsight.Contracts.DTOs;
 
 namespace Vorsight.Service;
 
@@ -148,15 +149,15 @@ public class Worker : BackgroundService
                     _logger.LogInformation("Sending audit event to server: EventId={EventId}, Type={EventType}", 
                         args.Event.EventId, args.Event.EventType);
                     
-                    await _serverConnection.SendAuditEventAsync(new
+                    await _serverConnection.SendAuditEventAsync(new AuditEventPayload
                     {
-                        eventId = args.Event.EventId,
-                        eventType = args.Event.EventType,
-                        username = args.Event.Username,
-                        timestamp = args.Event.Timestamp,
-                        details = args.Event.Details,
-                        sourceLogName = args.Event.SourceLogName,
-                        isFlagged = args.Event.IsFlagged
+                        EventId = args.Event.EventId.ToString(),
+                        EventType = args.Event.EventType,
+                        Username = args.Event.Username,
+                        Timestamp = new DateTimeOffset(args.Event.Timestamp),
+                        Details = args.Event.Details,
+                        SourceLogName = args.Event.SourceLogName,
+                        IsFlagged = args.Event.IsFlagged
                     });
                     
                     _logger.LogInformation("Audit event sent successfully");
