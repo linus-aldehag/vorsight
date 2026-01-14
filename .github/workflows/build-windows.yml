@@ -84,6 +84,11 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
     - name: Install Inno Setup
       run: choco install innosetup -y
         

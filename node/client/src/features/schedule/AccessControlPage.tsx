@@ -136,11 +136,22 @@ export function AccessControlPage() {
                             ? (
                                 <>
                                     <div className="flex flex-col gap-1">
-                                        {/* Group by time for simpler display if possible, or just show range of first */}
                                         <div className="flex items-center gap-2">
-                                            <span className="text-muted-foreground w-16 text-xs">Mon-Sun</span>
+                                            <span className="text-muted-foreground w-16 text-xs">
+                                                {accessControl.scheduleMode === 'custom' ? 'Custom' : 'Every Day'}
+                                            </span>
                                             <span>
-                                                <span className="text-foreground">{getStartTime(accessControl)}</span> - <span className="text-foreground">{getEndTime(accessControl)}</span>
+                                                {accessControl.scheduleMode === 'simple' || accessControl.schedule.length === 1 ? (
+                                                    // Simple mode or single enty
+                                                    <>
+                                                        <span className="text-foreground">{getStartTime(accessControl)}</span> - <span className="text-foreground">{getEndTime(accessControl)}</span>
+                                                    </>
+                                                ) : (
+                                                    // Custom mode summary
+                                                    <span className="text-sm">
+                                                        {accessControl.schedule.length} active windows
+                                                    </span>
+                                                )}
                                             </span>
                                         </div>
                                     </div>

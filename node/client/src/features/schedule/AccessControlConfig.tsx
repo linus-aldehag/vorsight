@@ -10,10 +10,23 @@ interface AccessControlConfigProps {
 }
 
 export function AccessControlConfig({ settings, onSave, saving }: AccessControlConfigProps) {
-    const [mode, setMode] = useState<'simple' | 'custom'>('simple');
-    // Ordered days: Mon(1), Tue(2), Wed(3), Thu(4), Fri(5), Sat(6), Sun(0)
-    const orderedDays = [1, 2, 3, 4, 5, 6, 0];
-    const weekDayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const [mode, setMode] = useState<'simple' | 'custom'>(
+        settings.scheduleMode || (settings.schedule && settings.schedule.length > 1 ? 'custom' : 'simple')
+    );
+
+    // Ordered days for display
+    const orderedDays: Array<'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'> =
+        ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    const dayLabels: Record<string, string> = {
+        monday: 'Monday',
+        tuesday: 'Tuesday',
+        wednesday: 'Wednesday',
+        thursday: 'Thursday',
+        friday: 'Friday',
+        saturday: 'Saturday',
+        sunday: 'Sunday'
+    };
 
     // Simple Mode State
     const [simpleStart, setSimpleStart] = useState(
@@ -24,20 +37,22 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
     );
 
     // Custom Mode State (Initialize 7 days)
-    const [customWindows, setCustomWindows] = useState<{ day: number, start: string, end: string, enabled: boolean }[]>([]);
+    const [customWindows, setCustomWindows] = useState<{ day: string, start: string, end: string, enabled: boolean }[]>([]);
 
     useEffect(() => {
         // Initialize windows based on ordered days
-        setCustomWindows(orderedDays.map(dayIdx => {
-            const existing = settings.schedule?.find(w => w.dayOfWeek === dayIdx);
+        setCustomWindows(orderedDays.map(dayKey => {
+            // Find existing schedule for this day
+            // We need to match string day keys
+            const existing = settings.schedule?.find(w => w.dayOfWeek === dayKey);
             return {
-                day: dayIdx,
+                day: dayKey,
                 start: existing?.startTime || '08:00',
                 end: existing?.endTime || '22:00',
                 enabled: !!existing
             };
         }));
-    }, [settings.schedule]); // Re-init if schedule prop changes deeply
+    }, [settings.schedule]);
 
     const [violationAction, setViolationAction] = useState<'logoff' | 'shutdown'>(
         settings.violationAction || 'logoff'
@@ -48,6 +63,9 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
         setSimpleStart(settings.schedule?.[0]?.startTime || '08:00');
         setSimpleEnd(settings.schedule?.[0]?.endTime || '22:00');
         setViolationAction(settings.violationAction || 'logoff');
+        if (settings.scheduleMode) {
+            setMode(settings.scheduleMode);
+        }
     }, [settings]);
 
     const isValidTime = (time: string) => /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
@@ -64,9 +82,8 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
         let newSchedule;
 
         if (mode === 'simple') {
-            // Apply to all days - Order: Mon(1) -> Sun(0)
-            const days = [1, 2, 3, 4, 5, 6, 0];
-            newSchedule = days.map(day => ({
+            // Apply to all days
+            newSchedule = orderedDays.map(day => ({
                 dayOfWeek: day,
                 startTime: simpleStart,
                 endTime: simpleEnd
@@ -83,7 +100,7 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
             newSchedule = customWindows
                 .filter(w => w.enabled)
                 .map(w => ({
-                    dayOfWeek: w.day,
+                    dayOfWeek: w.day as any, // Cast to match strict literal type if needed
                     startTime: w.start,
                     endTime: w.end
                 }));
@@ -91,27 +108,24 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
 
         const updatedSettings: AccessControlSettings = {
             enabled: true, // Implicitly enable when saving configuration
+            scheduleMode: mode,
             violationAction,
-            schedule: newSchedule.sort((a, b) => {
-                // Custom Sort: 1-6 then 0
-                const dayA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
-                const dayB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
-                return dayA - dayB;
-            })
+            schedule: newSchedule
         };
         await onSave(updatedSettings);
     };
 
-    const updateCustomDay = (dayIndex: number, field: 'start' | 'end' | 'enabled', value: any) => {
+    const updateCustomDay = (dayKey: string, field: 'start' | 'end' | 'enabled', value: any) => {
         setCustomWindows(prev => prev.map(d =>
-            d.day === dayIndex ? { ...d, [field]: value } : d
+            d.day === dayKey ? { ...d, [field]: value } : d
         ));
     };
 
     const handleModeChange = (newMode: 'simple' | 'custom') => {
         setMode(newMode);
         if (newMode === 'custom') {
-            // Sync custom windows with current simple settings
+            // Sync custom windows with current simple settings if they are currently all disabled or default
+            // Actually, best to just pre-fill enabled days with simple times
             setCustomWindows(prev => prev.map(w => ({
                 ...w,
                 start: simpleStart,
@@ -185,7 +199,7 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
                                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                     />
                                     <span className={`text-sm ${dayWindow.enabled ? 'font-medium' : 'text-muted-foreground'}`}>
-                                        {weekDayNames[dayWindow.day].substring(0, 3)}
+                                        {dayLabels[dayWindow.day].substring(0, 3)}
                                     </span>
                                 </div>
 

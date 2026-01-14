@@ -1,6 +1,10 @@
 using System;
 using System.Linq;
 using Vorsight.Contracts.Settings;
+using System.Collections.Generic;
+
+// Alias to avoid conflict if the generated enum is named DayOfWeek
+using ContractDay = Vorsight.Contracts.Settings.DayOfWeek;
 
 namespace Vorsight.Infrastructure.Extensions
 {
@@ -9,39 +13,20 @@ namespace Vorsight.Infrastructure.Extensions
         public static bool IsAccessAllowedNow(this AccessControlSettings settings)
         {
             if (!settings.Enabled)
-                return false; // Or true? AccessSchedule logic said: if (!Enabled) return false. Wait.
-                // If "Enabled" means "Access Control Enabled", then if it's DISABLED, access should be ALLOWED (true).
-                // AccessSchedule.cs 65: if (!Enabled) return false; -> This implies Enabled means "Schedule is Active/Allowed"?
-                // Let's re-read AccessSchedule.cs.
-                // Property: "Whether this schedule is currently active working (enabled)."
-                // If schedule is NOT enabled, surely it means the restrictions are OFF, so access is allowed?
-                // But the code says return false. This implies if schedule is disabled, NO ACCESS.
-                // That sounds wrong for a parental control app "Enabling" restrictions.
-                // However, let's stick to the existing logic OR check broader context. 
-                // In ScheduleManager.cs: if (schedule != null && schedule.Enabled) { ... Enforce ... }
-                // So if schedule.Enabled is false, enforcement skipped. 
-                // But IsAccessAllowedNow is called inside enforcement loop?
-                // Line 298: else if (!schedule.IsAccessAllowedNow()) { Access Denied }
-                // This is only called IF schedule.Enabled is true.
-                // So IsAccessAllowedNow assumes enforcement is active.
+                return false; 
                 
             try 
             {
-                // MachineSettings doesn't have TimeZoneId. It uses local time implicitly?
-                // AccessSchedule had TimeZoneId defaulting to Local.
-                // We will use Local time.
                 var now = DateTime.Now; // Local time
-                
                 var today = now.DayOfWeek;
                 var timeNow = now.TimeOfDay;
 
                 if (settings.Schedule == null) return false;
 
-                // Check matches. Schedule windows from JSON are strings "HH:mm"
+                // Check matches. 
                 return settings.Schedule.Any(w => 
                 {
-                    // AccessScheduleWindow has DayOfWeek (int), StartTime (string), EndTime (string)
-                    if (w.DayOfWeek != (int)today) return false;
+                    if (ToSystemDay(w.DayOfWeek) != today) return false;
                     
                     if (!TimeSpan.TryParse(w.StartTime, out var start)) return false;
                     if (!TimeSpan.TryParse(w.EndTime, out var end)) return false;
@@ -51,7 +36,6 @@ namespace Vorsight.Infrastructure.Extensions
             }
             catch
             {
-                // Fail safe?
                 return false;
             }
         }
@@ -65,14 +49,14 @@ namespace Vorsight.Infrastructure.Extensions
             {
                 var now = DateTime.Now;
                 var timeNow = now.TimeOfDay;
-                var today = (int)now.DayOfWeek;
+                var today = now.DayOfWeek;
 
                 if (settings.Schedule == null) return null;
 
                 var currentWindow = settings.Schedule
-                    .Select(w => new { w, Start = ParseTime(w.StartTime), End = ParseTime(w.EndTime) })
+                    .Where(w => ToSystemDay(w.DayOfWeek) == today)
+                    .Select(w => new { Start = ParseTime(w.StartTime), End = ParseTime(w.EndTime) })
                     .FirstOrDefault(x => 
-                        x.w.DayOfWeek == today && 
                         timeNow >= x.Start && 
                         timeNow < x.End
                     );
@@ -101,14 +85,13 @@ namespace Vorsight.Infrastructure.Extensions
                 if (settings.Schedule == null || !settings.Schedule.Any()) return null;
 
                 // Check next 7 days (including today)
-                for (int i = 0; i < 8; i++) // Check up to a week
+                for (int i = 0; i < 8; i++) 
                 {
                     var targetDate = now.Date.AddDays(i);
-                    var targetDay = (int)targetDate.DayOfWeek;
-                    var isToday = i == 0;
+                    var targetDay = targetDate.DayOfWeek;
                     
                     var windows = settings.Schedule
-                        .Where(w => w.DayOfWeek == targetDay)
+                        .Where(w => ToSystemDay(w.DayOfWeek) == targetDay)
                         .Select(w => new { Start = ParseTime(w.StartTime), End = ParseTime(w.EndTime) })
                         .OrderBy(w => w.Start);
 
@@ -132,6 +115,21 @@ namespace Vorsight.Infrastructure.Extensions
         private static TimeSpan ParseTime(string t)
         {
             return TimeSpan.TryParse(t, out var ts) ? ts : TimeSpan.Zero;
+        }
+
+        private static System.DayOfWeek ToSystemDay(ContractDay contractDay)
+        {
+            return contractDay switch
+            {
+                ContractDay.Monday => System.DayOfWeek.Monday,
+                ContractDay.Tuesday => System.DayOfWeek.Tuesday,
+                ContractDay.Wednesday => System.DayOfWeek.Wednesday,
+                ContractDay.Thursday => System.DayOfWeek.Thursday,
+                ContractDay.Friday => System.DayOfWeek.Friday,
+                ContractDay.Saturday => System.DayOfWeek.Saturday,
+                ContractDay.Sunday => System.DayOfWeek.Sunday,
+                _ => System.DayOfWeek.Monday // Default
+            };
         }
     }
 }
