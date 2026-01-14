@@ -272,7 +272,7 @@ namespace Vorsight.Infrastructure.Scheduling
                         // Enforce the single global schedule if it exists and is active
                         var schedule = _currentSchedule;
 
-                        if (schedule != null && schedule.IsActive)
+                        if (schedule != null && schedule.Enabled)
                         {
                             var timeRemaining = schedule.GetTimeRemaining();
 
@@ -343,7 +343,7 @@ namespace Vorsight.Infrastructure.Scheduling
                 var newSchedule = new AccessSchedule
                 {
                     ScheduleId = Guid.NewGuid().ToString(), // Regenerate ID or track it in settings? Settings usually doesn't have ID.
-                    IsActive = settings.Enabled,
+                    Enabled = settings.Enabled,
                     ViolationAction = settings.ViolationAction == "shutdown" ? AccessViolationAction.ShutDown : AccessViolationAction.LogOff,
                     AllowedTimeWindows = conversion_helper(settings.Schedule),
                     TimeZoneId = TimeZoneInfo.Local.Id
@@ -352,12 +352,16 @@ namespace Vorsight.Infrastructure.Scheduling
                 _currentSchedule = newSchedule;
                 await PersistScheduleAsync();
                 
-                _logger.LogInformation("Schedule updated from Settings (Active: {IsActive})", _currentSchedule.IsActive);
+                _logger.LogInformation("Schedule updated from Settings (Enabled: {Enabled})", _currentSchedule.Enabled);
                 
                 // If active, ensure enforcement is running
-                if (_currentSchedule.IsActive && !_isEnforcementRunning)
+                if (_currentSchedule.Enabled && !_isEnforcementRunning)
                 {
                     await StartEnforcementAsync();
+                }
+                else if (!_currentSchedule.Enabled && _isEnforcementRunning)
+                {
+                    await StopEnforcementAsync();
                 }
             }
              catch (Exception ex)

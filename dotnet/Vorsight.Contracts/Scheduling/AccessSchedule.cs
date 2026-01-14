@@ -24,9 +24,9 @@ namespace Vorsight.Contracts.Scheduling
         public List<AccessWindow> AllowedTimeWindows { get; set; } = new();
 
         /// <summary>
-        /// Whether this schedule is currently active/enforced.
+        /// Whether this schedule is currently active working (enabled).
         /// </summary>
-        public bool IsActive { get; set; }
+        public bool Enabled { get; set; }
 
         /// <summary>
         /// Time zone identifier (e.g., "Eastern Standard Time").
@@ -62,7 +62,7 @@ namespace Vorsight.Contracts.Scheduling
         /// </summary>
         public bool IsAccessAllowedNow()
         {
-            if (!IsActive)
+            if (!Enabled)
                 return false;
                 
             try 
@@ -97,7 +97,7 @@ namespace Vorsight.Contracts.Scheduling
         /// </summary>
         public TimeSpan? GetTimeUntilAccess()
         {
-            if (!IsActive) return null; // Logic parity with previous: if inactive, return null (undefined?)
+            if (!Enabled) return null; // Logic parity with previous: if inactive, return null (undefined?)
 
             // This logic is complex with multiple windows. 
             // Simplified: Find the NEXT start time from NOW.

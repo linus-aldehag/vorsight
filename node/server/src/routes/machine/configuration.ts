@@ -41,8 +41,8 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
             ...storedSettings,
             // Ensure nested objects are merged if they exist in stored
             screenshots: { ...defaults.screenshots, ...storedSettings.screenshots },
-            monitoring: { ...defaults.network, ...storedSettings.monitoring }, // Legacy fallback
-            network: { ...defaults.network, ...storedSettings.network },
+            monitoring: { ...defaults.network, ...(storedSettings.monitoring || storedSettings.network) }, // Legacy fallback (try monitoring first then network)
+            network: { ...defaults.network, ...(storedSettings.network || storedSettings.monitoring) }, // New standard (try network first then monitoring)
             activity: { ...defaults.activity, ...storedSettings.activity },
             audit: { ...defaults.audit, ...storedSettings.audit },
             accessControl: { ...defaults.accessControl, ...storedSettings.accessControl }

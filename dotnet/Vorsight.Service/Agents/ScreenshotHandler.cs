@@ -65,6 +65,7 @@ public class ScreenshotHandler
                     try
                     {
                         currentHash = _hashService.ComputeHash(message.Payload);
+                        _logger.LogDebug("Computed pHash for screenshot: {HashPrefix}...", currentHash.Substring(0, Math.Min(10, currentHash.Length)));
                     }
                     catch (Exception hashEx)
                     {
@@ -77,6 +78,11 @@ public class ScreenshotHandler
                     {
                         var similarity = _hashService.GetSimilarityPercentage(currentHash, lastHash);
                         
+                        _logger.LogInformation("Duplicate Check: Similarity={Similarity:F2}%, Threshold=5%. CurrentHash={CurrentPrefix}, LastHash={LastPrefix}", 
+                            similarity, 
+                            currentHash.Substring(0, Math.Min(8, currentHash.Length)), 
+                            lastHash.Substring(0, Math.Min(8, lastHash.Length)));
+
                         if (_hashService.IsSimilar(currentHash, lastHash))
                         {
                             _logger.LogInformation(
@@ -93,6 +99,14 @@ public class ScreenshotHandler
                                 similarity,
                                 machineId);
                         }
+                    }
+                    else if (string.IsNullOrEmpty(currentHash))
+                    {
+                         _logger.LogDebug("Current hash empty, skipping duplicate check.");
+                    }
+                    else
+                    {
+                         _logger.LogDebug("No previous hash found for machine {MachineId}, skipping comparison.", machineId);
                     }
                     
                     // Update last hash for this machine
