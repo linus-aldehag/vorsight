@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '../db/database';
-import { MachineMetadata, MachineSettings, ViolationAction } from '../types';
+import { MachineMetadata, MachineSettings, ViolationAction, DayOfWeek } from '../types';
 import { Prisma } from '@prisma/client';
 
 export interface RegisterDTO {
@@ -195,18 +195,18 @@ export class MachineService {
         // Construct schedule if enabled
         let schedule = undefined;
         if (enableAccessControl) {
-            const start = accessControlStartTime || "09:00";
-            const end = accessControlEndTime || "17:00";
+            const start = accessControlStartTime || "08:00";
+            const end = accessControlEndTime || "22:00";
 
             // Create default TimeWindow[] instead of complex AccessSchedule object
             schedule = [
-                { dayOfWeek: 1, startTime: start, endTime: end }, // Mon
-                { dayOfWeek: 2, startTime: start, endTime: end }, // Tue
-                { dayOfWeek: 3, startTime: start, endTime: end }, // Wed
-                { dayOfWeek: 4, startTime: start, endTime: end }, // Thu
-                { dayOfWeek: 5, startTime: start, endTime: end }, // Fri
-                { dayOfWeek: 6, startTime: start, endTime: end }, // Sat
-                { dayOfWeek: 0, startTime: start, endTime: end }, // Sun
+                { dayOfWeek: "monday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "tuesday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "wednesday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "thursday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "friday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "saturday" as DayOfWeek, startTime: start, endTime: end },
+                { dayOfWeek: "sunday" as DayOfWeek, startTime: start, endTime: end },
             ];
         }
 

@@ -2,7 +2,7 @@
 ; Inno Setup 6.x
 
 #define MyAppName "Vörsight"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.6.0"
 #define MyAppPublisher "Vörsight"
 #define MyAppURL "https://github.com/your-repo/vorsight"
 #define MyAppServiceExeName "Vorsight.Service.exe"
