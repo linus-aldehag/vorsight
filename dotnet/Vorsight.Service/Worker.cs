@@ -1,7 +1,6 @@
 using System.Text.Json;
-using Vorsight.Contracts.Audit;
 using Vorsight.Contracts.IPC;
-using Vorsight.Contracts.Scheduling;
+
 using Vorsight.Contracts.Settings;
 using Vorsight.Infrastructure.Contracts;
 
@@ -149,16 +148,7 @@ public class Worker : BackgroundService
                     _logger.LogInformation("Sending audit event to server: EventId={EventId}, Type={EventType}", 
                         args.Event.EventId, args.Event.EventType);
                     
-                    await _serverConnection.SendAuditEventAsync(new AuditEventPayload
-                    {
-                        EventId = args.Event.EventId.ToString(),
-                        EventType = args.Event.EventType,
-                        Username = args.Event.Username,
-                        Timestamp = new DateTimeOffset(args.Event.Timestamp),
-                        Details = args.Event.Details,
-                        SourceLogName = args.Event.SourceLogName,
-                        IsFlagged = args.Event.IsFlagged
-                    });
+                    await _serverConnection.SendAuditEventAsync(args.Event);
                     
                     _logger.LogInformation("Audit event sent successfully");
                 }

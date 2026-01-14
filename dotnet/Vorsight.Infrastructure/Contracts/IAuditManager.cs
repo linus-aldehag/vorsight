@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Vorsight.Contracts.Audit;
+using Vorsight.Contracts.DTOs;
 
 using Vorsight.Contracts.Settings;
 
@@ -49,7 +49,7 @@ namespace Vorsight.Infrastructure.Contracts
     /// </summary>
     public class AuditEventDetectedEventArgs : EventArgs
     {
-        public required AuditEvent Event { get; set; }
+        public required AuditEventPayload Event { get; set; }
         public required string Description { get; set; }
         public DateTime DetectedTime { get; set; }
     }

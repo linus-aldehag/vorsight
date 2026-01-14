@@ -1,7 +1,7 @@
 using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Logging;
 using Vorsight.Infrastructure.Contracts;
-using Vorsight.Contracts.Audit;
+using Vorsight.Contracts.DTOs;
 using Vorsight.Contracts.Settings;
 
 namespace Vorsight.Infrastructure.Audit;
@@ -111,7 +111,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private string BuildSecurityQuery()
     {
-        // Security specific events: User management, Audit tampering, Process creation
         return @"*[System[(
             EventID=4720 or
             EventID=4732 or
@@ -130,7 +129,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private string BuildSystemQuery()
     {
-        // System specific events: Service Installation (System Log typically has 7045)
         return @"*[System[(
             EventID=7045 or
             EventID=7040
@@ -145,15 +143,17 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             using var eventRecord = e.EventRecord;
             if (eventRecord == null) return;
 
-            var evt = new AuditEvent
+            var timeCreated = eventRecord.TimeCreated ?? DateTime.UtcNow;
+
+            var evt = new AuditEventPayload
             {
-                Timestamp = eventRecord.TimeCreated ?? DateTime.UtcNow,
+                Timestamp = timeCreated, // Assuming DateTimeOffset or DateTime compat
                 EventId = eventRecord.Id.ToString(),
                 EventType = eventRecord.TaskDisplayName ?? $"{logName} Event",
                 SourceLogName = logName,
-                Username = "System", // Default, extraction logic could be improved
+                Username = "System", 
                 Details = eventRecord.FormatDescription() ?? "No description available",
-                IsFlagged = false // Default to Unflagged (History). Explicitly flag tampering events.
+                IsFlagged = false 
             };
             
             // Check for duplicates before processing
@@ -171,11 +171,10 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         }
     }
 
-    private void ProcessEvent(AuditEvent evt, int eventId, string logName)
+    private void ProcessEvent(AuditEventPayload evt, int eventId, string logName)
     {
         switch (eventId)
         {
-            // --- Security Log Events ---
             case 4720: // User Created
                 NotifyCriticalEvent(evt, "User Account Created");
                 break;
@@ -232,7 +231,6 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 NotifyCriticalEvent(evt, "System audit policy modified");
                 break;
 
-            // --- System Log Events ---
             case 7045: // Service installed (System log)
                 evt.EventType = "Service Installed";
                 NotifyCriticalEvent(evt, "New service installed - verify legitimacy");
@@ -252,7 +250,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         }
     }
 
-    private void NotifyCriticalEvent(AuditEvent evt, string description)
+    private void NotifyCriticalEvent(AuditEventPayload evt, string description)
     {
         OnCriticalEventDetected(new AuditEventDetectedEventArgs
         {
@@ -262,21 +260,23 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         });
     }
     
-    private string GetEventHash(AuditEvent evt)
+    private string GetEventHash(AuditEventPayload evt)
     {
-        // Create hash based on event ID, username, and timestamp (rounded to second)
-        var timestampKey = evt.Timestamp.ToString("yyyyMMddHHmmss");
-        return $"{evt.EventId}_{evt.Username}_{timestampKey}";
+        // AuditEventPayload Timestamp might be DateTimeOffset
+        var tsp = evt.Timestamp; 
+        // DateTimeOffset ToString format might differ. 
+        var tsStr = tsp.ToString("yyyyMMddHHmmss"); 
+        
+        return $"{evt.EventId}_{evt.Username}_{tsStr}";
     }
     
-    private bool IsDuplicate(AuditEvent evt)
+    private bool IsDuplicate(AuditEventPayload evt)
     {
         lock (_dedupeLock)
         {
             var hash = GetEventHash(evt);
             var now = DateTime.UtcNow;
             
-            // Clean up old hashes (older than dedup window)
             var expiredHashes = _recentEventHashes
                 .Where(kvp => now - kvp.Value > _dedupeWindow)
                 .Select(kvp => kvp.Key)
@@ -287,13 +287,11 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 _recentEventHashes.Remove(expiredHash);
             }
             
-            // Check if we've seen this event recently
             if (_recentEventHashes.ContainsKey(hash))
             {
-                return true; // Duplicate
+                return true; 
             }
             
-            // Add to recent events
             _recentEventHashes[hash] = now;
             return false;
         }
