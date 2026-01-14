@@ -24,12 +24,17 @@ if (Test-Path $ContractScript) {
         Write-Error "Failed to generate contracts."
         exit 1
     }
-} else {
+}
+else {
     Write-Warning "GenerateContracts.ps1 not found at $ContractScript"
 }
 
 Write-Host "Restoring dependencies..."
-dotnet restore
+dotnet restore dotnet\Vorsight.sln
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Restore failed!"
+    exit 1
+}
 
 Write-Host "Publishing Service (self-contained)..."
 dotnet publish dotnet\Vorsight.Service\Vorsight.Service.csproj `
@@ -40,6 +45,11 @@ dotnet publish dotnet\Vorsight.Service\Vorsight.Service.csproj `
     -p:AppendRuntimeIdentifierToOutputPath=false `
     -o publish\Service
 
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Service publish failed!"
+    exit 1
+}
+
 Write-Host "Publishing Agent (self-contained)..."
 dotnet publish dotnet\Vorsight.Agent\Vorsight.Agent.csproj `
     -c $Configuration `
@@ -48,6 +58,11 @@ dotnet publish dotnet\Vorsight.Agent\Vorsight.Agent.csproj `
     -p:PublishSingleFile=true `
     -p:AppendRuntimeIdentifierToOutputPath=false `
     -o publish\Agent
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Agent publish failed!"
+    exit 1
+}
 
 Write-Host "Compiling Inno Setup installer..."
 & $InnoSetup deploy\windows\vorsight-setup.iss /O"Output" /F"VorsightSetup"

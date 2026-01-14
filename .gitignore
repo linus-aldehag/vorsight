@@ -136,6 +136,7 @@ deploy/pi/*.tar.gz
 # SQLite WAL/SHM
 *.db-shm
 *.db-wal
+*.db-journal
 
 # Build output assets
 # Build output assets
