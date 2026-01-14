@@ -138,7 +138,6 @@ model MachineLog {
   machine       Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   @@index([machineId, timestamp])
-  @@index([level])
   @@map("machine_logs")
 }
 
@@ -212,7 +211,7 @@ model ActivitySession {
   // Relations
   machine         Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
-  @@index([machineId, startTime, endTime])
+  @@index([machineId, startTime])
   @@map("activity_sessions")
 }
 
