@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Vorsight.Contracts.Scheduling;
+using Vorsight.Contracts.Settings;
 
 namespace Vorsight.Infrastructure.Contracts
 {
@@ -17,29 +16,19 @@ namespace Vorsight.Infrastructure.Contracts
         Task InitializeAsync();
 
         /// <summary>
-        /// Creates a new access schedule.
+        /// Creates or Updates the access schedule settings.
         /// </summary>
-        Task<AccessSchedule> CreateScheduleAsync(AccessSchedule schedule);
+        Task<AccessControlSettings> UpdateScheduleAsync(AccessControlSettings settings);
 
         /// <summary>
-        /// Updates an existing schedule.
+        /// Deletes the schedule (disables it).
         /// </summary>
-        Task<AccessSchedule> UpdateScheduleAsync(AccessSchedule schedule);
+        Task DeleteScheduleAsync();
 
         /// <summary>
-        /// Deletes a schedule.
+        /// Gets the current schedule settings.
         /// </summary>
-        Task DeleteScheduleAsync(string scheduleId);
-
-        /// <summary>
-        /// Gets the global schedule.
-        /// </summary>
-        Task<AccessSchedule?> GetScheduleAsync();
-
-        /// <summary>
-        /// Gets all active schedules.
-        /// </summary>
-        Task<IEnumerable<AccessSchedule>> GetAllSchedulesAsync();
+        Task<AccessControlSettings?> GetScheduleAsync();
 
         /// <summary>
         /// Checks if access is currently allowed.

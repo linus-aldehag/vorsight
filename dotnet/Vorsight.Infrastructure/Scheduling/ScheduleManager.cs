@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 using Vorsight.Interop;
 
 using Vorsight.Infrastructure.Contracts;
-using Vorsight.Contracts.Scheduling;
+using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Extensions;
 using Vorsight.Infrastructure.Identity;
 
 namespace Vorsight.Infrastructure.Scheduling
@@ -22,11 +23,8 @@ namespace Vorsight.Infrastructure.Scheduling
     public class ScheduleManager : IScheduleManager
     {
         private readonly ILogger<ScheduleManager> _logger;
-        private readonly string _schedulePath;
-        private readonly HttpClient? _httpClient;
-        private readonly string? _serverUrl;
-        private readonly string? _machineId;
-        private AccessSchedule? _currentSchedule;
+        private readonly ISettingsManager _settingsManager;
+        private AccessControlSettings? _currentSchedule;
         private CancellationTokenSource? _enforcementCts;
         private Task? _enforcementTask;
         private bool _disposed;
@@ -40,23 +38,10 @@ namespace Vorsight.Infrastructure.Scheduling
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
         public ScheduleManager(
             ILogger<ScheduleManager> logger, 
-            IHttpClientFactory? httpClientFactory = null,
-            Microsoft.Extensions.Configuration.IConfiguration? configuration = null,
-            string? schedulePath = null)
+            ISettingsManager settingsManager)
         {
             _logger = logger;
-            _schedulePath = schedulePath ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                "Vorsight",
-                "access_schedule.json");
-            
-            if (httpClientFactory != null && configuration != null)
-            {
-                _httpClient = httpClientFactory.CreateClient();
-                _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
-                _machineId = Vorsight.Infrastructure.Identity.MachineIdentity.GenerateMachineId();
-                _httpClient.BaseAddress = new Uri(_serverUrl);
-            }
+            _settingsManager = settingsManager;
         }
 
         public async Task InitializeAsync()
@@ -65,24 +50,20 @@ namespace Vorsight.Infrastructure.Scheduling
 
             try
             {
-                // Only load from local file primarily
-                // Remote schedule is pushed via UpdateScheduleFromJsonAsync
-                
-                if (File.Exists(_schedulePath))
+                var settings = await _settingsManager.GetSettingsAsync();
+                if (settings?.AccessControl != null)
                 {
-                    var json = await File.ReadAllTextAsync(_schedulePath);
-                    _currentSchedule = JsonSerializer.Deserialize<AccessSchedule>(json);
+                    _currentSchedule = settings.AccessControl;
+                    _logger.LogInformation("Loaded schedule from SettingsManager");
                     
-                    if (_currentSchedule != null)
+                    if (_currentSchedule.Enabled && !_isEnforcementRunning)
                     {
-                        _logger.LogInformation("Loaded schedule {ScheduleId} from file", 
-                            _currentSchedule.ScheduleId);
+                        await StartEnforcementAsync();
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("No schedule found (waiting for server update)");
-                    Directory.CreateDirectory(Path.GetDirectoryName(_schedulePath)!);
+                    _logger.LogInformation("No schedule found in settings");
                 }
             }
             catch (Exception ex)
@@ -93,80 +74,68 @@ namespace Vorsight.Infrastructure.Scheduling
 
 
 
-        public async Task<AccessSchedule> CreateScheduleAsync(AccessSchedule schedule)
+        public async Task<AccessControlSettings> UpdateScheduleAsync(AccessControlSettings settings)
         {
             ThrowIfDisposed();
 
-            if (schedule == null)
-                throw new ArgumentNullException(nameof(schedule));
+            if (settings == null)
+                throw new ArgumentNullException(nameof(settings));
 
-            schedule.ScheduleId ??= Guid.NewGuid().ToString();
-            
-            _currentSchedule = schedule;
+            _currentSchedule = settings;
 
-            await PersistScheduleAsync();
-            _logger.LogInformation("Created/Overwrote schedule {ScheduleId}", schedule.ScheduleId);
+            var fullSettings = await _settingsManager.GetSettingsAsync();
+            fullSettings.AccessControl = settings;
+            await _settingsManager.UpdateSettingsAsync(fullSettings);
 
-            return schedule;
-        }
-
-        public async Task<AccessSchedule> UpdateScheduleAsync(AccessSchedule schedule)
-        {
-            ThrowIfDisposed();
-
-            if (schedule == null)
-                throw new ArgumentNullException(nameof(schedule));
-
-            _currentSchedule = schedule;
-
-            await PersistScheduleAsync();
-            _logger.LogInformation("Updated schedule {ScheduleId}", schedule.ScheduleId);
-
-            return schedule;
-        }
-
-        public async Task DeleteScheduleAsync(string scheduleId)
-        {
-            ThrowIfDisposed();
-
-            _currentSchedule = null;
-            
-            try
+            // Ensure enforcement
+            if (_currentSchedule.Enabled && !_isEnforcementRunning)
             {
-                if (File.Exists(_schedulePath))
-                    File.Delete(_schedulePath);
+                await StartEnforcementAsync();
             }
-            catch (Exception ex) 
+            else if (!_currentSchedule.Enabled && _isEnforcementRunning)
             {
-                _logger.LogError(ex, "Error deleting schedule file");
+                await StopEnforcementAsync();
             }
 
-            _logger.LogInformation("Deleted schedule");
-            await Task.CompletedTask;
+            _logger.LogInformation("Updated Access Control Settings in SettingsManager");
+
+            return settings;
         }
 
-        public async Task<AccessSchedule?> GetScheduleAsync()
+        public async Task DeleteScheduleAsync()
+        {
+            ThrowIfDisposed();
+
+            // "Delete" means disable
+            if (_currentSchedule != null)
+            {
+                _currentSchedule.Enabled = false;
+                
+                var fullSettings = await _settingsManager.GetSettingsAsync();
+                if (fullSettings.AccessControl != null)
+                {
+                    fullSettings.AccessControl.Enabled = false;
+                    await _settingsManager.UpdateSettingsAsync(fullSettings);
+                }
+            }
+
+            await StopEnforcementAsync();
+            _logger.LogInformation("Disabled schedule via SettingsManager");
+        }
+
+        public async Task<AccessControlSettings?> GetScheduleAsync()
         {
             ThrowIfDisposed();
             return await Task.FromResult(_currentSchedule);
         }
 
-        public async Task<IEnumerable<AccessSchedule>> GetAllSchedulesAsync()
-        {
-            ThrowIfDisposed();
-            if (_currentSchedule != null)
-                return await Task.FromResult(new[] { _currentSchedule });
-            return await Task.FromResult(Array.Empty<AccessSchedule>());
-        }
-
         public async Task<bool> IsAccessAllowedAsync()
         {
             ThrowIfDisposed();
+            if (_currentSchedule == null || !_currentSchedule.Enabled)
+                return await Task.FromResult(true);
 
-            if (_currentSchedule == null)
-                return false;
-            
-            return await Task.FromResult(_currentSchedule?.IsAccessAllowedNow() ?? true); 
+            return await Task.FromResult(_currentSchedule.IsAccessAllowedNow());
         }
 
         public async Task<TimeSpan?> GetTimeRemainingAsync()
@@ -300,7 +269,7 @@ namespace Vorsight.Infrastructure.Scheduling
                                 // Access time expired or outside window
                                 _logger.LogWarning("Access denied (Outside Allowed Hours). Action: {Action}", schedule.ViolationAction);
                                 
-                                if (schedule.ViolationAction == AccessViolationAction.ShutDown)
+                                if (schedule.ViolationAction == ViolationAction.Shutdown)
                                 {
                                     // Initiate shutdown if not already shutting down
                                     // 60 second warning to user
@@ -333,82 +302,21 @@ namespace Vorsight.Infrastructure.Scheduling
             }
         }
 
-        public async Task UpdateScheduleFromSettingsAsync(Vorsight.Contracts.Settings.AccessControlSettings settings)
+        public async Task UpdateScheduleFromSettingsAsync(AccessControlSettings settings)
         {
             ThrowIfDisposed();
             if (settings == null) return;
             
-            try
+            _currentSchedule = settings;
+            _logger.LogInformation("Schedule updated from Settings (Enabled: {Enabled})", _currentSchedule.Enabled);
+            
+            if (_currentSchedule.Enabled && !_isEnforcementRunning)
             {
-                var newSchedule = new AccessSchedule
-                {
-                    ScheduleId = Guid.NewGuid().ToString(), // Regenerate ID or track it in settings? Settings usually doesn't have ID.
-                    Enabled = settings.Enabled,
-                    ViolationAction = settings.ViolationAction == Vorsight.Contracts.Settings.ViolationAction.Shutdown ? AccessViolationAction.ShutDown : AccessViolationAction.LogOff,
-                    AllowedTimeWindows = conversion_helper(settings.Schedule),
-                    TimeZoneId = TimeZoneInfo.Local.Id
-                };
-                
-                _currentSchedule = newSchedule;
-                await PersistScheduleAsync();
-                
-                _logger.LogInformation("Schedule updated from Settings (Enabled: {Enabled})", _currentSchedule.Enabled);
-                
-                // If active, ensure enforcement is running
-                if (_currentSchedule.Enabled && !_isEnforcementRunning)
-                {
-                    await StartEnforcementAsync();
-                }
-                else if (!_currentSchedule.Enabled && _isEnforcementRunning)
-                {
-                    await StopEnforcementAsync();
-                }
+                await StartEnforcementAsync();
             }
-             catch (Exception ex)
+            else if (!_currentSchedule.Enabled && _isEnforcementRunning)
             {
-                _logger.LogError(ex, "Error updating schedule from settings");
-            }
-        }
-
-        private List<AccessWindow> conversion_helper(List<Vorsight.Contracts.Settings.AccessScheduleWindow> source)
-        {
-            var result = new List<AccessWindow>();
-            if (source == null) return result;
-
-            foreach(var w in source)
-            {
-                result.Add(new AccessWindow
-                {
-                    DayOfWeek = (DayOfWeek)w.DayOfWeek,
-                    StartTime = TimeSpan.Parse(w.StartTime),
-                    EndTime = TimeSpan.Parse(w.EndTime)
-                });
-            }
-            return result;
-        }
-
-        // Removed legacy fetch methods
-        
-        private async Task PersistScheduleAsync()
-        {
-            try
-            {
-                if (_currentSchedule == null) return;
-
-                var directory = Path.GetDirectoryName(_schedulePath);
-                if (directory != null) Directory.CreateDirectory(directory);
-
-                var json = JsonSerializer.Serialize(_currentSchedule, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
-                await File.WriteAllTextAsync(_schedulePath, json);
-                _logger.LogDebug("Schedule persisted to {Path}", _schedulePath);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error persisting schedule");
+                await StopEnforcementAsync();
             }
         }
 

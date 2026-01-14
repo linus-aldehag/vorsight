@@ -1,7 +1,6 @@
 using Serilog;
-using Vorsight.Contracts.Audit;
 using Vorsight.Contracts.IPC;
-using Vorsight.Contracts.Scheduling;
+
 using Vorsight.Infrastructure.Scheduling;
 using Vorsight.Infrastructure.Audit;
 using Vorsight.Infrastructure.Contracts;
@@ -172,8 +171,7 @@ try
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
         new ScheduleManager(
             sp.GetRequiredService<ILogger<ScheduleManager>>(),
-            sp.GetRequiredService<IHttpClientFactory>(),
-            sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()));
+            sp.GetRequiredService<ISettingsManager>()));
 
     builder.Services.AddSingleton<IAuditManager, AuditManager>();
 #pragma warning restore CA1416

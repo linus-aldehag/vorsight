@@ -5,7 +5,6 @@ using Vorsight.Contracts.IPC;
 using Vorsight.Infrastructure.Uptime;
 using Vorsight.Interop;
 
-using Vorsight.Contracts.Scheduling;
 using Vorsight.Infrastructure.Contracts;
 
 using Vorsight.Service.Monitoring;
@@ -155,22 +154,12 @@ public static class ApiEndpoints
         });
 
         app.MapPost("/api/schedule", async (
-            [FromBody] AccessSchedule schedule,
+            [FromBody] Vorsight.Contracts.Settings.AccessControlSettings schedule,
             IScheduleManager scheduleManager) =>
         {
             try 
             {
-                var existing = await scheduleManager.GetScheduleAsync();
-                if (existing == null)
-                {
-                    await scheduleManager.CreateScheduleAsync(schedule);
-                }
-                else
-                {
-                    // Preserve ID
-                    schedule.ScheduleId = existing.ScheduleId;
-                    await scheduleManager.UpdateScheduleAsync(schedule);
-                }
+                await scheduleManager.UpdateScheduleAsync(schedule);
                 return Results.Ok(schedule);
             }
             catch (Exception ex)
