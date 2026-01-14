@@ -2,7 +2,6 @@ import type {
     StatusResponse,
     ApiResponse,
     AgentSettings,
-    AccessSchedule,
     PaginatedScreenshots,
     ActivitySummary
 } from './types';
@@ -65,27 +64,7 @@ export const VorsightApi = {
         return res.json();
     },
 
-    async getSchedule(machineId?: string): Promise<AccessSchedule | null> {
-        const url = machineId ? `${BASE_URL}/schedule?machineId=${machineId}` : `${BASE_URL}/schedule`;
-        const response = await fetch(url, { headers: getAuthHeaders() });
-        if (response.status === 404) return null;
-        if (!response.ok) throw new Error('Failed to fetch schedule');
-        const text = await response.text();
-        if (!text) return null;
-
-        // Use a safe parser or custom logic if needed, but here we assume the API returns JSON
-        return JSON.parse(text);
-    },
-
-    async saveSchedule(machineId: string, schedule: AccessSchedule): Promise<AccessSchedule> {
-        const response = await fetch(`${BASE_URL}/schedule`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-            body: JSON.stringify({ machineId, ...schedule })
-        });
-        if (!response.ok) throw new Error('Failed to save schedule');
-        return response.json();
-    },
+    // Removed getSchedule and saveSchedule methods
 
     async getScreenshots(machineId: string, limit: number = 30, after?: string): Promise<PaginatedScreenshots> {
         const afterParam = after ? `&after=${after}` : '';
