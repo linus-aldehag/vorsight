@@ -17,6 +17,17 @@ if (!(Get-Command npx -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# Ensure output directories exist
+$SettingsDir = Split-Path $SettingsOut
+$PayloadsDir = Split-Path $PayloadsOut
+
+if (!(Test-Path $SettingsDir)) {
+    New-Item -ItemType Directory -Force -Path $SettingsDir | Out-Null
+}
+if (!(Test-Path $PayloadsDir)) {
+    New-Item -ItemType Directory -Force -Path $PayloadsDir | Out-Null
+}
+
 try {
     Write-Host "Generating MachineSettings.gen.cs..."
     # MachineSettings
