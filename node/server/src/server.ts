@@ -24,7 +24,7 @@ import machineOAuthRouter from './routes/machine/oauth';
 // Import Web Routes
 import webMachinesRouter from './routes/web/machines';
 import webSettingsRouter from './routes/web/settings';
-import webScheduleRouter from './routes/web/schedule';
+
 import webActivityRouter from './routes/web/activity';
 import webLogsRouter from './routes/web/logs';
 import webScreenshotsRouter from './routes/web/screenshots';
@@ -90,7 +90,7 @@ app.use('/api/web/v1/media', webMediaRouter); // Public for img tags
 // Protected Web Routes (Require JWT)
 app.use('/api/web/v1/machines', authenticateBrowser, webMachinesRouter);
 app.use('/api/web/v1/settings', authenticateBrowser, webSettingsRouter);
-app.use('/api/web/v1/schedule', authenticateBrowser, webScheduleRouter);
+
 app.use('/api/web/v1/activity', authenticateBrowser, webActivityRouter);
 app.use('/api/web/v1/logs', authenticateBrowser, webLogsRouter);
 app.use('/api/web/v1/screenshots', authenticateBrowser, webScreenshotsRouter);
