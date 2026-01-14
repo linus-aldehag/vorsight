@@ -16,6 +16,18 @@ if (-not (Test-Path $InnoSetup)) {
     exit 1
 }
 
+Write-Host "Generating Contracts..."
+$ContractScript = "dotnet\Vorsight.Contracts\GenerateContracts.ps1"
+if (Test-Path $ContractScript) {
+    & $ContractScript
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to generate contracts."
+        exit 1
+    }
+} else {
+    Write-Warning "GenerateContracts.ps1 not found at $ContractScript"
+}
+
 Write-Host "Restoring dependencies..."
 dotnet restore
 

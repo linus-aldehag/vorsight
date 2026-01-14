@@ -54,6 +54,7 @@ export interface ScreenshotSettings {
 
 export interface ActivitySettings {
     enabled: boolean;
+    activityIntervalSeconds?: number;
 }
 
 export interface AuditFilters {
@@ -69,6 +70,7 @@ export interface AuditSettings {
 
 export interface AccessControlSettings {
     enabled: boolean;
+    scheduleMode?: 'simple' | 'custom';
     violationAction: 'logoff' | 'shutdown';
     schedule: TimeWindow[];
 }
@@ -82,7 +84,7 @@ export interface AgentSettings {
 }
 
 export interface TimeWindow {
-    dayOfWeek: number; // 0=Sunday
+    dayOfWeek: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
     startTime: string; // HH:mm
     endTime: string;   // HH:mm
 }

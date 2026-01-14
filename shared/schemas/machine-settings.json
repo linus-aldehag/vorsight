@@ -124,6 +124,14 @@
                     "type": "boolean",
                     "default": false
                 },
+                "scheduleMode": {
+                    "type": "string",
+                    "enum": [
+                        "simple",
+                        "custom"
+                    ],
+                    "default": "simple"
+                },
                 "violationAction": {
                     "type": "string",
                     "enum": [
@@ -149,8 +157,17 @@
             "type": "object",
             "properties": {
                 "dayOfWeek": {
-                    "type": "integer",
-                    "description": "0=Sunday, 1=Monday..."
+                    "type": "string",
+                    "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                    ],
+                    "description": "Day of week (monday-sunday)"
                 },
                 "startTime": {
                     "type": "string",
