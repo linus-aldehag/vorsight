@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authenticateMachine } from '../../middleware/auth';
 import { prisma } from '../../db/database';
-import { MachineSettings } from '../../types';
+import { MachineSettings, ViolationAction } from '../../types';
 
 const router = express.Router();
 
@@ -25,7 +25,7 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
             network: { pingIntervalSeconds: 300 },
             activity: { enabled: false, intervalSeconds: 10 },
             audit: { enabled: false, filters: { security: true, system: true, application: true } },
-            accessControl: { enabled: false, violationAction: 'logoff', schedule: [] }
+            accessControl: { enabled: false, violationAction: ViolationAction.Logoff, schedule: [] }
         };
 
         // Merge stored settings with defaults

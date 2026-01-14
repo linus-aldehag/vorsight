@@ -5,10 +5,17 @@ import { authenticateMachine } from '../../middleware/auth';
 const router = express.Router();
 
 
+import { ActivityPayload } from '../../types';
+
 // Add activity heartbeat (authenticated) - processes into sessions
 router.post('/', authenticateMachine, async (req: Request, res: Response) => {
     try {
-        const { timestamp, activeWindow, processName, username, pingIntervalSeconds = 30 } = req.body;
+        const payload = req.body as ActivityPayload;
+        // Optional pingInterval currently sent by agent but not in strict schema yet? 
+        // We can cast to any for legacy or update schema. 
+        // Let's assume schema needs update if we want strictness.
+        const { timestamp, activeWindow, processName, username } = payload;
+        const pingIntervalSeconds = (req.body as any).pingIntervalSeconds || 30;
 
         if (!req.machine) {
             return res.status(401).json({ error: 'Unauthorized' });
@@ -20,11 +27,11 @@ router.post('/', authenticateMachine, async (req: Request, res: Response) => {
         let heartbeatTime: Date;
         let timeSeconds: number;
 
-        if (typeof timestamp === 'string') {
+        if (typeof timestamp === 'string' || timestamp instanceof Date) {
             heartbeatTime = new Date(timestamp);
             timeSeconds = Math.floor(heartbeatTime.getTime() / 1000);
         } else {
-            timeSeconds = timestamp || currentTime;
+            timeSeconds = (timestamp as number) || currentTime;
             heartbeatTime = new Date(timeSeconds * 1000);
         }
 

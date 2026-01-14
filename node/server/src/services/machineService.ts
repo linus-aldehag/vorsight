@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '../db/database';
-import { MachineMetadata, MachineSettings } from '../types';
+import { MachineMetadata, MachineSettings, ViolationAction } from '../types';
 import { Prisma } from '@prisma/client';
 
 export interface RegisterDTO {
@@ -234,7 +234,7 @@ export class MachineService {
             },
             accessControl: {
                 enabled: !!enableAccessControl,
-                violationAction: accessControlAction || 'logoff',
+                violationAction: (accessControlAction as ViolationAction) || ViolationAction.Logoff,
                 schedule: schedule || []
             }
         };

@@ -138,4 +138,9 @@ deploy/pi/*.tar.gz
 *.db-wal
 
 # Build output assets
+# Build output assets
 node/server/public/
+
+# Generated Types
+*.gen.cs
+*.gen.ts

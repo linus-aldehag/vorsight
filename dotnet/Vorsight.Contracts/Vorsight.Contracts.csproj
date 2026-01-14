@@ -14,5 +14,12 @@
     <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <Target Name="GenerateContracts" BeforeTargets="PreBuildEvent">
+    <Exec Command="powershell -ExecutionPolicy RemoteSigned -File &quot;$(ProjectDir)GenerateContracts.ps1&quot;" />
+  </Target>
 
 </Project>
