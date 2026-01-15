@@ -22,7 +22,7 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
         // Default settings - all features disabled for new machines
         const defaults: MachineSettings = {
             screenshots: { enabled: false, intervalSeconds: 300, filterDuplicates: true },
-            network: { pingIntervalSeconds: 300 },
+
             activity: { enabled: false, intervalSeconds: 10 },
             audit: { enabled: false, filters: { security: true, system: true, application: true } },
             accessControl: { enabled: false, violationAction: ViolationAction.Logoff, schedule: [] }
@@ -40,12 +40,10 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
             ...defaults,
             ...storedSettings,
             // Ensure nested objects are merged if they exist in stored
-            screenshots: { ...defaults.screenshots, ...storedSettings.screenshots },
-            monitoring: { ...defaults.network, ...(storedSettings.monitoring || storedSettings.network) }, // Legacy fallback (try monitoring first then network)
-            network: { ...defaults.network, ...(storedSettings.network || storedSettings.monitoring) }, // New standard (try network first then monitoring)
-            activity: { ...defaults.activity, ...storedSettings.activity },
-            audit: { ...defaults.audit, ...storedSettings.audit },
-            accessControl: { ...defaults.accessControl, ...storedSettings.accessControl }
+            screenshots: { ...defaults.screenshots, ...(storedSettings.screenshots || {}) },
+            activity: { ...defaults.activity, ...(storedSettings.activity || {}) },
+            audit: { ...defaults.audit, ...(storedSettings.audit || {}) },
+            accessControl: { ...defaults.accessControl, ...(storedSettings.accessControl || {}) }
         };
 
         return res.json(mergedSettings);
