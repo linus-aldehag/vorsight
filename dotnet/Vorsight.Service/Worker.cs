@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Vorsight.Contracts.IPC;
 
 using Vorsight.Contracts.Settings;
@@ -363,7 +364,12 @@ public class Worker : BackgroundService
             var json = await _serverConnection.FetchSettingsJsonAsync();
             if (json != null)
             {
-                var settings = JsonSerializer.Deserialize<MachineSettings>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    Converters = { new JsonStringEnumConverter() }
+                };
+                var settings = JsonSerializer.Deserialize<MachineSettings>(json, options);
                 if (settings != null)
                 {
                     await _settingsManager.UpdateSettingsAsync(settings);
