@@ -35,6 +35,7 @@ public class Worker : BackgroundService
     private readonly IServerConnection _serverConnection;
     private readonly IIpcMessageRouter _ipcMessageRouter;
     private readonly IServerCommandProcessor _serverCommandProcessor;
+    private readonly IAgentLauncher _agentLauncher;
     private readonly CancellationTokenSource _internalCts = new();
 
     public Worker(
@@ -53,7 +54,8 @@ public class Worker : BackgroundService
         ISettingsManager settingsManager,
         IServerConnection serverConnection,
         IIpcMessageRouter ipcMessageRouter,
-        IServerCommandProcessor serverCommandProcessor
+        IServerCommandProcessor serverCommandProcessor,
+        IAgentLauncher agentLauncher
     )
     {
         _logger = logger;
@@ -72,6 +74,7 @@ public class Worker : BackgroundService
         _serverConnection = serverConnection;
         _ipcMessageRouter = ipcMessageRouter;
         _serverCommandProcessor = serverCommandProcessor;
+        _agentLauncher = agentLauncher;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
