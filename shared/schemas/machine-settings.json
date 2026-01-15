@@ -4,9 +4,6 @@
     "title": "MachineSettings",
     "type": "object",
     "properties": {
-        "network": {
-            "$ref": "#/definitions/NetworkSettings"
-        },
         "screenshots": {
             "$ref": "#/definitions/ScreenshotSettings"
         },
@@ -21,25 +18,12 @@
         }
     },
     "required": [
-        "network",
         "screenshots",
         "activity",
         "audit",
         "accessControl"
     ],
     "definitions": {
-        "NetworkSettings": {
-            "type": "object",
-            "properties": {
-                "pingIntervalSeconds": {
-                    "type": "integer",
-                    "default": 300
-                }
-            },
-            "required": [
-                "pingIntervalSeconds"
-            ]
-        },
         "ScreenshotSettings": {
             "type": "object",
             "properties": {

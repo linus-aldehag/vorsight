@@ -41,10 +41,7 @@ export interface ApiResponse {
     [key: string]: any;
 }
 
-export interface MonitoringSettings {
-    enabled: boolean;
-    pingIntervalSeconds: number;
-}
+
 
 export interface ScreenshotSettings {
     enabled: boolean;
@@ -54,7 +51,7 @@ export interface ScreenshotSettings {
 
 export interface ActivitySettings {
     enabled: boolean;
-    activityIntervalSeconds?: number;
+    intervalSeconds: number;
 }
 
 export interface AuditFilters {
@@ -76,7 +73,7 @@ export interface AccessControlSettings {
 }
 
 export interface AgentSettings {
-    monitoring: MonitoringSettings;
+
     screenshots: ScreenshotSettings;
     activity: ActivitySettings;
     audit: AuditSettings;

@@ -48,13 +48,6 @@ export const VorsightApi = {
         // We only support 'ping' for now, map to new endpoint
         if (action !== 'ping') throw new Error('Unsupported network action');
 
-        // Find machine ID for target if possible, or use generic ping?
-        // The server only supports ping by Machine ID now in web/ping.ts
-        // But client might be passing IP/Hostname?
-        // If target is an ID (UUID-like), use it.
-        // For now, let's assume target IS machineId, as SystemControls.tsx usually works with Machine context.
-        // Actually, SystemControls might be passing raw target? No, let's check usage.
-        // Assuming target is machineId from previous context.
 
         const res = await fetch(`${BASE_URL}/ping/${target}`, {
             method: 'POST',
@@ -93,10 +86,7 @@ export const VorsightApi = {
                     intervalSeconds: 300,
                     filterDuplicates: true
                 },
-                monitoring: {
-                    enabled: false,
-                    pingIntervalSeconds: 30
-                },
+
                 audit: {
                     enabled: false,
                     filters: {
@@ -106,7 +96,8 @@ export const VorsightApi = {
                     }
                 },
                 activity: {
-                    enabled: false
+                    enabled: false,
+                    intervalSeconds: 30
                 },
                 accessControl: {
                     enabled: false,
