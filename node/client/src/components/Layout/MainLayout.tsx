@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useMachine } from '../../context/MachineContext';
 import { Dashboard } from '../../features/dashboard/Dashboard';
 import { ScreenshotGallery } from '../../features/gallery/ScreenshotGallery';
@@ -18,6 +18,7 @@ import type { Machine } from '../../context/MachineContext';
 export function MainLayout() {
     const { machineId, view } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { machines, pendingMachines, selectedMachine, selectMachine, onMachineDiscovered } = useMachine();
     const { settings, refreshSettings } = useHealthStats(selectedMachine?.id);
 
@@ -115,12 +116,12 @@ export function MainLayout() {
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col font-mono selection:bg-primary/20">
             <AppHeader
-                onSettingsClick={() => navigate('/settings')}
+                onSettingsClick={() => navigate('/settings', { state: { returnTo: location.pathname } })}
                 onMachineSelectorClick={() => {
                     setManagerStartTab(machines.length === 0 && pendingMachines.length > 0 ? 'pending' : 'active');
                     setManagerOpen(true);
                 }}
-                showSelector={machines.length > 1 || pendingMachines.length > 0}
+                showSelector={machines.length !== 1 || pendingMachines.length > 0}
             />
 
             <NavigationTabs
