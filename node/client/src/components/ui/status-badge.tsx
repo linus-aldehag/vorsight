@@ -1,4 +1,4 @@
-import * as React from "react"
+import { type HTMLAttributes } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -82,7 +82,7 @@ const badgeVariants = cva("text-xs font-mono border-current flex items-center ga
 export type StatusValue = "online" | "unstable" | "reachable" | "offline" | "warning" | "error"
 
 export interface StatusBadgeProps
-    extends React.HTMLAttributes<HTMLDivElement>,
+    extends HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof statusBadgeVariants> {
     status: StatusValue
     statusText?: string
