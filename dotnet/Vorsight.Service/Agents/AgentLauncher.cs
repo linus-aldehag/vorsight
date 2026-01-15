@@ -9,6 +9,7 @@ namespace Vorsight.Service.Agents;
 public interface IAgentLauncher
 {
     Task LaunchScreenshotAgentAsync();
+    Task LaunchActivityCaptureAsync(CancellationToken cancellationToken);
 }
 
 public class AgentLauncher : IAgentLauncher
@@ -176,5 +177,93 @@ public class AgentLauncher : IAgentLauncher
         }
 
         return Task.CompletedTask;
+    }
+
+    public async Task LaunchActivityCaptureAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var sessionId = ProcessHelper.GetActiveConsoleSessionId();
+            if (sessionId == 0xFFFFFFFF)
+                return;
+
+            // Re-use logic for launching as user
+            var explorerProcesses = Process.GetProcessesByName("explorer");
+            var userProcess = explorerProcesses.FirstOrDefault(p => (uint)p.SessionId == sessionId);
+            if (userProcess == null)
+                return;
+
+            if (
+                !ProcessHelper.TryOpenProcess(
+                    (uint)userProcess.Id,
+                    ProcessInterop.PROCESS_QUERY_INFORMATION,
+                    out var processHandle
+                )
+            )
+                return;
+
+            try
+            {
+                if (
+                    !ProcessHelper.TryOpenProcessToken(
+                        processHandle,
+                        ProcessInterop.TOKEN_DUPLICATE
+                            | ProcessInterop.TOKEN_QUERY
+                            | ProcessInterop.TOKEN_ASSIGN_PRIMARY,
+                        out var tokenHandle
+                    )
+                )
+                    return;
+                try
+                {
+                    if (
+                        !ProcessHelper.TryDuplicateTokenEx(
+                            tokenHandle,
+                            ProcessInterop.TOKEN_ALL_ACCESS,
+                            2,
+                            1,
+                            out var newToken
+                        )
+                    )
+                        return;
+                    try
+                    {
+                        var cmdLine = $"\"{_agentPath}\" activity";
+                        var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
+
+                        if (
+                            ProcessHelper.TryCreateProcessAsUser(
+                                newToken,
+                                _agentPath,
+                                cmdLine,
+                                workingDir,
+                                out var newPid
+                            )
+                        )
+                        {
+                            // Fire and forget
+                        }
+                    }
+                    finally
+                    {
+                        ProcessInterop.CloseHandle(newToken);
+                    }
+                }
+                finally
+                {
+                    ProcessInterop.CloseHandle(tokenHandle);
+                }
+            }
+            finally
+            {
+                ProcessInterop.CloseHandle(processHandle);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to launch activity agent");
+        }
+
+        await Task.CompletedTask;
     }
 }

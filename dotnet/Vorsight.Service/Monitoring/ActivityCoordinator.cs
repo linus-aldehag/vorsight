@@ -25,7 +25,8 @@ public class ActivityCoordinator(
     ICommandExecutor commandExecutor,
     ISettingsManager settingsManager,
     IServerConnection serverConnection,
-    IHealthMonitor healthMonitor
+    IHealthMonitor healthMonitor,
+    IAgentLauncher agentLauncher
 ) : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -34,6 +35,7 @@ public class ActivityCoordinator(
     private readonly ISettingsManager _settingsManager = settingsManager;
     private readonly IServerConnection _serverConnection = serverConnection;
     private readonly IHealthMonitor _healthMonitor = healthMonitor;
+    private readonly IAgentLauncher _agentLauncher = agentLauncher;
     private string _currentWindow = string.Empty;
     private string _currentProcess = string.Empty;
     private DateTime _currentActivityStart = DateTime.MinValue;
@@ -41,6 +43,7 @@ public class ActivityCoordinator(
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
     private string _currentUsername = string.Empty;
+    private DateTime _lastActivityPoll = DateTime.MinValue;
 
     // Recovery tracking
     private DateTime _lastAgentPathResolveAttempt = DateTime.MinValue;
@@ -115,7 +118,7 @@ public class ActivityCoordinator(
                 // Activity updates are event-driven via UpdateActivity, but we need to keep connection alive
                 // and potentially send heartbeat if interval elapsed (though server might handle pings)
 
-                // Let's assume we send a heartbeat every 30 seconds
+                // Heartbeat (Every 30s)
                 if (now - _lastPollTime > TimeSpan.FromSeconds(30))
                 {
                     _lastPollTime = now;
@@ -157,6 +160,16 @@ public class ActivityCoordinator(
                             }
                         );
                     }
+                }
+
+                // Poll Activity (Every few seconds)
+                // We launch the ephemeral agent to capture current window/activity
+                var activityInterval =
+                    settings.Activity.IntervalSeconds > 0 ? settings.Activity.IntervalSeconds : 10;
+                if (now - _lastActivityPoll > TimeSpan.FromSeconds(activityInterval))
+                {
+                    _lastActivityPoll = now;
+                    await _agentLauncher.LaunchActivityCaptureAsync(cancellationToken);
                 }
 
                 // Check for Timed Screenshot (only if enabled)
