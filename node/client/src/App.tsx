@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { UIStateProvider } from './context/UIStateContext';
@@ -24,10 +24,8 @@ export function App() {
 
 function AppContent() {
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-    const { machines, isLoading: isMachinesLoading } = useMachine();
+    const { isLoading: isMachinesLoading } = useMachine();
     const [oauthConfigured, setOauthConfigured] = useState<boolean | null>(null);
-    const navigate = useNavigate();
-    const location = useLocation();
 
     // Check OAuth status on mount
     useEffect(() => {
@@ -52,15 +50,7 @@ function AppContent() {
         }
     }, [isAuthenticated]);
 
-    // Handle redirection when no machines are available
-    useEffect(() => {
-        if (isAuthenticated && !isMachinesLoading && machines.length === 0) {
-            // If not already on a settings page, redirect to settings
-            if (!location.pathname.startsWith('/settings')) {
-                navigate('/settings', { replace: true });
-            }
-        }
-    }, [isAuthenticated, isMachinesLoading, machines.length, location.pathname, navigate]);
+
 
     if (isAuthLoading || (isAuthenticated && (oauthConfigured === null || isMachinesLoading))) {
         return (
@@ -74,12 +64,12 @@ function AppContent() {
         return <LoginPage />;
     }
 
-    // Redirect to settings if OAuth not configured OR no machines available, otherwise dashboard
-    const defaultRoute = (oauthConfigured && machines.length > 0) ? '/dashboard' : '/settings';
+    // Redirect to settings if OAuth not configured, otherwise dashboard
+    const defaultRoute = oauthConfigured ? '/dashboard' : '/settings';
 
     return (
         <Routes>
-            <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+            <Route path="/" element={<Navigate to={defaultRoute} replace state={{ returnTo: '/dashboard' }} />} />
             <Route path="/settings" element={<SettingsLayout />} />
             <Route path="/:view" element={<MainLayout />} />
             <Route path="/:machineId/:view" element={<MainLayout />} />
