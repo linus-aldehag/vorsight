@@ -201,6 +201,30 @@ public class Worker : BackgroundService
 
                     // Update uptime
                     _uptimeMonitor.RecordHeartbeat();
+                    
+                    // Construct state payload
+                    var healthReport = _healthMonitor.GetHealthReport();
+                    var currentActivity = _activityCoordinator.GetCurrentActivity();
+                    var uptimeStatus = _uptimeMonitor.GetCurrentStatus();
+                    
+                    var state = new StatePayload
+                    {
+                        LastActivityTime = currentActivity?.Timestamp ?? DateTime.UtcNow, 
+                        ActiveWindow = currentActivity?.ActiveWindowTitle ?? "Unknown",
+                        ScreenshotCount = healthReport.TotalScreenshotsSuccessful,
+                        UploadCount = healthReport.TotalUploadsSuccessful,
+                        Health = new HealthStatus 
+                        { 
+                            Uptime = uptimeStatus.CurrentStart.HasValue 
+                                ? (DateTime.UtcNow - uptimeStatus.CurrentStart.Value).TotalSeconds 
+                                : 0,
+                            Message = "Running"
+                        },
+                        Version = "1.0.0" 
+                    };
+
+                    // Send heartbeat
+                    await _serverConnection.SendHeartbeatAsync(state);
 
                     // Service health check every 10 seconds (Heartbeat)
                     await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
