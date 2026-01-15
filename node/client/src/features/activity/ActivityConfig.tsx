@@ -9,26 +9,26 @@ interface ActivityConfigProps {
 }
 
 export function ActivityConfig({ settings, onSave, saving }: ActivityConfigProps) {
-    const [activityInterval, setActivityInterval] = useState(settings.monitoring.pingIntervalSeconds);
+    const [interval, setInterval] = useState(settings.activity.intervalSeconds || 10);
 
     const handleSave = async () => {
         await onSave({
-            monitoring: {
-                ...settings.monitoring,
-                pingIntervalSeconds: activityInterval
+            activity: {
+                ...settings.activity,
+                intervalSeconds: interval
             }
         });
     };
 
     return (
         <NumberField
-            label="Heartbeat Interval (seconds)"
-            value={activityInterval}
-            onChange={setActivityInterval}
+            label="Activity Interval (seconds)"
+            value={interval}
+            onChange={setInterval}
             onSave={handleSave}
-            min={5}
-            max={300}
-            hint="Range: 5 - 300 seconds"
+            min={1}
+            max={60}
+            hint="Range: 1 - 60 seconds"
             saving={saving}
         />
     );

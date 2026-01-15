@@ -18,7 +18,7 @@ interface HealthStatsProps {
 
 export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: HealthStatsProps) {
     const { selectedMachine } = useMachine();
-    const { settings } = useHealthStats(selectedMachine?.id);
+    useHealthStats(selectedMachine?.id);
 
     const fetcher = async (url: string) => {
         const token = localStorage.getItem('auth_token');
@@ -33,9 +33,6 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
         { refreshInterval: 10000, revalidateOnFocus: false }
     );
 
-    // Fetch recent logs to determining health status
-    // Polling every 10s to match other stats
-    // We only need the latest few to check for warnings/errors
     const { logs } = useMachineLogs(selectedMachine?.id || '', 10000);
 
     const checkLogHealth = () => {
@@ -133,7 +130,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                 <div className="pt-2 border-t border-border/50">
                     <UptimeDisplay
                         currentStart={uptime.currentStart}
-                        isDisabled={settings?.monitoring.pingIntervalSeconds === 0}
+                        isDisabled={false}
                     />
                 </div>
             </CardContent>

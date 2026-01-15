@@ -28,9 +28,7 @@ export function FeaturesWidget({ settings }: FeaturesWidgetProps) {
         ? Math.round(settings.screenshots.intervalSeconds / 60)
         : null;
 
-    const activityInterval = activityEnabled
-        ? settings.monitoring.pingIntervalSeconds
-        : null;
+    const activityInterval = settings.activity.intervalSeconds;
 
     const features = [
         {

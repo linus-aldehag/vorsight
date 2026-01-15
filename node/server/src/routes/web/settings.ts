@@ -21,9 +21,9 @@ router.get('/', async (req: Request, res: Response) => {
 
         // Default settings
         const defaults = {
-            monitoring: { enabled: true, pingIntervalSeconds: 30 },
+
             screenshots: { enabled: false, intervalSeconds: 300, filterDuplicates: true },
-            activity: { enabled: false },
+            activity: { enabled: false, intervalSeconds: 10 },
             audit: { enabled: false, filters: { security: true, system: false, application: false } },
             accessControl: { enabled: false, violationAction: 'logoff', schedule: [] }
         };
@@ -34,7 +34,7 @@ router.get('/', async (req: Request, res: Response) => {
         // Deep merge is safer here but spreading top level keys is a start
         // Any missing keys in stored will use defaults
         const mergedSettings = { ...defaults };
-        if (storedSettings.monitoring) mergedSettings.monitoring = { ...defaults.monitoring, ...storedSettings.monitoring };
+
         if (storedSettings.screenshots) mergedSettings.screenshots = { ...defaults.screenshots, ...storedSettings.screenshots };
         if (storedSettings.activity) mergedSettings.activity = { ...defaults.activity, ...storedSettings.activity };
         if (storedSettings.audit) mergedSettings.audit = {
