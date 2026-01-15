@@ -6,8 +6,10 @@ namespace Vorsight.Infrastructure.IO;
 /// </summary>
 public static class PathConfiguration
 {
-    private static readonly string BaseDataDirectory = 
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "Vorsight");
+    private static readonly string BaseDataDirectory = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        "Vorsight"
+    );
 
     /// <summary>
     /// Gets the base Vörsight data directory: %ProgramData%/Vorsight

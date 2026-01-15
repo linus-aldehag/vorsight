@@ -63,7 +63,8 @@ namespace Vorsight.Interop
             IntPtr lpEnvironment,
             string? lpCurrentDirectory,
             ref STARTUPINFO lpStartupInfo,
-            out PROCESS_INFORMATION lpProcessInformation);
+            out PROCESS_INFORMATION lpProcessInformation
+        );
 
         /// <summary>
         /// Opens the access token associated with a process.
@@ -72,7 +73,8 @@ namespace Vorsight.Interop
         public static extern bool OpenProcessToken(
             IntPtr ProcessHandle,
             uint DesiredAccess,
-            out IntPtr TokenHandle);
+            out IntPtr TokenHandle
+        );
 
         /// <summary>
         /// Duplicates an access token so it can be used in CreateProcessAsUser.
@@ -84,7 +86,8 @@ namespace Vorsight.Interop
             IntPtr lpTokenAttributes,
             int ImpersonationLevel,
             int TokenType,
-            out IntPtr phNewToken);
+            out IntPtr phNewToken
+        );
 
         /// <summary>
         /// Gets the process handle for a given process ID.
@@ -93,7 +96,8 @@ namespace Vorsight.Interop
         public static extern IntPtr OpenProcess(
             uint dwDesiredAccess,
             bool bInheritHandle,
-            uint dwProcessId);
+            uint dwProcessId
+        );
 
         /// <summary>
         /// Closes an open handle.
@@ -108,7 +112,11 @@ namespace Vorsight.Interop
         public static extern uint GetCurrentProcessId();
 
         [DllImport("userenv.dll", SetLastError = true)]
-        public static extern bool CreateEnvironmentBlock(out IntPtr lpEnvironment, IntPtr hToken, bool bInherit);
+        public static extern bool CreateEnvironmentBlock(
+            out IntPtr lpEnvironment,
+            IntPtr hToken,
+            bool bInherit
+        );
 
         [DllImport("userenv.dll", SetLastError = true)]
         public static extern bool DestroyEnvironmentBlock(IntPtr lpEnvironment);
@@ -133,4 +141,3 @@ namespace Vorsight.Interop
         public const int TokenImpersonation = 2;
     }
 }
-

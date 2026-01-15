@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -21,5 +20,4 @@
   <Target Name="GenerateContracts" BeforeTargets="PreBuildEvent">
     <Exec Command="powershell -ExecutionPolicy RemoteSigned -File &quot;$(ProjectDir)GenerateContracts.ps1&quot;" />
   </Target>
-
 </Project>

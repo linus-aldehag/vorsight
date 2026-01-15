@@ -48,7 +48,9 @@ namespace Vorsight.Interop
                 // Force logoff without saving
                 return ShutdownInterop.ExitWindowsEx(
                     ShutdownInterop.EWX_LOGOFF | ShutdownInterop.EWX_FORCE,
-                    ShutdownInterop.SHTDN_REASON_FLAG_PLANNED | ShutdownInterop.SHTDN_REASON_MAJOR_APPLICATION);
+                    ShutdownInterop.SHTDN_REASON_FLAG_PLANNED
+                        | ShutdownInterop.SHTDN_REASON_MAJOR_APPLICATION
+                );
             }
             catch (Exception ex)
             {
@@ -104,16 +106,18 @@ namespace Vorsight.Interop
             uint timeoutSeconds,
             string? message = null,
             bool forceAppsClose = false,
-            bool rebootAfter = false)
+            bool rebootAfter = false
+        )
         {
             try
             {
                 // Ensure we have shutdown privilege
                 ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
 
-                var reason = ShutdownInterop.SHTDN_REASON_FLAG_PLANNED |
-                           ShutdownInterop.SHTDN_REASON_MAJOR_APPLICATION |
-                           ShutdownInterop.SHTDN_REASON_MINOR_OTHER;
+                var reason =
+                    ShutdownInterop.SHTDN_REASON_FLAG_PLANNED
+                    | ShutdownInterop.SHTDN_REASON_MAJOR_APPLICATION
+                    | ShutdownInterop.SHTDN_REASON_MINOR_OTHER;
 
                 var result = ShutdownInterop.InitiateSystemShutdownEx(
                     null, // Local machine
@@ -121,7 +125,8 @@ namespace Vorsight.Interop
                     timeoutSeconds,
                     forceAppsClose,
                     rebootAfter,
-                    reason);
+                    reason
+                );
 
                 return result == 0; // ERROR_SUCCESS
             }
@@ -183,4 +188,3 @@ namespace Vorsight.Interop
         }
     }
 }
-

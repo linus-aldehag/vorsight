@@ -9,5 +9,6 @@ public interface IIpcService
         object? payload,
         uint sessionId,
         string? metadata = null,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default
+    );
 }

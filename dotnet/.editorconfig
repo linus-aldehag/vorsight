@@ -1,0 +1,10 @@
+root = true
+
+[*.cs]
+# Enforce using directives (IDE0001: Simplify name)
+# This is NOT handled by CSharpier, which only handles formatting (whitespace).
+# This rule ensures you don't use fully qualified names like 'System.Text.StringBuilder'.
+dotnet_diagnostic.IDE0001.severity = warning
+
+# Use file-scoped namespace declarations
+csharp_style_namespace_declarations = file_scoped:warning

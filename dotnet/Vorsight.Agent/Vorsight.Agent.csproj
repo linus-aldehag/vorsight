@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -36,5 +35,4 @@
     <ProjectReference Include="..\Vorsight.Infrastructure\Vorsight.Infrastructure.csproj" />
     <ProjectReference Include="..\Vorsight.Interop\Vorsight.Interop.csproj" />
   </ItemGroup>
-
 </Project>

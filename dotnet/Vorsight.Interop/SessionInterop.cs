@@ -25,7 +25,8 @@ namespace Vorsight.Interop
             uint SessionId,
             WTS_INFO_CLASS WTSInfoClass,
             out IntPtr ppBuffer,
-            out uint pBytesReturned);
+            out uint pBytesReturned
+        );
 
         /// <summary>
         /// Enumerates all sessions on a Terminal Server.
@@ -36,7 +37,8 @@ namespace Vorsight.Interop
             uint Reserved,
             uint Version,
             out IntPtr ppSessionInfo,
-            out uint pCount);
+            out uint pCount
+        );
 
         /// <summary>
         /// Frees memory allocated by Terminal Services functions.
@@ -61,10 +63,7 @@ namespace Vorsight.Interop
         /// Logs off a user from a specific session.
         /// </summary>
         [DllImport("wtsapi32.dll", SetLastError = true)]
-        public static extern bool WTSLogoffSession(
-            IntPtr hServer,
-            uint SessionId,
-            bool bWait);
+        public static extern bool WTSLogoffSession(IntPtr hServer, uint SessionId, bool bWait);
 
         /// <summary>
         /// </summary>
@@ -115,7 +114,7 @@ namespace Vorsight.Interop
             WTSSessionLogoffTime = 42,
             WTSSessionWallpaperDisplayed = 43,
             WTSSessionUsageCompressionFlags = 44,
-            WTSSessionRemoteSessionActiveNotification = 45
+            WTSSessionRemoteSessionActiveNotification = 45,
         }
 
         /// <summary>
@@ -132,7 +131,7 @@ namespace Vorsight.Interop
             WTSListen = 6,
             WTSReset = 7,
             WTSDown = 8,
-            WTSInit = 9
+            WTSInit = 9,
         }
 
         /// <summary>
@@ -154,4 +153,3 @@ namespace Vorsight.Interop
         public const uint WTS_CURRENT_SESSION = uint.MaxValue;
     }
 }
-

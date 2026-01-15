@@ -1,18 +1,15 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Vorsight.Contracts.DTOs;
 using Vorsight.Contracts.IPC;
-
 using Vorsight.Contracts.Settings;
 using Vorsight.Infrastructure.Contracts;
-
-
 using Vorsight.Service.Agents;
 using Vorsight.Service.IPC;
-using Vorsight.Service.Server;
 using Vorsight.Service.Monitoring;
+using Vorsight.Service.Server;
 using Vorsight.Service.Storage;
 using Vorsight.Service.SystemOperations;
-using Vorsight.Contracts.DTOs;
 
 namespace Vorsight.Service;
 
@@ -56,7 +53,8 @@ public class Worker : BackgroundService
         ISettingsManager settingsManager,
         IServerConnection serverConnection,
         IIpcMessageRouter ipcMessageRouter,
-        IServerCommandProcessor serverCommandProcessor)
+        IServerCommandProcessor serverCommandProcessor
+    )
     {
         _logger = logger;
         _ipcServer = ipcServer;
@@ -80,7 +78,10 @@ public class Worker : BackgroundService
     {
         _logger.LogInformation("Vörsight Service starting at {Time}", DateTimeOffset.Now);
 
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, _internalCts.Token);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+            stoppingToken,
+            _internalCts.Token
+        );
         var cancellationToken = linkedCts.Token;
 
         try
@@ -90,7 +91,10 @@ public class Worker : BackgroundService
             await TryStartComponent("AuditManager", () => _auditManager.InitializeAsync());
             await TryStartComponent("IPC Server", () => _ipcServer.StartAsync());
             await TryStartComponent("ServerConnection", () => _serverConnection.InitializeAsync());
-            await TryStartComponent("SessionSummaryManager", () => _sessionSummaryManager.InitializeAsync());
+            await TryStartComponent(
+                "SessionSummaryManager",
+                () => _sessionSummaryManager.InitializeAsync()
+            );
             await TryStartComponent("ScheduleManager", () => _scheduleManager.InitializeAsync());
 
             // Try to fetch initial settings which includes schedule
@@ -110,7 +114,9 @@ public class Worker : BackgroundService
             // Hook up schedule updates - Now handled via settings, but keep for fallback triggers
             _serverConnection.ScheduleUpdateReceived += async (sender, args) =>
             {
-                _logger.LogInformation("Schedule update event received - reloading settings to get new schedule");
+                _logger.LogInformation(
+                    "Schedule update event received - reloading settings to get new schedule"
+                );
                 await FetchAndApplySettingsAsync();
             };
 
@@ -125,7 +131,7 @@ public class Worker : BackgroundService
             _serverConnection.ConnectionRestored += async (sender, args) =>
             {
                 _logger.LogInformation("Connection to server restored - re-fetching settings");
-                
+
                 // Fetch Settings (includes Schedule)
                 await FetchAndApplySettingsAsync();
             };
@@ -137,20 +143,28 @@ public class Worker : BackgroundService
                 {
                     _logger.LogInformation(
                         "Audit Alert (Flagged): [{EventId}] {Description} - Check Audit Log for details.",
-                        args.Event.EventId, args.Description);
+                        args.Event.EventId,
+                        args.Description
+                    );
                 }
                 // Routine audit events (IsFlagged=false) are not logged locally to keep logs clean
                 // They are still sent to the server in the block below
-                
+
                 // Send to server
-                _logger.LogInformation("Server connection status: {Status}", _serverConnection.IsConnected);
+                _logger.LogInformation(
+                    "Server connection status: {Status}",
+                    _serverConnection.IsConnected
+                );
                 if (_serverConnection.IsConnected)
                 {
-                    _logger.LogInformation("Sending audit event to server: EventId={EventId}, Type={EventType}", 
-                        args.Event.EventId, args.Event.EventType);
-                    
+                    _logger.LogInformation(
+                        "Sending audit event to server: EventId={EventId}, Type={EventType}",
+                        args.Event.EventId,
+                        args.Event.EventType
+                    );
+
                     await _serverConnection.SendAuditEventAsync(args.Event);
-                    
+
                     _logger.LogInformation("Audit event sent successfully");
                 }
                 else
@@ -163,25 +177,54 @@ public class Worker : BackgroundService
             {
                 _logger.LogCritical(
                     "SECURITY ALERT: Audit tampering detected - Type: {TamperingType}, User: {User}, Details: {Details}",
-                    args.TamperingType, args.AffectedUsername, args.Details);
+                    args.TamperingType,
+                    args.AffectedUsername,
+                    args.Details
+                );
             };
 
             // Start cloud services
-            await TryStartComponent("UploadQueueProcessor", () => _uploadQueueProcessor.StartAsync(cancellationToken));
-            TryStartComponentSync("TempFileManager", () => _tempFileManager.StartPeriodicCleanup(cancellationToken));
-            
+            await TryStartComponent(
+                "UploadQueueProcessor",
+                () => _uploadQueueProcessor.StartAsync(cancellationToken)
+            );
+            TryStartComponentSync(
+                "TempFileManager",
+                () => _tempFileManager.StartPeriodicCleanup(cancellationToken)
+            );
+
             // Start monitoring loops in background (do not await, as they run indefinitely)
-            _ = Task.Run(() => TryStartComponent("HealthMonitor", () => _healthMonitor.StartMonitoringAsync(cancellationToken)), cancellationToken);
-            _ = Task.Run(() => TryStartComponent("ActivityCoordinator", () => _activityCoordinator.StartMonitoringAsync(cancellationToken)), cancellationToken);
+            _ = Task.Run(
+                () =>
+                    TryStartComponent(
+                        "HealthMonitor",
+                        () => _healthMonitor.StartMonitoringAsync(cancellationToken)
+                    ),
+                cancellationToken
+            );
+            _ = Task.Run(
+                () =>
+                    TryStartComponent(
+                        "ActivityCoordinator",
+                        () => _activityCoordinator.StartMonitoringAsync(cancellationToken)
+                    ),
+                cancellationToken
+            );
 
             // Start enforcement
-            await TryStartComponent("ScheduleManager Enforcement", () => _scheduleManager.StartEnforcementAsync());
+            await TryStartComponent(
+                "ScheduleManager Enforcement",
+                () => _scheduleManager.StartEnforcementAsync()
+            );
 
             // Start audit monitoring (respecting settings)
             var currentSettings = await _settingsManager.GetSettingsAsync();
             if (currentSettings.Audit.Enabled)
             {
-                await TryStartComponent("AuditManager Monitoring", () => _auditManager.StartMonitoringAsync(currentSettings));
+                await TryStartComponent(
+                    "AuditManager Monitoring",
+                    () => _auditManager.StartMonitoringAsync(currentSettings)
+                );
             }
             else
             {
@@ -195,32 +238,32 @@ public class Worker : BackgroundService
                 try
                 {
                     _logger.LogTrace("Service health check: OK");
-                    
+
                     // Ensure server connection
                     await _serverConnection.EnsureConnectedAsync(cancellationToken);
 
                     // Update uptime
                     _uptimeMonitor.RecordHeartbeat();
-                    
+
                     // Construct state payload
                     var healthReport = _healthMonitor.GetHealthReport();
                     var currentActivity = _activityCoordinator.GetCurrentActivity();
                     var uptimeStatus = _uptimeMonitor.GetCurrentStatus();
-                    
+
                     var state = new StatePayload
                     {
-                        LastActivityTime = currentActivity?.Timestamp ?? DateTime.UtcNow, 
+                        LastActivityTime = currentActivity?.Timestamp ?? DateTime.UtcNow,
                         ActiveWindow = currentActivity?.ActiveWindowTitle ?? "Unknown",
                         ScreenshotCount = healthReport.TotalScreenshotsSuccessful,
                         UploadCount = healthReport.TotalUploadsSuccessful,
-                        Health = new HealthStatus 
-                        { 
-                            Uptime = uptimeStatus.CurrentStart.HasValue 
-                                ? (DateTime.UtcNow - uptimeStatus.CurrentStart.Value).TotalSeconds 
+                        Health = new HealthStatus
+                        {
+                            Uptime = uptimeStatus.CurrentStart.HasValue
+                                ? (DateTime.UtcNow - uptimeStatus.CurrentStart.Value).TotalSeconds
                                 : 0,
-                            Message = "Running"
+                            Message = "Running",
                         },
-                        Version = "1.0.0" 
+                        Version = "1.0.0",
                     };
 
                     // Send heartbeat
@@ -297,12 +340,12 @@ public class Worker : BackgroundService
 
     private async Task StopServiceAsync()
     {
-        if (_isStopping) return;
+        if (_isStopping)
+            return;
         _isStopping = true;
 
         try
         {
-
             _logger.LogInformation("Shutting down service components");
 
             // Signal shutdown to Google Drive service immediately
@@ -320,11 +363,14 @@ public class Worker : BackgroundService
             // Cleanup uploads with reduced timeouts
             await _uploadQueueProcessor.CompleteAsync(TimeSpan.FromSeconds(3));
             await _shutdownCoordinator.ShutdownGracefullyAsync(TimeSpan.FromSeconds(5));
-            
+
             // Complete session (Upload logs) - MUST be done before disposing drive service (via container)
             // Note: Worker doesn't own the container, but we must ensure this runs before the host shuts down completely
-            await _sessionSummaryManager.CompleteSessionAsync("Controlled Exit", _healthMonitor.GetHealthReport());
-            
+            await _sessionSummaryManager.CompleteSessionAsync(
+                "Controlled Exit",
+                _healthMonitor.GetHealthReport()
+            );
+
             _auditManager?.Dispose();
             _scheduleManager?.Dispose();
             _ipcServer?.Dispose();
@@ -367,7 +413,8 @@ public class Worker : BackgroundService
         _logger.LogDebug(
             "Agent session connected: SessionId={SessionId}, User={Username}",
             e.SessionId,
-            e.Username ?? "(unknown)");
+            e.Username ?? "(unknown)"
+        );
     }
 
     /// <summary>
@@ -378,7 +425,8 @@ public class Worker : BackgroundService
         _logger.LogDebug(
             "Agent session disconnected: SessionId={SessionId}, Reason={Reason}",
             e.SessionId,
-            e.Reason ?? "normal");
+            e.Reason ?? "normal"
+        );
     }
 
     private async Task FetchAndApplySettingsAsync()
@@ -391,7 +439,7 @@ public class Worker : BackgroundService
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
-                    Converters = { new JsonStringEnumConverter() }
+                    Converters = { new JsonStringEnumConverter() },
                 };
                 var settings = JsonSerializer.Deserialize<MachineSettings>(json, options);
                 if (settings != null)

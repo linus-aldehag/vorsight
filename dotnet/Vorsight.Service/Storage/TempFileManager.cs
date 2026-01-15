@@ -9,7 +9,7 @@ public interface ITempFileManager
     /// Starts the periodic cleanup process
     /// </summary>
     void StartPeriodicCleanup(CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Gets the temp path for this machine
     /// </summary>
@@ -22,26 +22,45 @@ public interface ITempFileManager
 public class TempFileManager(
     ILogger<TempFileManager> logger,
     IConfiguration configuration,
-    IUploadQueueProcessor uploadQueueProcessor)
-    : ITempFileManager
+    IUploadQueueProcessor uploadQueueProcessor
+) : ITempFileManager
 {
     private readonly string _tempPath = Vorsight.Infrastructure.IO.PathConfiguration.GetTempPath();
-    private readonly TimeSpan _maxFileAge = TimeSpan.FromHours(configuration.GetValue("TempFileManager:MaxFileAgeHours", 24));
-    private readonly TimeSpan _retryFailedUploadsInterval = TimeSpan.FromMinutes(configuration.GetValue("TempFileManager:RetryFailedUploadsIntervalMinutes", 30));
-    private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(configuration.GetValue("TempFileManager:CleanupIntervalHours", 6));
-    
+    private readonly TimeSpan _maxFileAge = TimeSpan.FromHours(
+        configuration.GetValue("TempFileManager:MaxFileAgeHours", 24)
+    );
+    private readonly TimeSpan _retryFailedUploadsInterval = TimeSpan.FromMinutes(
+        configuration.GetValue("TempFileManager:RetryFailedUploadsIntervalMinutes", 30)
+    );
+    private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(
+        configuration.GetValue("TempFileManager:CleanupIntervalHours", 6)
+    );
+
     private static readonly TimeSpan MinAgeForRetry = TimeSpan.FromMinutes(5);
 
     public string GetTempPath() => _tempPath;
-    
+
     public void StartPeriodicCleanup(CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Starting periodic cleanup (cleanup every {CleanupInterval}, retry every {RetryInterval})", 
-            _cleanupInterval, _retryFailedUploadsInterval);
-        
+        logger.LogInformation(
+            "Starting periodic cleanup (cleanup every {CleanupInterval}, retry every {RetryInterval})",
+            _cleanupInterval,
+            _retryFailedUploadsInterval
+        );
+
         // Start tasks without awaiting them
-        _ = RunPeriodicTaskAsync("cleanup", _cleanupInterval, CleanupOldFilesAsync, cancellationToken);
-        _ = RunPeriodicTaskAsync("retry", _retryFailedUploadsInterval, RetryFailedUploadsAsync, cancellationToken);
+        _ = RunPeriodicTaskAsync(
+            "cleanup",
+            _cleanupInterval,
+            CleanupOldFilesAsync,
+            cancellationToken
+        );
+        _ = RunPeriodicTaskAsync(
+            "retry",
+            _retryFailedUploadsInterval,
+            RetryFailedUploadsAsync,
+            cancellationToken
+        );
     }
 
     private async Task CleanupOldFilesAsync(CancellationToken cancellationToken = default)
@@ -49,12 +68,15 @@ public class TempFileManager(
         try
         {
             var filesToDelete = GetFilesOlderThan(_maxFileAge);
-            
+
             if (filesToDelete.Count > 0)
             {
-                logger.LogInformation("Cleaning up {Count} old temporary files (older than {MaxAge})", 
-                    filesToDelete.Count, _maxFileAge);
-                
+                logger.LogInformation(
+                    "Cleaning up {Count} old temporary files (older than {MaxAge})",
+                    filesToDelete.Count,
+                    _maxFileAge
+                );
+
                 DeleteFiles(filesToDelete);
                 await CleanupEmptyDirectoriesAsync(_tempPath);
             }
@@ -70,10 +92,13 @@ public class TempFileManager(
         try
         {
             var failedFiles = GetFilesInAgeRange(MinAgeForRetry, _maxFileAge);
-            
+
             if (failedFiles.Count > 0)
             {
-                logger.LogInformation("Re-queuing {Count} potentially failed upload files", failedFiles.Count);
+                logger.LogInformation(
+                    "Re-queuing {Count} potentially failed upload files",
+                    failedFiles.Count
+                );
                 await EnqueueFiles(failedFiles, cancellationToken);
             }
         }
@@ -90,16 +115,19 @@ public class TempFileManager(
 
         var cutoffTime = DateTime.Now - maxAge;
         var files = new List<string>();
-        
+
         foreach (var directory in Directory.GetDirectories(_tempPath))
         {
-            files.AddRange(Directory.GetFiles(directory, "*.png", SearchOption.AllDirectories)
-                .Where(file => new FileInfo(file).CreationTime < cutoffTime));
+            files.AddRange(
+                Directory
+                    .GetFiles(directory, "*.png", SearchOption.AllDirectories)
+                    .Where(file => new FileInfo(file).CreationTime < cutoffTime)
+            );
         }
-        
+
         return files;
     }
-    
+
     private List<string> GetFilesInAgeRange(TimeSpan minAge, TimeSpan maxAge)
     {
         if (!Directory.Exists(_tempPath))
@@ -107,17 +135,20 @@ public class TempFileManager(
 
         var now = DateTime.Now;
         var files = new List<string>();
-        
+
         foreach (var directory in Directory.GetDirectories(_tempPath))
         {
-            files.AddRange(Directory.GetFiles(directory, "*.png", SearchOption.AllDirectories)
-                .Where(file =>
-                {
-                    var age = now - new FileInfo(file).CreationTime;
-                    return age > minAge && age < maxAge;
-                }));
+            files.AddRange(
+                Directory
+                    .GetFiles(directory, "*.png", SearchOption.AllDirectories)
+                    .Where(file =>
+                    {
+                        var age = now - new FileInfo(file).CreationTime;
+                        return age > minAge && age < maxAge;
+                    })
+            );
         }
-        
+
         return files;
     }
 
@@ -154,10 +185,11 @@ public class TempFileManager(
     }
 
     private async Task RunPeriodicTaskAsync(
-        string taskName, 
-        TimeSpan interval, 
-        Func<CancellationToken, Task> task, 
-        CancellationToken cancellationToken)
+        string taskName,
+        TimeSpan interval,
+        Func<CancellationToken, Task> task,
+        CancellationToken cancellationToken
+    )
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -169,7 +201,7 @@ public class TempFileManager(
             {
                 logger.LogError(ex, "Error in periodic {TaskName} task", taskName);
             }
-            
+
             try
             {
                 await Task.Delay(interval, cancellationToken);
@@ -180,7 +212,7 @@ public class TempFileManager(
             }
         }
     }
-    
+
     private async Task CleanupEmptyDirectoriesAsync(string rootPath)
     {
         try
@@ -191,7 +223,7 @@ public class TempFileManager(
 
                 if (Directory.EnumerateFileSystemEntries(directory).Any())
                     continue;
-                
+
                 try
                 {
                     Directory.Delete(directory);

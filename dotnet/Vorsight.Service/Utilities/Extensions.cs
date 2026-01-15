@@ -11,8 +11,8 @@ public static class Extensions
     /// <param name="ex">The exception to check</param>
     /// <returns>True if the exception is a cancellation exception</returns>
     public static bool IsCancellation(this Exception ex) =>
-        ex is OperationCanceledException ||
-        ex is TaskCanceledException ||
-        ex is AggregateException aggregateEx && 
-        aggregateEx.InnerExceptions.Any(inner => inner.IsCancellation());
+        ex is OperationCanceledException
+        || ex is TaskCanceledException
+        || ex is AggregateException aggregateEx
+            && aggregateEx.InnerExceptions.Any(inner => inner.IsCancellation());
 }

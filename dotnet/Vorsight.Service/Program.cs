@@ -1,54 +1,61 @@
 using Serilog;
-using Vorsight.Contracts.IPC;
-
-using Vorsight.Infrastructure.Scheduling;
-using Vorsight.Infrastructure.Audit;
-using Vorsight.Infrastructure.Contracts;
-using Vorsight.Service;
-using Vorsight.Service.Agents;
-using Vorsight.Service.IPC;
-using Vorsight.Service.Server;
-using Vorsight.Service.Monitoring;
-using Vorsight.Service.Storage;
-using Vorsight.Service.SystemOperations;
-using Vorsight.Service.Auditing;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
+using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Audit;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.IO;
 using Vorsight.Infrastructure.IPC;
+using Vorsight.Infrastructure.Scheduling;
 using Vorsight.Infrastructure.Settings;
 using Vorsight.Infrastructure.Uptime;
+using Vorsight.Service;
+using Vorsight.Service.Agents;
+using Vorsight.Service.Auditing;
+using Vorsight.Service.IPC;
 using Vorsight.Service.Logging;
+using Vorsight.Service.Monitoring;
+using Vorsight.Service.Server;
+using Vorsight.Service.Storage;
+using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Utilities;
 
 // Configure Serilog for structured logging
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true)
+    .AddJsonFile(
+        $"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json",
+        optional: true
+    )
     .AddEnvironmentVariables()
     .Build();
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
     .MinimumLevel.Information() // Default if not in config
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information) 
-    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning) // Suppress verbose HTTP logs 
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning) // Suppress verbose HTTP logs
     .WriteTo.File(
         path: Path.Combine(PathConfiguration.GetServiceLogPath(), "vorsight-service-.log"),
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 3,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"
+    )
     .WriteTo.Console(
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+    )
     // Add Server Sink for remote logging (Warning+ by default)
-    .WriteTo.Sink(new PeriodicBatchingSink(
-        new ServerSink(LogEventLevel.Information),
-        new PeriodicBatchingSinkOptions 
-        { 
-            BatchSizeLimit = 50, 
-            Period = TimeSpan.FromSeconds(5) 
-        }))
+    .WriteTo.Sink(
+        new PeriodicBatchingSink(
+            new ServerSink(LogEventLevel.Information),
+            new PeriodicBatchingSinkOptions
+            {
+                BatchSizeLimit = 50,
+                Period = TimeSpan.FromSeconds(5),
+            }
+        )
+    )
     .CreateLogger();
 
 try
@@ -57,44 +64,45 @@ try
     if (args.Length > 0)
     {
         var command = args[0].ToLowerInvariant();
-        
+
         if (command == "install")
         {
             var serviceName = "VorsightService";
             var displayName = "Vörsight Service";
             var description = "Vörsight monitoring and management service";
-            
+
             var exePath = Path.Combine(AppContext.BaseDirectory, "Vorsight.Service.exe");
-            
+
             // Use sc.exe to create the service
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "sc.exe",
-                Arguments = $"create \"{serviceName}\" binPath= \"\\\"{exePath}\\\"\" DisplayName= \"{displayName}\" start= auto",
+                Arguments =
+                    $"create \"{serviceName}\" binPath= \"\\\"{exePath}\\\"\" DisplayName= \"{displayName}\" start= auto",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
-            
+
             using var process = System.Diagnostics.Process.Start(startInfo);
             if (process != null)
             {
                 process.WaitForExit();
                 var output = process.StandardOutput.ReadToEnd();
                 var error = process.StandardError.ReadToEnd();
-                
+
                 if (process.ExitCode == 0)
                 {
                     Console.WriteLine($"Service '{serviceName}' installed successfully.");
-                    
+
                     // Set description
                     var descStartInfo = new System.Diagnostics.ProcessStartInfo
                     {
                         FileName = "sc.exe",
                         Arguments = $"description \"{serviceName}\" \"{description}\"",
                         UseShellExecute = false,
-                        CreateNoWindow = true
+                        CreateNoWindow = true,
                     };
                     using var descProcess = System.Diagnostics.Process.Start(descStartInfo);
                     descProcess?.WaitForExit();
@@ -110,14 +118,14 @@ try
         else if (command == "uninstall")
         {
             var serviceName = "VorsightService";
-            
+
             // Check for custom service name
             for (int i = 1; i < args.Length; i++)
             {
                 if (args[i] == "--service-name" && i + 1 < args.Length)
                     serviceName = args[i + 1];
             }
-            
+
             var startInfo = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "sc.exe",
@@ -125,9 +133,9 @@ try
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                CreateNoWindow = true
+                CreateNoWindow = true,
             };
-            
+
             using var process = System.Diagnostics.Process.Start(startInfo);
             if (process != null)
             {
@@ -151,7 +159,7 @@ try
     Log.Information("Application directory: {Directory}", AppContext.BaseDirectory);
 
     var builder = WebApplication.CreateBuilder(args);
-    
+
     // Enable Windows Service support
     builder.Host.UseWindowsService();
 
@@ -164,14 +172,17 @@ try
 
     // Configure core services
     builder.Services.AddCors();
-    builder.Services.AddSingleton<INamedPipeServer>(sp =>
-        new NamedPipeServer(sp.GetRequiredService<ILogger<NamedPipeServer>>(), "VorsightIPC"));
+    builder.Services.AddSingleton<INamedPipeServer>(sp => new NamedPipeServer(
+        sp.GetRequiredService<ILogger<NamedPipeServer>>(),
+        "VorsightIPC"
+    ));
 
     builder.Services.AddSingleton<IScheduleManager>(sp =>
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
-        new ScheduleManager(
-            sp.GetRequiredService<ILogger<ScheduleManager>>(),
-            sp.GetRequiredService<ISettingsManager>()));
+    new ScheduleManager(
+        sp.GetRequiredService<ILogger<ScheduleManager>>(),
+        sp.GetRequiredService<ISettingsManager>()
+    ));
 
     builder.Services.AddSingleton<IAuditManager, AuditManager>();
 #pragma warning restore CA1416
@@ -186,13 +197,12 @@ try
     builder.Services.AddSingleton<IHealthMonitor, HealthMonitor>();
     builder.Services.AddSingleton<UptimeMonitor>();
 
-    
     // Server Connection (Node.js server)
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<ICredentialStore, FileCredentialStore>();
     builder.Services.AddSingleton<IServerConnection, ServerConnection>();
     builder.Services.AddSingleton<IAgentLauncher, AgentLauncher>();
-    
+
     // Scavenged Services
     builder.Services.AddSingleton<IActivityCoordinator, ActivityCoordinator>();
     builder.Services.AddSingleton<ISessionSummaryManager, SessionSummaryManager>();
@@ -209,18 +219,22 @@ try
     // Add hosted service
     builder.Services.AddHostedService<Worker>();
 
-
     // Build and run
     var app = builder.Build();
-    
+
     // Map API Endpoints
-    app.UseCors(policy => policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost").AllowAnyMethod().AllowAnyHeader());
+    app.UseCors(policy =>
+        policy
+            .SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+    );
     app.MapApiEndpoints();
 
     // Initialize Global Exception Handling
     var sessionManager = app.Services.GetRequiredService<ISessionSummaryManager>();
     // Session initialization moved to Worker.cs to ensure ServerConnection is ready
-    
+
     AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
     {
         sessionManager.RegisterException((Exception)e.ExceptionObject);
@@ -231,7 +245,7 @@ try
         }
     };
 
-    try 
+    try
     {
         await app.RunAsync();
         // Session completion moved to Worker.StopServiceAsync to ensure safe disposal

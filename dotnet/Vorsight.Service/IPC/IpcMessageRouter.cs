@@ -20,7 +20,8 @@ public class IpcMessageRouter : IIpcMessageRouter
     public IpcMessageRouter(
         ScreenshotHandler screenshotHandler,
         ActivityLogHandler activityLogHandler,
-        ILogger<IpcMessageRouter> logger)
+        ILogger<IpcMessageRouter> logger
+    )
     {
         _screenshotHandler = screenshotHandler;
         _activityLogHandler = activityLogHandler;
@@ -35,7 +36,8 @@ public class IpcMessageRouter : IIpcMessageRouter
                 "Agent message received from session {SessionId}: Type={MessageType}, Size={PayloadSize} bytes",
                 e.SessionId,
                 e.Message.Type,
-                e.Message.Payload?.Length ?? 0);
+                e.Message.Payload?.Length ?? 0
+            );
 
             // Handle different message types
             switch (e.Message.Type)
@@ -49,7 +51,10 @@ public class IpcMessageRouter : IIpcMessageRouter
                     break;
 
                 default:
-                    _logger.LogWarning("Unknown message type received: {MessageType}", e.Message.Type);
+                    _logger.LogWarning(
+                        "Unknown message type received: {MessageType}",
+                        e.Message.Type
+                    );
                     break;
             }
         }

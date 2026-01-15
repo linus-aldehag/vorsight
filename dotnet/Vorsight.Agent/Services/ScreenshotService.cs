@@ -1,10 +1,10 @@
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using Vorsight.Interop;
 using Microsoft.Extensions.Logging;
 using Vorsight.Agent.Contracts;
 using Vorsight.Contracts.Screenshots;
+using Vorsight.Interop;
 
 namespace Vorsight.Agent.Services;
 
@@ -42,11 +42,15 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
                     CaptureTime = DateTime.UtcNow,
                     Width = bitmap.Width,
                     Height = bitmap.Height,
-                    SizeBytes = pngData.Length
+                    SizeBytes = pngData.Length,
                 };
 
-                logger.LogDebug("Screenshot captured successfully: {Width}x{Height}, {SizeBytes} bytes",
-                    bitmap.Width, bitmap.Height, pngData.Length);
+                logger.LogDebug(
+                    "Screenshot captured successfully: {Width}x{Height}, {SizeBytes} bytes",
+                    bitmap.Width,
+                    bitmap.Height,
+                    pngData.Length
+                );
 
                 return pngData;
             }
@@ -82,13 +86,14 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
     public ScreenshotMetadata GetLastCaptureMetadata()
     {
-        return _lastMetadata ?? new ScreenshotMetadata
-        {
-            CaptureTime = DateTime.MinValue,
-            Width = 0,
-            Height = 0,
-            SizeBytes = 0
-        };
+        return _lastMetadata
+            ?? new ScreenshotMetadata
+            {
+                CaptureTime = DateTime.MinValue,
+                Width = 0,
+                Height = 0,
+                SizeBytes = 0,
+            };
     }
 
     private Bitmap CaptureScreenInternal()
@@ -100,9 +105,12 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
         {
             // Check if session is locked/in secure desktop mode
             var hDesktop = User32.OpenInputDesktop(
-                0, false, 
-                Vorsight.Interop.User32.DESKTOP_READOBJECTS | Vorsight.Interop.User32.DESKTOP_WRITEOBJECTS);
-            
+                0,
+                false,
+                Vorsight.Interop.User32.DESKTOP_READOBJECTS
+                    | Vorsight.Interop.User32.DESKTOP_WRITEOBJECTS
+            );
+
             if (hDesktop != IntPtr.Zero)
             {
                 try
@@ -112,7 +120,10 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
                     {
                         // If we are on Winlogon or another desktop, the session is likely locked or in UAC prompt
                         // Taking a screenshot here usually results in black screen or old buffer
-                        logger.LogWarning("Skipping screenshot: Desktop is not 'Default' (Current: {Desktop}). Session appears locked.", desktopName);
+                        logger.LogWarning(
+                            "Skipping screenshot: Desktop is not 'Default' (Current: {Desktop}). Session appears locked.",
+                            desktopName
+                        );
                         throw new InvalidOperationException("Session is locked");
                     }
                 }
@@ -124,8 +135,10 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
             else
             {
                 // If we can't open input desktop, we likely don't have access (e.g. system is locked)
-                 logger.LogWarning("Skipping screenshot: Could not open Input Desktop. Session appears locked.");
-                 throw new InvalidOperationException("Session is locked");
+                logger.LogWarning(
+                    "Skipping screenshot: Could not open Input Desktop. Session appears locked."
+                );
+                throw new InvalidOperationException("Session is locked");
             }
 
             using var graphics = Graphics.FromImage(bitmap);
@@ -196,7 +209,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
             using var fontTitle = new Font("Arial", 16, FontStyle.Bold);
             using var fontInfo = new Font("Arial", 12);
-                
+
             const string title = "Vörsight - Screenshot Failed";
             var timestamp = $"Time: {DateTime.UtcNow:O}";
             var machine = $"Machine: {Environment.MachineName}";
@@ -204,7 +217,13 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
             g.DrawString(title, fontTitle, Brushes.White, 50, 50);
             g.DrawString(timestamp, fontInfo, Brushes.White, 50, 100);
             g.DrawString(machine, fontInfo, Brushes.White, 50, 130);
-            g.DrawString("Screen capture failed. Check service logs for details.", fontInfo, Brushes.Yellow, 50, 180);
+            g.DrawString(
+                "Screen capture failed. Check service logs for details.",
+                fontInfo,
+                Brushes.Yellow,
+                50,
+                180
+            );
         }
         catch (Exception ex)
         {
@@ -216,7 +235,9 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
 
     private static Rectangle GetCombinedScreenBounds()
     {
-        return Screen.AllScreens.Aggregate(Rectangle.Empty, (current, screen) => 
-            Rectangle.Union(current, screen.Bounds));
+        return Screen.AllScreens.Aggregate(
+            Rectangle.Empty,
+            (current, screen) => Rectangle.Union(current, screen.Bounds)
+        );
     }
 }

@@ -1,4 +1,3 @@
-
 namespace Vorsight.Contracts.Models;
 
 public class ActivityData

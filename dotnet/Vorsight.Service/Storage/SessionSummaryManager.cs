@@ -26,8 +26,11 @@ public class SessionSummaryManager : ISessionSummaryManager
     private readonly IGoogleDriveService _driveService;
     private readonly string _lockFilePath;
     private readonly SessionSummary _currentSession = new();
-    
-    public SessionSummaryManager(ILogger<SessionSummaryManager> logger, IGoogleDriveService driveService)
+
+    public SessionSummaryManager(
+        ILogger<SessionSummaryManager> logger,
+        IGoogleDriveService driveService
+    )
     {
         _logger = logger;
         _driveService = driveService;
@@ -65,7 +68,9 @@ public class SessionSummaryManager : ISessionSummaryManager
     {
         lock (_currentSession)
         {
-            _currentSession.Exceptions.Add($"{DateTimeOffset.Now}: {ex.GetType().Name} - {ex.Message}\n{ex.StackTrace}");
+            _currentSession.Exceptions.Add(
+                $"{DateTimeOffset.Now}: {ex.GetType().Name} - {ex.Message}\n{ex.StackTrace}"
+            );
         }
         _ = SaveLockFileAsync(); // Fire and forget update
     }
@@ -102,22 +107,25 @@ public class SessionSummaryManager : ISessionSummaryManager
     {
         try
         {
-            var json = JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true });
+            var json = JsonSerializer.Serialize(
+                summary,
+                new JsonSerializerOptions { WriteIndented = true }
+            );
             var fileName = $"session-{summary.SessionId}-{summary.StartTime:yyyyMMddHHmmss}.json";
-            
+
             // Construct path: Temp/Vorsight/{Machine}/Logs
             var logDir = Vorsight.Infrastructure.IO.PathConfiguration.GetSessionLogPath();
             Directory.CreateDirectory(logDir);
-            
+
             var tempPath = Path.Combine(logDir, fileName);
-            
+
             await File.WriteAllTextAsync(tempPath, json);
-            
+
             // Upload to Google Drive with custom folder path
             var machineName = Environment.MachineName;
             var targetFolder = $"Vorsight/{machineName}/Sessions";
             await _driveService.UploadFileAsync(tempPath, CancellationToken.None, targetFolder);
-            
+
             // Delete the local file after successful upload
             if (File.Exists(tempPath))
             {

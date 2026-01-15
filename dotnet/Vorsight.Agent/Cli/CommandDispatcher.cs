@@ -1,7 +1,7 @@
 using Serilog;
+using Vorsight.Agent.Contracts;
 using Vorsight.Agent.Services;
 using Vorsight.Contracts.IPC;
-using Vorsight.Agent.Contracts;
 using Vorsight.Interop;
 
 namespace Vorsight.Agent.Cli;
@@ -9,7 +9,8 @@ namespace Vorsight.Agent.Cli;
 public class CommandDispatcher(
     IScreenshotService screenshotService,
     IActivityService activityService,
-    IIpcService ipcService)
+    IIpcService ipcService
+)
 {
     public async Task<int> DispatchAsync(string[] args)
     {
@@ -31,10 +32,10 @@ public class CommandDispatcher(
             {
                 case "screenshot":
                     return await HandleScreenshotAsync(sessionId, options);
-                
+
                 case "activity":
                     return await HandleActivityAsync(sessionId, options);
-                
+
                 default:
                     Log.Error("Unknown command: {Command}", command);
                     ShowUsage();
@@ -60,14 +61,19 @@ public class CommandDispatcher(
     {
         Log.Debug("Capturing screenshot for session {SessionId}", sessionId);
         var bytes = await screenshotService.CaptureScreenAsync();
-        
+
         // Option 1 is metadata string if present
         string? metadata = options.Length > 0 ? options[0] : null;
 
         if (bytes != null && bytes.Length > 0)
         {
             Log.Debug("Sending screenshot ({Size} bytes)", bytes.Length);
-            await ipcService.SendMessageAsync(PipeMessage.MessageType.Screenshot, bytes, sessionId, metadata);
+            await ipcService.SendMessageAsync(
+                PipeMessage.MessageType.Screenshot,
+                bytes,
+                sessionId,
+                metadata
+            );
             return 0;
         }
         else
@@ -88,7 +94,12 @@ public class CommandDispatcher(
     private static uint GetSessionId()
     {
         // Use P/Invoke to get Session ID
-        if (ProcessInterop.ProcessIdToSessionId(ProcessInterop.GetCurrentProcessId(), out var sessionId))
+        if (
+            ProcessInterop.ProcessIdToSessionId(
+                ProcessInterop.GetCurrentProcessId(),
+                out var sessionId
+            )
+        )
         {
             return sessionId;
         }

@@ -26,7 +26,8 @@ namespace Vorsight.Interop
             uint dwTimeout,
             bool bForceAppsClosed,
             bool bRebootAfterShutdown,
-            uint dwReason);
+            uint dwReason
+        );
 
         /// <summary>
         /// Prevents the system from shutting down (aborts a previous InitiateSystemShutdownEx call).
@@ -86,4 +87,3 @@ namespace Vorsight.Interop
         public const uint SHTDN_REASON_MINOR_OTHER = 0;
     }
 }
-

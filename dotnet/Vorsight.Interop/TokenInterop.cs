@@ -20,7 +20,8 @@ namespace Vorsight.Interop
             ref TOKEN_PRIVILEGES NewState,
             uint BufferLength,
             IntPtr PreviousState,
-            IntPtr ReturnLength);
+            IntPtr ReturnLength
+        );
 
         /// <summary>
         /// Looks up the privilege ID for a given privilege name.
@@ -29,7 +30,8 @@ namespace Vorsight.Interop
         public static extern bool LookupPrivilegeValue(
             string? lpSystemName,
             string lpName,
-            out long lpLuid);
+            out long lpLuid
+        );
 
         /// <summary>
         /// Gets information about an access token.
@@ -40,7 +42,8 @@ namespace Vorsight.Interop
             TOKEN_INFORMATION_CLASS TokenInformationClass,
             IntPtr TokenInformation,
             uint TokenInformationLength,
-            out uint ReturnLength);
+            out uint ReturnLength
+        );
 
         /// <summary>
         /// Privilege names for use with LookupPrivilegeValue.
@@ -71,6 +74,7 @@ namespace Vorsight.Interop
         public struct TOKEN_PRIVILEGES
         {
             public uint PrivilegeCount;
+
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
             public LUID_AND_ATTRIBUTES[] Privileges;
         }
@@ -128,7 +132,7 @@ namespace Vorsight.Interop
             TokenIsLessPrivilegedAppContainer = 46,
             TokenIsSandboxed = 47,
             TokenOriginatingProcessTrustLevel = 48,
-            MaxTokenInfoClass = 49
+            MaxTokenInfoClass = 49,
         }
 
         /// <summary>
@@ -139,4 +143,3 @@ namespace Vorsight.Interop
         public const uint SE_PRIVILEGE_REMOVED = 0x00000004;
     }
 }
-

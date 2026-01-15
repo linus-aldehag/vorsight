@@ -2,10 +2,9 @@ using System;
 using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Threading.Tasks;
-
-using Vorsight.Infrastructure.Contracts;
-using Vorsight.Contracts.Models;
 using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Models;
+using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Infrastructure.IPC
 {
@@ -52,7 +51,7 @@ namespace Vorsight.Infrastructure.IPC
         {
             _isRunning = false;
             _pipeServer?.Dispose();
-            
+
             foreach (var connection in _connections.Values)
             {
                 connection?.Dispose();
@@ -71,7 +70,8 @@ namespace Vorsight.Infrastructure.IPC
                         PipeDirection.InOut,
                         NamedPipeServerStream.MaxAllowedServerInstances,
                         PipeTransmissionMode.Byte,
-                        PipeOptions.Asynchronous);
+                        PipeOptions.Asynchronous
+                    );
 
                     var task = _pipeServer.WaitForConnectionAsync();
                     task.Wait();
@@ -95,11 +95,11 @@ namespace Vorsight.Infrastructure.IPC
             try
             {
                 var connection = new PipeConnection(pipeServer);
-                
+
                 while (_isRunning && pipeServer.IsConnected)
                 {
                     var message = await connection.ReadMessageAsync();
-                    
+
                     if (message != null)
                     {
                         ProcessIncomingMessage(message);
@@ -121,13 +121,16 @@ namespace Vorsight.Infrastructure.IPC
             if (message.Type == PipeMessage.MessageType.Screenshot)
             {
                 StoreScreenshot(message);
-                ScreenshotReceived?.Invoke(this, new ScreenshotReceivedEventArgs
-                {
-                    Message = message,
-                    SessionId = message.SessionId,
-                    ScreenshotData = message.Payload!,
-                    Timestamp = message.CreatedUtc
-                });
+                ScreenshotReceived?.Invoke(
+                    this,
+                    new ScreenshotReceivedEventArgs
+                    {
+                        Message = message,
+                        SessionId = message.SessionId,
+                        ScreenshotData = message.Payload!,
+                        Timestamp = message.CreatedUtc,
+                    }
+                );
             }
         }
 
@@ -135,7 +138,8 @@ namespace Vorsight.Infrastructure.IPC
         {
             var buffer = _screenshotBuffers.GetOrAdd(
                 message.SessionId,
-                _ => new ScreenshotBuffer(MaxScreenshotsPerSession));
+                _ => new ScreenshotBuffer(MaxScreenshotsPerSession)
+            );
 
             buffer.AddScreenshot(message);
         }
@@ -188,7 +192,7 @@ namespace Vorsight.Infrastructure.IPC
                     int bytesRead = _pipe.Read(lengthBuffer, 0, 4);
                     if (bytesRead != 4)
                         return null!;
-                    
+
                     int messageLength = BitConverter.ToInt32(lengthBuffer, 0);
 
                     if (messageLength <= 0 || messageLength > 10 * 1024 * 1024) // 10MB max
@@ -200,7 +204,8 @@ namespace Vorsight.Infrastructure.IPC
                     while (totalRead < messageLength)
                     {
                         int read = _pipe.Read(messageData, totalRead, messageLength - totalRead);
-                        if (read == 0) break;
+                        if (read == 0)
+                            break;
                         totalRead += read;
                     }
 
@@ -278,4 +283,3 @@ namespace Vorsight.Infrastructure.IPC
         public DateTime Timestamp { get; set; }
     }
 }
-

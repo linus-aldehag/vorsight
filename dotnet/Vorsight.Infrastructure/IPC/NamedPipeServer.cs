@@ -3,11 +3,10 @@ using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Microsoft.Extensions.Logging;
-
-using Vorsight.Infrastructure.Contracts;
-using Vorsight.Contracts.Models;
 using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Models;
 using Vorsight.Contracts.Screenshots;
+using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Infrastructure.IPC;
 
@@ -92,13 +91,17 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         {
             var data = message.Serialize();
             var lengthBytes = BitConverter.GetBytes(data.Length);
-            
+
             // Write length prefix first
             await pipe.WriteAsync(lengthBytes, 0, 4);
             await pipe.WriteAsync(data, 0, data.Length);
             await pipe.FlushAsync();
 
-            logger.LogDebug("Message sent to session {SessionId}: {MessageType}", sessionId, message.Type);
+            logger.LogDebug(
+                "Message sent to session {SessionId}: {MessageType}",
+                sessionId,
+                message.Type
+            );
         }
         catch (Exception ex)
         {
@@ -129,7 +132,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
     {
         bool fallbackToDefaultSecurity = false;
         bool worldAccessEstablished = false;
-        
+
         try
         {
             while (!cancellationToken.IsCancellationRequested)
@@ -140,16 +143,19 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     // Strategy 1: World Access (Preferred)
                     if (!fallbackToDefaultSecurity)
                     {
-                        try 
+                        try
                         {
                             // Create security object allowing Everyone to read/write - create fresh each time
                             var pipeSecurity = new PipeSecurity();
-                            
+
                             // 1. Grant Everyone Read/Write access (so Agent can connect)
-                            pipeSecurity.AddAccessRule(new PipeAccessRule(
-                                new SecurityIdentifier(WellKnownSidType.WorldSid, null),
-                                PipeAccessRights.ReadWrite,
-                                AccessControlType.Allow));
+                            pipeSecurity.AddAccessRule(
+                                new PipeAccessRule(
+                                    new SecurityIdentifier(WellKnownSidType.WorldSid, null),
+                                    PipeAccessRights.ReadWrite,
+                                    AccessControlType.Allow
+                                )
+                            );
 
                             // 2. Grant Current User (Service Owner) Full Control
                             // This is CRITICAL. Without this, the explicit 'Everyone' rule might strip
@@ -157,10 +163,13 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             var currentUser = WindowsIdentity.GetCurrent().User;
                             if (currentUser != null)
                             {
-                                pipeSecurity.AddAccessRule(new PipeAccessRule(
-                                    currentUser,
-                                    PipeAccessRights.FullControl,
-                                    AccessControlType.Allow));
+                                pipeSecurity.AddAccessRule(
+                                    new PipeAccessRule(
+                                        currentUser,
+                                        PipeAccessRights.FullControl,
+                                        AccessControlType.Allow
+                                    )
+                                );
                             }
 
                             pipeServer = NamedPipeServerStreamAcl.Create(
@@ -169,10 +178,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                                 NamedPipeServerStream.MaxAllowedServerInstances,
                                 PipeTransmissionMode.Byte,
                                 PipeOptions.Asynchronous,
-                                0, 
-                                0, 
-                                pipeSecurity);
-                            
+                                0,
+                                0,
+                                pipeSecurity
+                            );
+
                             // If we succeed, we LOCK onto this strategy
                             worldAccessEstablished = true;
                         }
@@ -183,23 +193,28 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                                 // CRITICAL: We previously succeeded with World Access, but now failed.
                                 // We CANNOT switch to Default Security because existing pipe instances use World Access.
                                 // Switching would cause a mismatch error. We must retry World Access.
-                                logger.LogError(uex, "Insufficient permissions to create subsequent Named Pipe with World access. Retrying in 1s due to ACL constraints...");
+                                logger.LogError(
+                                    uex,
+                                    "Insufficient permissions to create subsequent Named Pipe with World access. Retrying in 1s due to ACL constraints..."
+                                );
                                 await Task.Delay(1000, cancellationToken);
-                                continue; 
+                                continue;
                             }
                             else
                             {
                                 // First attempt failed? Okay to fallback.
-                                logger.LogWarning("Insufficient permissions to create Named Pipe with World access. Switching to Default Permissions strategy for future connections.");
+                                logger.LogWarning(
+                                    "Insufficient permissions to create Named Pipe with World access. Switching to Default Permissions strategy for future connections."
+                                );
                                 fallbackToDefaultSecurity = true;
                             }
                         }
                     }
 
                     // Strategy 2: Default Security (Fallback)
-                    if (pipeServer == null && fallbackToDefaultSecurity) 
+                    if (pipeServer == null && fallbackToDefaultSecurity)
                     {
-                         try
+                        try
                         {
                             pipeServer = NamedPipeServerStreamAcl.Create(
                                 PipeName,
@@ -207,22 +222,27 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                                 NamedPipeServerStream.MaxAllowedServerInstances,
                                 PipeTransmissionMode.Byte,
                                 PipeOptions.Asynchronous,
-                                0, 
-                                0, 
-                                null); // Default security
+                                0,
+                                0,
+                                null
+                            ); // Default security
 
                             logger.LogDebug("Created Named Pipe with default permissions.");
                         }
                         catch (Exception exFallback)
                         {
-                            logger.LogError(exFallback, "Failed to create Named Pipe even with default permissions. IPC will be disabled.");
+                            logger.LogError(
+                                exFallback,
+                                "Failed to create Named Pipe even with default permissions. IPC will be disabled."
+                            );
                             // If we fail here, we are truly stuck. Wait a bit to avoid hot loop.
                             await Task.Delay(5000, cancellationToken);
                             continue;
                         }
                     }
-                    
-                    if (pipeServer == null) continue; // Should have been handled above, but safety check
+
+                    if (pipeServer == null)
+                        continue; // Should have been handled above, but safety check
 
                     logger.LogDebug("Pipe created on: {PipeName}", PipeName);
                     logger.LogDebug("Waiting for client connection on pipe: {PipeName}", PipeName);
@@ -245,7 +265,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     logger.LogError(ex, "Error accepting client connection");
                     pipeServer?.Dispose();
                     // Wait before retrying loop to avoid log spam
-                    await Task.Delay(1000, cancellationToken); 
+                    await Task.Delay(1000, cancellationToken);
                 }
             }
         }
@@ -255,8 +275,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         }
     }
 
-
-    private async Task HandleClientAsync(NamedPipeServerStream pipe, CancellationToken cancellationToken)
+    private async Task HandleClientAsync(
+        NamedPipeServerStream pipe,
+        CancellationToken cancellationToken
+    )
     {
         uint sessionId = 0;
         try
@@ -266,7 +288,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 // Read session ID from client
                 var sessionIdBytes = new byte[4];
                 var bytesRead = await pipe.ReadAsync(sessionIdBytes, 0, 4, cancellationToken);
-                    
+
                 if (bytesRead != 4)
                 {
                     logger.LogWarning("Invalid session ID received");
@@ -283,7 +305,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 }
 
                 logger.LogDebug("Session {SessionId} registered", sessionId);
-                SessionConnected?.Invoke(this, new SessionConnectedEventArgs { SessionId = sessionId });
+                SessionConnected?.Invoke(
+                    this,
+                    new SessionConnectedEventArgs { SessionId = sessionId }
+                );
 
                 // Message loop
                 while (!cancellationToken.IsCancellationRequested && pipe.IsConnected)
@@ -306,8 +331,16 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             int headerRemaining = 4 - bytesRead;
                             while (headerRemaining > 0)
                             {
-                                int read = await pipe.ReadAsync(lengthBuffer, 4 - headerRemaining, headerRemaining, cancellationToken);
-                                if (read == 0) throw new EndOfStreamException("Connection closed during header read");
+                                int read = await pipe.ReadAsync(
+                                    lengthBuffer,
+                                    4 - headerRemaining,
+                                    headerRemaining,
+                                    cancellationToken
+                                );
+                                if (read == 0)
+                                    throw new EndOfStreamException(
+                                        "Connection closed during header read"
+                                    );
                                 headerRemaining -= read;
                             }
                         }
@@ -317,7 +350,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                         // Validity check (max 10MB to prevent OOM)
                         if (messageLength <= 0 || messageLength > 10 * 1024 * 1024)
                         {
-                            logger.LogWarning("Invalid message length received: {Length}", messageLength);
+                            logger.LogWarning(
+                                "Invalid message length received: {Length}",
+                                messageLength
+                            );
                             break; // Disconnect
                         }
 
@@ -326,20 +362,35 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                         int totalRead = 0;
                         while (totalRead < messageLength)
                         {
-                            int read = await pipe.ReadAsync(messageBuffer, totalRead, messageLength - totalRead, cancellationToken);
-                            if (read == 0) throw new EndOfStreamException("Connection closed during body read");
+                            int read = await pipe.ReadAsync(
+                                messageBuffer,
+                                totalRead,
+                                messageLength - totalRead,
+                                cancellationToken
+                            );
+                            if (read == 0)
+                                throw new EndOfStreamException(
+                                    "Connection closed during body read"
+                                );
                             totalRead += read;
                         }
 
                         // Deserialize and process message
                         var message = PipeMessage.Deserialize(messageBuffer, messageLength);
-                        logger.LogDebug("Message received from session {SessionId}: {MessageType}", sessionId, message.Type);
+                        logger.LogDebug(
+                            "Message received from session {SessionId}: {MessageType}",
+                            sessionId,
+                            message.Type
+                        );
 
-                        MessageReceived?.Invoke(this, new PipeMessageReceivedEventArgs
-                        {
-                            SessionId = sessionId,
-                            Message = message
-                        });
+                        MessageReceived?.Invoke(
+                            this,
+                            new PipeMessageReceivedEventArgs
+                            {
+                                SessionId = sessionId,
+                                Message = message,
+                            }
+                        );
                     }
                     catch (EndOfStreamException)
                     {
@@ -352,7 +403,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     }
                     catch (Exception ex)
                     {
-                        logger.LogWarning(ex, "Error reading message from session {SessionId}", sessionId);
+                        logger.LogWarning(
+                            ex,
+                            "Error reading message from session {SessionId}",
+                            sessionId
+                        );
                         break;
                     }
                 }
@@ -367,7 +422,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
             if (sessionId > 0)
             {
                 _sessions.TryRemove(sessionId, out _);
-                SessionDisconnected?.Invoke(this, new SessionDisconnectedEventArgs { SessionId = sessionId });
+                SessionDisconnected?.Invoke(
+                    this,
+                    new SessionDisconnectedEventArgs { SessionId = sessionId }
+                );
                 logger.LogDebug("Session {SessionId} unregistered", sessionId);
             }
         }
@@ -389,7 +447,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
             _cancellationTokenSource?.Cancel();
             foreach (var session in _sessions.Values)
             {
-                try { session?.Dispose(); } catch { }
+                try
+                {
+                    session?.Dispose();
+                }
+                catch { }
             }
         }
         catch (Exception ex)

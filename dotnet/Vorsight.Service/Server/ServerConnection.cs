@@ -1,13 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using SocketIOClient;
-using Vorsight.Infrastructure.Identity;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-
-using Vorsight.Service.Storage;
-using Vorsight.Service.Logging;
+using Microsoft.Extensions.Logging;
+using SocketIOClient;
 using Vorsight.Contracts.DTOs;
+using Vorsight.Infrastructure.Identity;
+using Vorsight.Service.Logging;
+using Vorsight.Service.Storage;
 
 namespace Vorsight.Service.Server;
 
@@ -42,13 +41,13 @@ public class ServerConnection : IServerConnection
     private string? _machineId;
     private string? _apiKey;
     private bool _isConnected;
-    
+
     private readonly string _serverUrl;
     private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
     };
-    
+
     public bool IsConnected => _isConnected;
     public string? ApiKey => _apiKey;
     public string? MachineId => _machineId;
@@ -56,8 +55,13 @@ public class ServerConnection : IServerConnection
     public event EventHandler? ScheduleUpdateReceived;
     public event EventHandler? SettingsUpdateReceived;
     public event EventHandler? ConnectionRestored;
-    
-    public ServerConnection(ILogger<ServerConnection> logger, IHttpClientFactory httpClientFactory, IConfiguration configuration, ICredentialStore credentialStore)
+
+    public ServerConnection(
+        ILogger<ServerConnection> logger,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        ICredentialStore credentialStore
+    )
     {
         _logger = logger;
         _credentialStore = credentialStore;
@@ -65,7 +69,7 @@ public class ServerConnection : IServerConnection
         _serverUrl = configuration["Server:Url"] ?? "http://localhost:3000";
         _httpClient.BaseAddress = new Uri(_serverUrl);
     }
-    
+
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public async Task InitializeAsync()
     {
@@ -76,31 +80,40 @@ public class ServerConnection : IServerConnection
         {
             // Generate or load machine ID
             var (storedId, storedKey) = await _credentialStore.LoadCredentialsAsync();
-            
+
             if (!string.IsNullOrEmpty(storedKey))
             {
                 _apiKey = storedKey;
                 _machineId = storedId ?? MachineIdentity.GenerateMachineId();
-                _logger.LogInformation("Loaded API Key from store for Machine ID: {MachineId}", _machineId);
+                _logger.LogInformation(
+                    "Loaded API Key from store for Machine ID: {MachineId}",
+                    _machineId
+                );
             }
             else
             {
                 _machineId = MachineIdentity.GenerateMachineId();
-                _logger.LogInformation("No credentials found. Generated Machine ID: {MachineId}", _machineId);
+                _logger.LogInformation(
+                    "No credentials found. Generated Machine ID: {MachineId}",
+                    _machineId
+                );
             }
-            
+
             // Register with server if no API key
             if (string.IsNullOrEmpty(_apiKey))
             {
                 await RegisterMachineAsync();
             }
-            
+
             // Connect WebSocket
             await ConnectWebSocketAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize server connection (will retry in background)");
+            _logger.LogError(
+                ex,
+                "Failed to initialize server connection (will retry in background)"
+            );
         }
     }
 
@@ -109,44 +122,50 @@ public class ServerConnection : IServerConnection
         // If we don't have an API key, we must try to register first
         if (string.IsNullOrEmpty(_apiKey))
         {
-            try 
+            try
             {
-                _logger.LogInformation("Connection Watchdog: No API key found. Retrying registration...");
-                
+                _logger.LogInformation(
+                    "Connection Watchdog: No API key found. Retrying registration..."
+                );
+
                 // Ensure machine ID is loaded
                 if (string.IsNullOrEmpty(_machineId) && OperatingSystem.IsWindows())
                 {
                     _machineId = MachineIdentity.GenerateMachineId();
                 }
-                
+
                 await RegisterMachineAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Connection Watchdog: Failed to re-register ({Message})", ex.Message);
+                _logger.LogWarning(
+                    "Connection Watchdog: Failed to re-register ({Message})",
+                    ex.Message
+                );
                 return; // Cannot connect without API key
             }
         }
 
-        if (_socket != null && _socket.Connected) 
+        if (_socket != null && _socket.Connected)
         {
             // NEW: Check if we are physically connected but not logically authenticated
             if (!_isConnected && !string.IsNullOrEmpty(_apiKey))
             {
-                 _logger.LogWarning("Connection Watchdog: Socket connected but not authenticated. Retrying handshake...");
-                 await _socket.EmitAsync("machine:connect", new
-                 {
-                     machineId = _machineId,
-                     apiKey = _apiKey
-                 });
+                _logger.LogWarning(
+                    "Connection Watchdog: Socket connected but not authenticated. Retrying handshake..."
+                );
+                await _socket.EmitAsync(
+                    "machine:connect",
+                    new { machineId = _machineId, apiKey = _apiKey }
+                );
             }
             return;
         }
 
-        try 
+        try
         {
             _logger.LogInformation("Connection Watchdog: Attempting to connect to server...");
-            
+
             // If socket is null or disposed, recreate it
             if (_socket == null)
             {
@@ -162,7 +181,7 @@ public class ServerConnection : IServerConnection
             _logger.LogWarning("Connection Watchdog: Failed to connect ({Message})", ex.Message);
         }
     }
-    
+
     private async Task RegisterMachineAsync()
     {
         try
@@ -176,22 +195,37 @@ public class ServerConnection : IServerConnection
                 {
                     os = Environment.OSVersion.ToString(),
                     version = "1.0.0",
-                    dotnetVersion = Environment.Version.ToString()
-                }
+                    dotnetVersion = Environment.Version.ToString(),
+                },
             };
-            
-            var response = await _httpClient.PostAsJsonAsync("/api/machine/v1/machines/register", registrationData);
+
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/machine/v1/machines/register",
+                registrationData
+            );
             response.EnsureSuccessStatusCode();
-            
-            var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>(_jsonOptions);
+
+            var result = await response.Content.ReadFromJsonAsync<RegistrationResponse>(
+                _jsonOptions
+            );
             _apiKey = result?.ApiKey;
-            
-            _logger.LogInformation("Successfully registered with server. Received API Key: {ApiKeyPrefix}...", _apiKey?.Substring(0, Math.Min(5, _apiKey?.Length ?? 0)));
-            
+
+            _logger.LogInformation(
+                "Successfully registered with server. Received API Key: {ApiKeyPrefix}...",
+                _apiKey?.Substring(0, Math.Min(5, _apiKey?.Length ?? 0))
+            );
+
             // Adopt canonical ID from server if different (Name-based recovery)
-            if (!string.IsNullOrEmpty(result?.MachineId) && !string.Equals(result.MachineId, _machineId, StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrEmpty(result?.MachineId)
+                && !string.Equals(result.MachineId, _machineId, StringComparison.OrdinalIgnoreCase)
+            )
             {
-                _logger.LogWarning("Adopting canonical Machine ID from server: {NewId} (was {OldId})", result.MachineId, _machineId);
+                _logger.LogWarning(
+                    "Adopting canonical Machine ID from server: {NewId} (was {OldId})",
+                    result.MachineId,
+                    _machineId
+                );
                 _machineId = result.MachineId;
             }
 
@@ -212,175 +246,222 @@ public class ServerConnection : IServerConnection
             throw;
         }
     }
-    
+
     private async Task ConnectWebSocketAsync()
     {
         try
         {
             _socket = new SocketIOClient.SocketIO(_serverUrl);
-            
+
             _socket.OnConnected += async (sender, e) =>
             {
                 _logger.LogInformation("WebSocket connected");
-                
-                _logger.LogInformation("Authenticating... MachineId: {MachineId}, KeyPrefix: {KeyPrefix}", 
-                    _machineId, 
-                    !string.IsNullOrEmpty(_apiKey) && _apiKey.Length > 5 ? _apiKey.Substring(0, 5) + "..." : "invalid");
+
+                _logger.LogInformation(
+                    "Authenticating... MachineId: {MachineId}, KeyPrefix: {KeyPrefix}",
+                    _machineId,
+                    !string.IsNullOrEmpty(_apiKey) && _apiKey.Length > 5
+                        ? _apiKey.Substring(0, 5) + "..."
+                        : "invalid"
+                );
 
                 // Authenticate
-                await _socket.EmitAsync("machine:connect", new
-                {
-                    machineId = _machineId,
-                    apiKey = _apiKey
-                });
+                await _socket.EmitAsync(
+                    "machine:connect",
+                    new { machineId = _machineId, apiKey = _apiKey }
+                );
             };
-            
-            _socket.On("machine:connected", response =>
-            {
-                _isConnected = true;
-                _logger.LogInformation("Machine authenticated with server");
-                
-                // Trigger connection restored event so listeners can fetch settings/schedules
-                Task.Run(() => ConnectionRestored?.Invoke(this, EventArgs.Empty));
-            });
 
-            _socket.On("machine:error", async response => 
-            {
-                var data = response.GetValue<JsonElement>();
-                
-                // Handle credential errors
-                if (data.TryGetProperty("error", out var errorProp))
+            _socket.On(
+                "machine:connected",
+                response =>
                 {
-                    var error = errorProp.GetString();
-                    if (error?.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase) == true ||
-                        error?.Equals("Missing credentials", StringComparison.OrdinalIgnoreCase) == true)
-                    {
-                        _logger.LogWarning("Server rejected credentials ({Error}). Flushing stored keys and re-registering...", error);
-                        
-                        try 
-                        {
-                            // 1. Delete bad credentials
-                            await _credentialStore.DeleteCredentialsAsync();
-                            
-                            // 2. Clear local state
-                            _apiKey = null;
-                            
-                            // 3. Re-register (generates new ID)
-                            await RegisterMachineAsync();
-                            
-                            // 4. Re-connect
-                            if (!string.IsNullOrEmpty(_apiKey)) {
-                                 _logger.LogInformation("Re-acquired credentials. Retrying authentication...");
-                                 await _socket.EmitAsync("machine:connect", new {
-                                    machineId = _machineId,
-                                    apiKey = _apiKey
-                                 });
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Critical failure during credential recovery.");
-                        }
-                    }
-                    else 
-                    {
-                        _logger.LogError("Server reported error: {Error}", data.GetRawText());
-                    }
+                    _isConnected = true;
+                    _logger.LogInformation("Machine authenticated with server");
+
+                    // Trigger connection restored event so listeners can fetch settings/schedules
+                    Task.Run(() => ConnectionRestored?.Invoke(this, EventArgs.Empty));
                 }
-            });
-            
+            );
 
-
-            _socket.On("server:command", response =>
-            {
-                try 
+            _socket.On(
+                "machine:error",
+                async response =>
                 {
                     var data = response.GetValue<JsonElement>();
-                    if (data.TryGetProperty("type", out var typeElement))
+
+                    // Handle credential errors
+                    if (data.TryGetProperty("error", out var errorProp))
                     {
-                        var type = typeElement.GetString();
-                        if (!string.IsNullOrEmpty(type))
+                        var error = errorProp.GetString();
+                        if (
+                            error?.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase)
+                                == true
+                            || error?.Equals(
+                                "Missing credentials",
+                                StringComparison.OrdinalIgnoreCase
+                            ) == true
+                        )
                         {
-                            CommandReceived?.Invoke(this, new CommandReceivedEventArgs 
-                            { 
-                                CommandType = type,
-                                Data = data
-                            });
-                            _logger.LogInformation("Received command from server: {Type}", type);
+                            _logger.LogWarning(
+                                "Server rejected credentials ({Error}). Flushing stored keys and re-registering...",
+                                error
+                            );
+
+                            try
+                            {
+                                // 1. Delete bad credentials
+                                await _credentialStore.DeleteCredentialsAsync();
+
+                                // 2. Clear local state
+                                _apiKey = null;
+
+                                // 3. Re-register (generates new ID)
+                                await RegisterMachineAsync();
+
+                                // 4. Re-connect
+                                if (!string.IsNullOrEmpty(_apiKey))
+                                {
+                                    _logger.LogInformation(
+                                        "Re-acquired credentials. Retrying authentication..."
+                                    );
+                                    await _socket.EmitAsync(
+                                        "machine:connect",
+                                        new { machineId = _machineId, apiKey = _apiKey }
+                                    );
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(
+                                    ex,
+                                    "Critical failure during credential recovery."
+                                );
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogError("Server reported error: {Error}", data.GetRawText());
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to parse server command");
-                }
-            });
+            );
 
-            _socket.On("server:settings_update", response =>
-            {
-                try
+            _socket.On(
+                "server:command",
+                response =>
                 {
-                    var settings = response.GetValue<JsonElement>();
-                    _logger.LogInformation("Received settings update from server - triggering reload");
-                    SettingsUpdateReceived?.Invoke(this, EventArgs.Empty);
+                    try
+                    {
+                        var data = response.GetValue<JsonElement>();
+                        if (data.TryGetProperty("type", out var typeElement))
+                        {
+                            var type = typeElement.GetString();
+                            if (!string.IsNullOrEmpty(type))
+                            {
+                                CommandReceived?.Invoke(
+                                    this,
+                                    new CommandReceivedEventArgs { CommandType = type, Data = data }
+                                );
+                                _logger.LogInformation(
+                                    "Received command from server: {Type}",
+                                    type
+                                );
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse server command");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to parse settings update");
-                }
-            });
+            );
 
-            _socket.On("server:schedule_update", async response =>
-            {
-                try
+            _socket.On(
+                "server:settings_update",
+                response =>
                 {
-                    var schedule = response.GetValue<JsonElement>();
-                    _logger.LogInformation("Received schedule update from server - triggering reload");
-                    
-                    // Trigger schedule reload event
-                    ScheduleUpdateReceived?.Invoke(this, EventArgs.Empty);
+                    try
+                    {
+                        var settings = response.GetValue<JsonElement>();
+                        _logger.LogInformation(
+                            "Received settings update from server - triggering reload"
+                        );
+                        SettingsUpdateReceived?.Invoke(this, EventArgs.Empty);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse settings update");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to parse schedule update");
-                }
-            });
+            );
 
-            _socket.On("machine:archived", response =>
-            {
-                try
+            _socket.On(
+                "server:schedule_update",
+                async response =>
                 {
-                    _logger.LogWarning("⚠ Machine has been archived - data collection stopped");
-                    _logger.LogWarning("This machine will not send any monitoring data until it is un-archived");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to parse machine:archived event");
-                }
-            });
+                    try
+                    {
+                        var schedule = response.GetValue<JsonElement>();
+                        _logger.LogInformation(
+                            "Received schedule update from server - triggering reload"
+                        );
 
-            _socket.On("machine:unarchived", response =>
-            {
-                try
-                {
-                    _logger.LogInformation("✓ Machine has been un-archived - data collection resumed");
+                        // Trigger schedule reload event
+                        ScheduleUpdateReceived?.Invoke(this, EventArgs.Empty);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse schedule update");
+                    }
                 }
-                catch (Exception ex)
+            );
+
+            _socket.On(
+                "machine:archived",
+                response =>
                 {
-                    _logger.LogError(ex, "Failed to parse machine:unarchived event");
+                    try
+                    {
+                        _logger.LogWarning("⚠ Machine has been archived - data collection stopped");
+                        _logger.LogWarning(
+                            "This machine will not send any monitoring data until it is un-archived"
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse machine:archived event");
+                    }
                 }
-            });
-            
+            );
+
+            _socket.On(
+                "machine:unarchived",
+                response =>
+                {
+                    try
+                    {
+                        _logger.LogInformation(
+                            "✓ Machine has been un-archived - data collection resumed"
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to parse machine:unarchived event");
+                    }
+                }
+            );
+
             _socket.OnDisconnected += (sender, e) =>
             {
                 // Only log if we were previously connected
                 if (_isConnected)
                 {
-                     _isConnected = false;
-                     _logger.LogWarning("WebSocket disconnected");
+                    _isConnected = false;
+                    _logger.LogWarning("WebSocket disconnected");
                 }
             };
-            
+
             await _socket.ConnectAsync();
         }
         catch (Exception ex)
@@ -389,43 +470,34 @@ public class ServerConnection : IServerConnection
             throw;
         }
     }
-    
+
     public async Task SendHeartbeatAsync(StatePayload state)
     {
         if (_socket?.Connected == true)
         {
-            await _socket.EmitAsync("machine:heartbeat", new
-            {
-                machineId = _machineId,
-                state
-            });
+            await _socket.EmitAsync("machine:heartbeat", new { machineId = _machineId, state });
         }
     }
-    
+
     public async Task SendActivityAsync(ActivityPayload activity)
     {
         if (_socket?.Connected == true)
         {
-            await _socket.EmitAsync("machine:activity", new
-            {
-                machineId = _machineId,
-                activity
-            });
+            await _socket.EmitAsync("machine:activity", new { machineId = _machineId, activity });
         }
     }
-    
+
     public async Task SendAuditEventAsync(AuditEventPayload auditEvent)
     {
-        _logger.LogDebug("SendAuditEventAsync called. Socket connected: {Connected}", _socket?.Connected);
-        
+        _logger.LogDebug(
+            "SendAuditEventAsync called. Socket connected: {Connected}",
+            _socket?.Connected
+        );
+
         if (_socket?.Connected == true)
         {
             _logger.LogInformation("Emitting audit event via Socket.IO");
-            await _socket.EmitAsync("machine:audit", new
-            {
-                machineId = _machineId,
-                auditEvent
-            });
+            await _socket.EmitAsync("machine:audit", new { machineId = _machineId, auditEvent });
             _logger.LogInformation("Audit event emitted successfully");
         }
         else
@@ -433,16 +505,15 @@ public class ServerConnection : IServerConnection
             _logger.LogWarning("Cannot send audit event - socket not connected");
         }
     }
-    
+
     public async Task SendScreenshotNotificationAsync(ScreenshotPayload screenshot)
     {
         if (_socket?.Connected == true)
         {
-            await _socket.EmitAsync("machine:screenshot", new
-            {
-                machineId = _machineId,
-                screenshot
-            });
+            await _socket.EmitAsync(
+                "machine:screenshot",
+                new { machineId = _machineId, screenshot }
+            );
         }
     }
 
@@ -452,10 +523,15 @@ public class ServerConnection : IServerConnection
         {
             using var content = new MultipartFormDataContent();
             using var fileContent = new ByteArrayContent(fileData);
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+                "image/png"
+            );
             content.Add(fileContent, "file", fileName);
 
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/media/upload"));
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(_httpClient.BaseAddress!, "/api/machine/v1/media/upload")
+            );
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = content;
 
@@ -487,13 +563,13 @@ public class ServerConnection : IServerConnection
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
-            
+
             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
                 _logger.LogWarning("Machine is archived - schedule fetch rejected");
                 return null;
             }
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to fetch schedule: {Status}", response.StatusCode);
@@ -508,7 +584,7 @@ public class ServerConnection : IServerConnection
             return null;
         }
     }
-    
+
     public async Task<string?> FetchSettingsJsonAsync()
     {
         if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
@@ -520,13 +596,13 @@ public class ServerConnection : IServerConnection
             request.Headers.Add("x-api-key", _apiKey);
 
             var response = await _httpClient.SendAsync(request);
-            
+
             if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
             {
                 _logger.LogWarning("Machine is archived - settings fetch rejected");
                 return null;
             }
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Failed to fetch settings: {Status}", response.StatusCode);
@@ -535,14 +611,13 @@ public class ServerConnection : IServerConnection
 
             return await response.Content.ReadAsStringAsync();
         }
-
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching settings JSON");
             return null;
         }
     }
-    
+
     public async Task SendLogBatchAsync(IEnumerable<LogEventDto> logs)
     {
         if (string.IsNullOrEmpty(_machineId) || string.IsNullOrEmpty(_apiKey))
@@ -550,14 +625,17 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/logs"));
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(_httpClient.BaseAddress!, "/api/machine/v1/logs")
+            );
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = JsonContent.Create(logs);
 
             var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
-               // Do not log here to avoid recursive logging loops if the sink uses this
+                // Do not log here to avoid recursive logging loops if the sink uses this
             }
         }
         catch
@@ -573,20 +651,22 @@ public class ServerConnection : IServerConnection
 
         try
         {
-            var payload = new
-            {
-                machineId = _machineId,
-                settings = settingsJson
-            };
+            var payload = new { machineId = _machineId, settings = settingsJson };
 
-            var request = new HttpRequestMessage(HttpMethod.Post, new Uri(_httpClient.BaseAddress!, "/api/machine/v1/configuration/applied"));
+            var request = new HttpRequestMessage(
+                HttpMethod.Post,
+                new Uri(_httpClient.BaseAddress!, "/api/machine/v1/configuration/applied")
+            );
             request.Headers.Add("x-api-key", _apiKey);
             request.Content = JsonContent.Create(payload);
 
             var response = await _httpClient.SendAsync(request);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Failed to report settings application: {Status}", response.StatusCode);
+                _logger.LogWarning(
+                    "Failed to report settings application: {Status}",
+                    response.StatusCode
+                );
             }
         }
         catch (Exception ex)
@@ -594,15 +674,15 @@ public class ServerConnection : IServerConnection
             _logger.LogError(ex, "Error reporting applied settings");
         }
     }
-    
+
     private class RegistrationResponse
     {
         [JsonPropertyName("success")]
         public bool Success { get; set; }
-        
+
         [JsonPropertyName("apiKey")]
         public string? ApiKey { get; set; }
-        
+
         [JsonPropertyName("machineId")]
         public string? MachineId { get; set; }
     }

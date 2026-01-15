@@ -15,27 +15,27 @@ public static class MachineIdentity
         try
         {
             var components = new List<string>();
-            
+
             // Get CPU ID
             var cpuId = GetCpuId();
             if (!string.IsNullOrEmpty(cpuId))
                 components.Add(cpuId);
-            
+
             // Get motherboard serial
             var motherboardSerial = GetMotherboardSerial();
             if (!string.IsNullOrEmpty(motherboardSerial))
                 components.Add(motherboardSerial);
-            
+
             // Get MAC address
             var macAddress = GetMacAddress();
             if (!string.IsNullOrEmpty(macAddress))
                 components.Add(macAddress);
-            
+
             // Combine and hash
             var combined = string.Join("|", components);
             using var sha256 = SHA256.Create();
             var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(combined));
-            
+
             // Convert to UUID format
             var guid = new Guid(hash.Take(16).ToArray());
             return guid.ToString();
@@ -46,13 +46,15 @@ public static class MachineIdentity
             return $"{Environment.MachineName}-{Guid.NewGuid()}";
         }
     }
-    
+
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static string? GetCpuId()
     {
         try
         {
-            using var searcher = new ManagementObjectSearcher("SELECT ProcessorId FROM Win32_Processor");
+            using var searcher = new ManagementObjectSearcher(
+                "SELECT ProcessorId FROM Win32_Processor"
+            );
             foreach (var obj in searcher.Get())
             {
                 return obj["ProcessorId"]?.ToString();
@@ -61,13 +63,15 @@ public static class MachineIdentity
         catch { }
         return null;
     }
-    
+
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     private static string? GetMotherboardSerial()
     {
         try
         {
-            using var searcher = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BaseBoard");
+            using var searcher = new ManagementObjectSearcher(
+                "SELECT SerialNumber FROM Win32_BaseBoard"
+            );
             foreach (var obj in searcher.Get())
             {
                 return obj["SerialNumber"]?.ToString();
@@ -76,16 +80,18 @@ public static class MachineIdentity
         catch { }
         return null;
     }
-    
+
     private static string? GetMacAddress()
     {
         try
         {
             var nics = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces();
-            var firstPhysical = nics.FirstOrDefault(n => 
-                n.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback &&
-                n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up);
-            
+            var firstPhysical = nics.FirstOrDefault(n =>
+                n.NetworkInterfaceType
+                    != System.Net.NetworkInformation.NetworkInterfaceType.Loopback
+                && n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
+            );
+
             return firstPhysical?.GetPhysicalAddress().ToString();
         }
         catch { }

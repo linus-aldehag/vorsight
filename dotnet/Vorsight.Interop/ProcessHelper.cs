@@ -13,7 +13,11 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely opens a process token with proper error handling.
         /// </summary>
-        public static bool TryOpenProcessToken(IntPtr processHandle, uint desiredAccess, out IntPtr tokenHandle)
+        public static bool TryOpenProcessToken(
+            IntPtr processHandle,
+            uint desiredAccess,
+            out IntPtr tokenHandle
+        )
         {
             if (!ProcessInterop.OpenProcessToken(processHandle, desiredAccess, out tokenHandle))
             {
@@ -32,15 +36,19 @@ namespace Vorsight.Interop
             uint desiredAccess,
             int impersonationLevel,
             int tokenType,
-            out IntPtr newToken)
+            out IntPtr newToken
+        )
         {
-            if (!ProcessInterop.DuplicateTokenEx(
-                existingToken,
-                desiredAccess,
-                IntPtr.Zero,
-                impersonationLevel,
-                tokenType,
-                out newToken))
+            if (
+                !ProcessInterop.DuplicateTokenEx(
+                    existingToken,
+                    desiredAccess,
+                    IntPtr.Zero,
+                    impersonationLevel,
+                    tokenType,
+                    out newToken
+                )
+            )
             {
                 var err = Marshal.GetLastWin32Error();
                 System.Diagnostics.Debug.WriteLine($"DuplicateTokenEx failed: {err}");
@@ -52,7 +60,11 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely opens a process by ID with proper error handling.
         /// </summary>
-        public static bool TryOpenProcess(uint processId, uint desiredAccess, out IntPtr processHandle)
+        public static bool TryOpenProcess(
+            uint processId,
+            uint desiredAccess,
+            out IntPtr processHandle
+        )
         {
             processHandle = ProcessInterop.OpenProcess(desiredAccess, false, processId);
             if (processHandle == IntPtr.Zero)
@@ -72,7 +84,8 @@ namespace Vorsight.Interop
             string applicationPath,
             string commandLine,
             string workingDirectory,
-            out uint processId)
+            out uint processId
+        )
         {
             processId = 0;
             IntPtr lpEnvironment = IntPtr.Zero;
@@ -84,7 +97,7 @@ namespace Vorsight.Interop
                 {
                     var err = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"CreateEnvironmentBlock failed: {err}");
-                    // Fallback to parent environment if creation fails? 
+                    // Fallback to parent environment if creation fails?
                     // Or keep it null/zero which implies parent (Service/System) environment.
                     // We'll proceed with zero but it is suboptimal.
                 }
@@ -97,21 +110,26 @@ namespace Vorsight.Interop
                 {
                     cb = (uint)Marshal.SizeOf(typeof(ProcessInterop.STARTUPINFO)),
                     lpDesktop = "winsta0\\default",
-                    dwFlags = 0
+                    dwFlags = 0,
                 };
 
-                if (!ProcessInterop.CreateProcessAsUser(
-                    userToken,
-                    applicationPath,
-                    commandLine,
-                    IntPtr.Zero,
-                    IntPtr.Zero,
-                    false,
-                    ProcessInterop.CREATE_UNICODE_ENVIRONMENT | ProcessInterop.NORMAL_PRIORITY_CLASS | ProcessInterop.CREATE_NO_WINDOW,
-                    lpEnvironment,
-                    workingDirectory,
-                    ref startupInfo,
-                    out var processInfo))
+                if (
+                    !ProcessInterop.CreateProcessAsUser(
+                        userToken,
+                        applicationPath,
+                        commandLine,
+                        IntPtr.Zero,
+                        IntPtr.Zero,
+                        false,
+                        ProcessInterop.CREATE_UNICODE_ENVIRONMENT
+                            | ProcessInterop.NORMAL_PRIORITY_CLASS
+                            | ProcessInterop.CREATE_NO_WINDOW,
+                        lpEnvironment,
+                        workingDirectory,
+                        ref startupInfo,
+                        out var processInfo
+                    )
+                )
                 {
                     var err = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"CreateProcessAsUser failed: {err}");
@@ -146,17 +164,21 @@ namespace Vorsight.Interop
         public static bool TryQuerySessionInformation(
             uint sessionId,
             SessionInterop.WTS_INFO_CLASS infoClass,
-            out string? result)
+            out string? result
+        )
         {
             result = null;
             var serverHandle = SessionInterop.WTS_CURRENT_SERVER_HANDLE;
 
-            if (!SessionInterop.WTSQuerySessionInformation(
-                serverHandle,
-                sessionId,
-                infoClass,
-                out var buffer,
-                out _))
+            if (
+                !SessionInterop.WTSQuerySessionInformation(
+                    serverHandle,
+                    sessionId,
+                    infoClass,
+                    out var buffer,
+                    out _
+                )
+            )
             {
                 var err = Marshal.GetLastWin32Error();
                 System.Diagnostics.Debug.WriteLine($"WTSQuerySessionInformation failed: {err}");
@@ -182,12 +204,15 @@ namespace Vorsight.Interop
             sessions = null;
             var serverHandle = SessionInterop.WTS_CURRENT_SERVER_HANDLE;
 
-            if (!SessionInterop.WTSEnumerateSessions(
-                serverHandle,
-                0,
-                1,
-                out var sessionInfoPtr,
-                out var sessionCount))
+            if (
+                !SessionInterop.WTSEnumerateSessions(
+                    serverHandle,
+                    0,
+                    1,
+                    out var sessionInfoPtr,
+                    out var sessionCount
+                )
+            )
             {
                 var err = Marshal.GetLastWin32Error();
                 System.Diagnostics.Debug.WriteLine($"WTSEnumerateSessions failed: {err}");
@@ -202,7 +227,10 @@ namespace Vorsight.Interop
                 for (int i = 0; i < sessionCount; i++)
                 {
                     var structPtr = sessionInfoPtr + (i * structSize);
-                    var structure = Marshal.PtrToStructure(structPtr, typeof(SessionInterop.WTS_SESSION_INFO));
+                    var structure = Marshal.PtrToStructure(
+                        structPtr,
+                        typeof(SessionInterop.WTS_SESSION_INFO)
+                    );
                     if (structure != null)
                     {
                         sessions[i] = (SessionInterop.WTS_SESSION_INFO)structure;
@@ -222,16 +250,23 @@ namespace Vorsight.Interop
         /// </summary>
         public static bool TryEnablePrivilege(string privilegeName)
         {
-            var processHandle = ProcessInterop.OpenProcess(ProcessInterop.PROCESS_QUERY_INFORMATION, false, (uint)System.Diagnostics.Process.GetCurrentProcess().Id);
+            var processHandle = ProcessInterop.OpenProcess(
+                ProcessInterop.PROCESS_QUERY_INFORMATION,
+                false,
+                (uint)System.Diagnostics.Process.GetCurrentProcess().Id
+            );
             if (processHandle == IntPtr.Zero)
                 return false;
 
             try
             {
-                if (!ProcessInterop.OpenProcessToken(
-                    processHandle,
-                    ProcessInterop.TOKEN_ADJUST_PRIVILEGES | ProcessInterop.TOKEN_QUERY,
-                    out var tokenHandle))
+                if (
+                    !ProcessInterop.OpenProcessToken(
+                        processHandle,
+                        ProcessInterop.TOKEN_ADJUST_PRIVILEGES | ProcessInterop.TOKEN_QUERY,
+                        out var tokenHandle
+                    )
+                )
                     return false;
 
                 try
@@ -246,10 +281,14 @@ namespace Vorsight.Interop
                         {
                             new TokenInterop.LUID_AND_ATTRIBUTES
                             {
-                                Luid = new TokenInterop.LUID { LowPart = (uint)(luid & 0xFFFFFFFF), HighPart = (int)(luid >> 32) },
-                                Attributes = TokenInterop.SE_PRIVILEGE_ENABLED
-                            }
-                        }
+                                Luid = new TokenInterop.LUID
+                                {
+                                    LowPart = (uint)(luid & 0xFFFFFFFF),
+                                    HighPart = (int)(luid >> 32),
+                                },
+                                Attributes = TokenInterop.SE_PRIVILEGE_ENABLED,
+                            },
+                        },
                     };
 
                     return TokenInterop.AdjustTokenPrivileges(
@@ -258,7 +297,8 @@ namespace Vorsight.Interop
                         ref tokenPrivileges,
                         0,
                         IntPtr.Zero,
-                        IntPtr.Zero);
+                        IntPtr.Zero
+                    );
                 }
                 finally
                 {
@@ -272,4 +312,3 @@ namespace Vorsight.Interop
         }
     }
 }
-

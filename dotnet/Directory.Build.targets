@@ -1,0 +1,11 @@
+<Project>
+  <!-- Run CSharpier before build to ensure code is formatted -->
+  <Target Name="EnforceCodeStyle" BeforeTargets="Build">
+    <Message Text="Running CSharpier..." Importance="high" />
+    <Exec
+      Command="dotnet csharpier format ."
+      WorkingDirectory="$(MSBuildThisFileDirectory)"
+      ContinueOnError="true"
+    />
+  </Target>
+</Project>

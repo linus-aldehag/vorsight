@@ -13,7 +13,8 @@ public class ActivityLogHandler
     public ActivityLogHandler(
         IActivityCoordinator activityCoordinator,
         ILogger<ActivityLogHandler> logger,
-        IHealthMonitor healthMonitor)
+        IHealthMonitor healthMonitor
+    )
     {
         _activityCoordinator = activityCoordinator;
         _logger = logger;
@@ -26,15 +27,19 @@ public class ActivityLogHandler
             "Audit log from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
             sessionId,
             message.Payload?.Length ?? 0,
-            message.MessageId);
+            message.MessageId
+        );
 
         try
         {
             if (message.Payload != null && message.Payload.Length > 0)
             {
                 var json = System.Text.Encoding.UTF8.GetString(message.Payload);
-                var data = System.Text.Json.JsonSerializer.Deserialize<Vorsight.Contracts.Models.ActivityData>(json);
-                
+                var data =
+                    System.Text.Json.JsonSerializer.Deserialize<Vorsight.Contracts.Models.ActivityData>(
+                        json
+                    );
+
                 if (data != null)
                 {
                     _activityCoordinator.UpdateActivity(data);
@@ -43,7 +48,10 @@ public class ActivityLogHandler
                 else
                 {
                     _healthMonitor.RecordActivityFailure();
-                    _logger.LogWarning("Activity data deserialized to null from session {SessionId}", sessionId);
+                    _logger.LogWarning(
+                        "Activity data deserialized to null from session {SessionId}",
+                        sessionId
+                    );
                 }
             }
             else
@@ -55,7 +63,11 @@ public class ActivityLogHandler
         catch (Exception ex)
         {
             _healthMonitor.RecordActivityFailure();
-            _logger.LogError(ex, "Failed to parse activity data from session {SessionId}", sessionId);
+            _logger.LogError(
+                ex,
+                "Failed to parse activity data from session {SessionId}",
+                sessionId
+            );
         }
     }
 }
