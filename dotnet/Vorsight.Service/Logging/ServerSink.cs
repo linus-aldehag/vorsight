@@ -1,7 +1,7 @@
-using Serilog.Events;
 using System.Collections.Concurrent;
-using Vorsight.Service.Server;
+using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
+using Vorsight.Service.Server;
 
 namespace Vorsight.Service.Logging;
 
@@ -9,7 +9,7 @@ public class ServerSink : IBatchedLogEventSink, IDisposable
 {
     // Static reference to allow global logging configuration to access the singleton connection
     public static IServerConnection? CurrentConnection { get; set; }
-    
+
     private readonly LogEventLevel _minimumLevel;
 
     public ServerSink(LogEventLevel minimumLevel)
@@ -31,9 +31,9 @@ public class ServerSink : IBatchedLogEventSink, IDisposable
                 Level = le.Level.ToString(),
                 Message = le.RenderMessage(),
                 Exception = le.Exception?.ToString(),
-                SourceContext = le.Properties.TryGetValue("SourceContext", out var property) 
-                    ? property.ToString().Trim('"') 
-                    : null
+                SourceContext = le.Properties.TryGetValue("SourceContext", out var property)
+                    ? property.ToString().Trim('"')
+                    : null,
             })
             .ToList();
 
@@ -55,9 +55,7 @@ public class ServerSink : IBatchedLogEventSink, IDisposable
         return Task.CompletedTask;
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }
 
 public class LogEventDto

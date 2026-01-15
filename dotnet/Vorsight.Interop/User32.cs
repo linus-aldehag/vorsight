@@ -7,13 +7,23 @@ namespace Vorsight.Interop
     public static class User32
     {
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr OpenInputDesktop(uint dwFlags, bool fInherit, uint dwDesiredAccess);
+        public static extern IntPtr OpenInputDesktop(
+            uint dwFlags,
+            bool fInherit,
+            uint dwDesiredAccess
+        );
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool CloseDesktop(IntPtr hDesktop);
 
         [DllImport("user32.dll", SetLastError = true)]
-        public static extern bool GetUserObjectInformation(IntPtr hObj, int nIndex, IntPtr pvInfo, int nLength, out int lpnLengthNeeded);
+        public static extern bool GetUserObjectInformation(
+            IntPtr hObj,
+            int nIndex,
+            IntPtr pvInfo,
+            int nLength,
+            out int lpnLengthNeeded
+        );
 
         public const uint DISCONNECT_IF_SUSPENDED = 0x0100;
         public const uint DESKTOP_READOBJECTS = 0x0001;
@@ -33,12 +43,21 @@ namespace Vorsight.Interop
             int neededLength = 0;
             GetUserObjectInformation(hDesktop, UOI_NAME, IntPtr.Zero, 0, out neededLength);
 
-            if (neededLength == 0) return null;
+            if (neededLength == 0)
+                return null;
 
             IntPtr ptr = Marshal.AllocHGlobal(neededLength);
             try
             {
-                if (GetUserObjectInformation(hDesktop, UOI_NAME, ptr, neededLength, out neededLength))
+                if (
+                    GetUserObjectInformation(
+                        hDesktop,
+                        UOI_NAME,
+                        ptr,
+                        neededLength,
+                        out neededLength
+                    )
+                )
                 {
                     return Marshal.PtrToStringAnsi(ptr);
                 }

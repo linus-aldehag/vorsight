@@ -1,8 +1,8 @@
 using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Logging;
-using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.DTOs;
 using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Infrastructure.Audit;
 
@@ -14,7 +14,7 @@ namespace Vorsight.Infrastructure.Audit;
 public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 {
     private bool _disposed;
-    
+
     // Deduplication
     private readonly Dictionary<string, DateTime> _recentEventHashes = new();
     private readonly TimeSpan _dedupeWindow = TimeSpan.FromSeconds(5);
@@ -76,7 +76,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 // Basic application audit - can be expanded later
                 StartWatcher("Application", "*[System[Level<=3]]"); // Error, Warning, Critical
             }
-            
+
             IsMonitoring = true;
             await Task.CompletedTask;
         }
@@ -94,18 +94,26 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         {
             var eventQuery = new EventLogQuery(logName, PathType.LogName, query);
             var watcher = new EventLogWatcher(eventQuery);
-            
-            watcher.EventRecordWritten += (sender, e) => 
+
+            watcher.EventRecordWritten += (sender, e) =>
                 LogWatcher_EventRecordWritten(sender, e, logName);
-            
+
             watcher.Enabled = true;
             _activeWatchers.Add(watcher);
-            
-            logger.LogInformation("Started monitoring {LogName} log with query: {Query}", logName, query);
+
+            logger.LogInformation(
+                "Started monitoring {LogName} log with query: {Query}",
+                logName,
+                query
+            );
         }
         catch (EventLogException ex)
         {
-            logger.LogWarning(ex, "Could not initialize watcher for {LogName}. Ensure permissions.", logName);
+            logger.LogWarning(
+                ex,
+                "Could not initialize watcher for {LogName}. Ensure permissions.",
+                logName
+            );
         }
     }
 
@@ -136,12 +144,17 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private void LogWatcher_EventRecordWritten(object? sender, EventRecordWrittenEventArgs e, string logName)
+    private void LogWatcher_EventRecordWritten(
+        object? sender,
+        EventRecordWrittenEventArgs e,
+        string logName
+    )
     {
         try
         {
             using var eventRecord = e.EventRecord;
-            if (eventRecord == null) return;
+            if (eventRecord == null)
+                return;
 
             var timeCreated = eventRecord.TimeCreated ?? DateTime.UtcNow;
 
@@ -151,18 +164,18 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 EventId = eventRecord.Id.ToString(),
                 EventType = eventRecord.TaskDisplayName ?? $"{logName} Event",
                 SourceLogName = logName,
-                Username = "System", 
+                Username = "System",
                 Details = eventRecord.FormatDescription() ?? "No description available",
-                IsFlagged = false 
+                IsFlagged = false,
             };
-            
+
             // Check for duplicates before processing
             if (IsDuplicate(evt))
             {
                 // logger.LogDebug("Skipping duplicate event {Id}", evt.EventId);
                 return;
             }
-            
+
             ProcessEvent(evt, eventRecord.Id, logName);
         }
         catch (Exception ex)
@@ -178,53 +191,56 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             case 4720: // User Created
                 NotifyCriticalEvent(evt, "User Account Created");
                 break;
-                
+
             case 4732:
             case 4728: // Added to group
                 NotifyCriticalEvent(evt, "Group Membership Changed");
                 break;
-                
+
             case 4672: // Admin login
                 break;
-                
+
             case 4697: // Service installed (Security log)
                 evt.EventType = "Service Installed (Security)";
                 NotifyCriticalEvent(evt, "New service installed via security event");
                 break;
-                
+
             case 4698: // Scheduled task created
                 evt.EventType = "Scheduled Task Created";
                 NotifyCriticalEvent(evt, "New scheduled task created");
                 break;
-                
+
             case 4699: // Scheduled task deleted - Potentially suspicious if unexpected
                 evt.EventType = "Scheduled Task Deleted";
                 // evt.IsFlagged = true; // Uncomment to flag deletions
                 NotifyCriticalEvent(evt, "Scheduled task deleted");
                 break;
-                
+
             case 4700: // Scheduled task enabled
                 evt.EventType = "Scheduled Task Enabled";
                 NotifyCriticalEvent(evt, "Scheduled task enabled");
                 break;
-                
+
             case 4701: // Scheduled task disabled
                 evt.EventType = "Scheduled Task Disabled";
                 NotifyCriticalEvent(evt, "Scheduled task disabled");
                 break;
-                
+
             case 4702: // Scheduled task updated
                 evt.EventType = "Scheduled Task Updated";
                 NotifyCriticalEvent(evt, "Scheduled task modified");
                 break;
-                
+
             case 1102: // Audit log cleared - CRITICAL!
                 evt.EventType = "Audit Log Cleared";
                 evt.IsFlagged = true; // Tampering
-                logger.LogCritical("CRITICAL: Audit log tampering detected! EventID={EventId}", evt.EventId);
+                logger.LogCritical(
+                    "CRITICAL: Audit log tampering detected! EventID={EventId}",
+                    evt.EventId
+                );
                 NotifyCriticalEvent(evt, "CRITICAL: Audit log cleared - tampering detected!");
                 break;
-                
+
             case 4719: // Audit policy changed
                 evt.EventType = "Audit Policy Changed";
                 evt.IsFlagged = true; // Tampering risk
@@ -235,14 +251,17 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 evt.EventType = "Service Installed";
                 NotifyCriticalEvent(evt, "New service installed - verify legitimacy");
                 break;
-                
+
             case 7040: // Service start type changed
                 evt.EventType = "Service Configuration Changed";
                 NotifyCriticalEvent(evt, "Service start type modified");
                 break;
-                
+
             default:
-                if (logName == "Application" && (evt.Details.Contains("Critical") || evt.Details.Contains("Error")))
+                if (
+                    logName == "Application"
+                    && (evt.Details.Contains("Critical") || evt.Details.Contains("Error"))
+                )
                 {
                     NotifyCriticalEvent(evt, $"Application Error: {evt.EventType}");
                 }
@@ -252,46 +271,48 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private void NotifyCriticalEvent(AuditEventPayload evt, string description)
     {
-        OnCriticalEventDetected(new AuditEventDetectedEventArgs
-        {
-            Event = evt,
-            DetectedTime = DateTime.UtcNow,
-            Description = description
-        });
+        OnCriticalEventDetected(
+            new AuditEventDetectedEventArgs
+            {
+                Event = evt,
+                DetectedTime = DateTime.UtcNow,
+                Description = description,
+            }
+        );
     }
-    
+
     private string GetEventHash(AuditEventPayload evt)
     {
         // AuditEventPayload Timestamp might be DateTimeOffset
-        var tsp = evt.Timestamp; 
-        // DateTimeOffset ToString format might differ. 
-        var tsStr = tsp.ToString("yyyyMMddHHmmss"); 
-        
+        var tsp = evt.Timestamp;
+        // DateTimeOffset ToString format might differ.
+        var tsStr = tsp.ToString("yyyyMMddHHmmss");
+
         return $"{evt.EventId}_{evt.Username}_{tsStr}";
     }
-    
+
     private bool IsDuplicate(AuditEventPayload evt)
     {
         lock (_dedupeLock)
         {
             var hash = GetEventHash(evt);
             var now = DateTime.UtcNow;
-            
+
             var expiredHashes = _recentEventHashes
                 .Where(kvp => now - kvp.Value > _dedupeWindow)
                 .Select(kvp => kvp.Key)
                 .ToList();
-            
+
             foreach (var expiredHash in expiredHashes)
             {
                 _recentEventHashes.Remove(expiredHash);
             }
-            
+
             if (_recentEventHashes.ContainsKey(hash))
             {
-                return true; 
+                return true;
             }
-            
+
             _recentEventHashes[hash] = now;
             return false;
         }
@@ -305,7 +326,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         if (!IsMonitoring && _activeWatchers.Count == 0)
             return;
 
-        try 
+        try
         {
             foreach (var watcher in _activeWatchers)
             {

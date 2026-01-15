@@ -15,7 +15,7 @@ public class PipeMessage
         Screenshot = 1,
         ScreenshotRequest = 2,
         ShutdownCommand = 3,
-        Activity = 4
+        Activity = 4,
     }
 
     /// <summary>
@@ -140,7 +140,7 @@ public class PipeMessage
                     SessionId = sessionId,
                     UserSid = string.IsNullOrEmpty(userSid) ? null : userSid,
                     Metadata = metadata,
-                    Payload = payload
+                    Payload = payload,
                 };
             }
             catch (Exception ex)

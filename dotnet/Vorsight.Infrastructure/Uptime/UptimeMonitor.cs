@@ -15,9 +15,13 @@ public class UptimeMonitor
         // Default to a folder in LocalApplicationData if not specified
         if (string.IsNullOrEmpty(storageDirectory))
         {
-            storageDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Vorsight", "Data");
+            storageDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Vorsight",
+                "Data"
+            );
         }
-        
+
         Directory.CreateDirectory(storageDirectory);
         _storagePath = Path.Combine(storageDirectory, "uptime.json");
     }
@@ -34,15 +38,17 @@ public class UptimeMonitor
                 // Start new interval
                 _currentStart = now;
                 _lastSeen = now;
-                
+
                 // Append new entry
-                AppendInterval(new UptimeInterval { Start = _currentStart.Value, End = _lastSeen.Value });
+                AppendInterval(
+                    new UptimeInterval { Start = _currentStart.Value, End = _lastSeen.Value }
+                );
             }
             else
             {
                 // Continue current interval
                 _lastSeen = now;
-                
+
                 // Update the last entry
                 UpdateLastIntervalEnd(_lastSeen.Value);
             }
@@ -73,7 +79,7 @@ public class UptimeMonitor
                 var last = intervals[intervals.Count - 1];
                 // Only update if it looks like the same interval (start matches)
                 // In a simplified model, we just update the last one since we know we are 'continuing' it in memory
-                if (last.Start == _currentStart) 
+                if (last.Start == _currentStart)
                 {
                     last.End = newEnd;
                     SaveIntervals(intervals);
@@ -81,7 +87,9 @@ public class UptimeMonitor
                 else
                 {
                     // If in-memory state drifted from file state (e.g. app restart), add new
-                    intervals.Add(new UptimeInterval { Start = _currentStart!.Value, End = newEnd });
+                    intervals.Add(
+                        new UptimeInterval { Start = _currentStart!.Value, End = newEnd }
+                    );
                     SaveIntervals(intervals);
                 }
             }
@@ -108,7 +116,8 @@ public class UptimeMonitor
         try
         {
             var json = File.ReadAllText(_storagePath);
-            return JsonSerializer.Deserialize<List<UptimeInterval>>(json) ?? new List<UptimeInterval>();
+            return JsonSerializer.Deserialize<List<UptimeInterval>>(json)
+                ?? new List<UptimeInterval>();
         }
         catch
         {
@@ -118,7 +127,10 @@ public class UptimeMonitor
 
     private void SaveIntervals(List<UptimeInterval> intervals)
     {
-        var json = JsonSerializer.Serialize(intervals, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(
+            intervals,
+            new JsonSerializerOptions { WriteIndented = true }
+        );
         File.WriteAllText(_storagePath, json);
         File.WriteAllText(_storagePath, json);
     }
@@ -131,7 +143,7 @@ public class UptimeMonitor
             {
                 CurrentStart = _currentStart,
                 LastSeen = _lastSeen,
-                IsTracking = _lastSeen.HasValue && (DateTime.UtcNow - _lastSeen.Value) < _threshold
+                IsTracking = _lastSeen.HasValue && (DateTime.UtcNow - _lastSeen.Value) < _threshold,
             };
         }
     }

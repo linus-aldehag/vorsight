@@ -1,5 +1,5 @@
-using Vorsight.Service.Storage;
 using System.Text;
+using Vorsight.Service.Storage;
 
 namespace Vorsight.Service.Auditing;
 
@@ -21,14 +21,15 @@ public class HealthAuditManager : IHealthAuditManager
     private readonly ILogger<HealthAuditManager> _logger;
     private readonly IGoogleDriveService _driveService;
     private readonly IConfiguration _config;
-    
+
     private AuditReport? _lastReport;
     private DateTime _lastAuditTime = DateTime.MinValue;
 
     public HealthAuditManager(
         ILogger<HealthAuditManager> logger,
         IGoogleDriveService driveService,
-        IConfiguration config)
+        IConfiguration config
+    )
     {
         _logger = logger;
         _driveService = driveService;
@@ -58,7 +59,12 @@ public class HealthAuditManager : IHealthAuditManager
                 var fallbackPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
                 if (!File.Exists(fallbackPath))
                 {
-                    var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"));
+                    var devPath = Path.GetFullPath(
+                        Path.Combine(
+                            AppContext.BaseDirectory,
+                            "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"
+                        )
+                    );
                     if (!File.Exists(devPath))
                     {
                         warnings.Add("Agent executable not found.");

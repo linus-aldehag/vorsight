@@ -19,7 +19,7 @@ public class AgentLauncher : IAgentLauncher
     public AgentLauncher(ILogger<AgentLauncher> logger, IConfiguration configuration)
     {
         _logger = logger;
-        
+
         var configuredPath = configuration["Agent:ExecutablePath"];
         if (string.IsNullOrEmpty(configuredPath))
         {
@@ -29,17 +29,17 @@ public class AgentLauncher : IAgentLauncher
         else
         {
             // Resolve relative paths if necessary (though config usually has absolute in dev)
-            _agentPath = Path.IsPathRooted(configuredPath) 
-                ? configuredPath 
+            _agentPath = Path.IsPathRooted(configuredPath)
+                ? configuredPath
                 : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
-                
+
             if (!File.Exists(_agentPath))
             {
                 _logger.LogWarning("Configured agent path does not exist: {Path}", _agentPath);
             }
             else
             {
-                 _logger.LogInformation("Using configured agent path: {Path}", _agentPath);
+                _logger.LogInformation("Using configured agent path: {Path}", _agentPath);
             }
         }
     }
@@ -66,19 +66,28 @@ public class AgentLauncher : IAgentLauncher
 
             _logger.LogInformation("Target Session ID: {SessionId}", sessionId);
 
-            // 2. We need a user token. 
+            // 2. We need a user token.
             // Strategy: Find Explorer.exe in that session
             var explorerProcesses = Process.GetProcessesByName("explorer");
             var userProcess = explorerProcesses.FirstOrDefault(p => (uint)p.SessionId == sessionId);
 
             if (userProcess == null)
             {
-                _logger.LogWarning("Explorer.exe not found in session {SessionId}. User might not be logged in.", sessionId);
+                _logger.LogWarning(
+                    "Explorer.exe not found in session {SessionId}. User might not be logged in.",
+                    sessionId
+                );
                 return Task.CompletedTask;
             }
 
             // 3. Duplicate Token
-            if (!ProcessHelper.TryOpenProcess((uint)userProcess.Id, ProcessInterop.PROCESS_QUERY_INFORMATION, out var processHandle))
+            if (
+                !ProcessHelper.TryOpenProcess(
+                    (uint)userProcess.Id,
+                    ProcessInterop.PROCESS_QUERY_INFORMATION,
+                    out var processHandle
+                )
+            )
             {
                 _logger.LogError("Failed to open Explorer process");
                 return Task.CompletedTask;
@@ -86,7 +95,15 @@ public class AgentLauncher : IAgentLauncher
 
             try
             {
-                if (!ProcessHelper.TryOpenProcessToken(processHandle, ProcessInterop.TOKEN_DUPLICATE | ProcessInterop.TOKEN_QUERY | ProcessInterop.TOKEN_ASSIGN_PRIMARY, out var tokenHandle))
+                if (
+                    !ProcessHelper.TryOpenProcessToken(
+                        processHandle,
+                        ProcessInterop.TOKEN_DUPLICATE
+                            | ProcessInterop.TOKEN_QUERY
+                            | ProcessInterop.TOKEN_ASSIGN_PRIMARY,
+                        out var tokenHandle
+                    )
+                )
                 {
                     _logger.LogError("Failed to open process token");
                     return Task.CompletedTask;
@@ -94,7 +111,15 @@ public class AgentLauncher : IAgentLauncher
 
                 try
                 {
-                    if (!ProcessHelper.TryDuplicateTokenEx(tokenHandle, ProcessInterop.TOKEN_ALL_ACCESS, 2, 1, out var newToken)) // SecurityImpersonation, TokenPrimary
+                    if (
+                        !ProcessHelper.TryDuplicateTokenEx(
+                            tokenHandle,
+                            ProcessInterop.TOKEN_ALL_ACCESS,
+                            2,
+                            1,
+                            out var newToken
+                        )
+                    ) // SecurityImpersonation, TokenPrimary
                     {
                         _logger.LogError("Failed to duplicate token");
                         return Task.CompletedTask;
@@ -105,13 +130,25 @@ public class AgentLauncher : IAgentLauncher
                         // 4. Launch Agent
                         // Command: "screenshot"
                         var cmdLine = $"\"{_agentPath}\" screenshot";
-                        
+
                         // Working directory: Agent folder
                         var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
 
-                        if (ProcessHelper.TryCreateProcessAsUser(newToken, _agentPath, cmdLine, workingDir, out var newPid))
+                        if (
+                            ProcessHelper.TryCreateProcessAsUser(
+                                newToken,
+                                _agentPath,
+                                cmdLine,
+                                workingDir,
+                                out var newPid
+                            )
+                        )
                         {
-                            _logger.LogInformation("Successfully launched Agent (PID: {Pid}) in session {SessionId}", newPid, sessionId);
+                            _logger.LogInformation(
+                                "Successfully launched Agent (PID: {Pid}) in session {SessionId}",
+                                newPid,
+                                sessionId
+                            );
                         }
                         else
                         {

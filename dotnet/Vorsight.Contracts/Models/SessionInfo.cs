@@ -94,7 +94,10 @@ namespace Vorsight.Contracts.Models
         /// </summary>
         public string GetFullUsername()
         {
-            if (string.IsNullOrEmpty(Domain) || Domain.Equals("LOCALHOST", StringComparison.OrdinalIgnoreCase))
+            if (
+                string.IsNullOrEmpty(Domain)
+                || Domain.Equals("LOCALHOST", StringComparison.OrdinalIgnoreCase)
+            )
                 return Username;
             return $"{Domain}\\{Username}";
         }
@@ -109,4 +112,3 @@ namespace Vorsight.Contracts.Models
         }
     }
 }
-

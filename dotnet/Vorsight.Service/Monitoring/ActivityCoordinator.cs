@@ -1,12 +1,11 @@
-using Vorsight.Contracts.IPC;
-using Vorsight.Interop;
-
-using Vorsight.Service.SystemOperations;
-using Vorsight.Service.Server;
-using Vorsight.Contracts.Settings;
 using Vorsight.Contracts.DTOs;
+using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Settings;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.Monitoring;
+using Vorsight.Interop;
+using Vorsight.Service.Server;
+using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Monitoring;
 
@@ -26,8 +25,8 @@ public class ActivityCoordinator(
     ICommandExecutor commandExecutor,
     ISettingsManager settingsManager,
     IServerConnection serverConnection,
-    IHealthMonitor healthMonitor)
-    : IActivityCoordinator
+    IHealthMonitor healthMonitor
+) : IActivityCoordinator
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private readonly INamedPipeServer _ipcServer = ipcServer;
@@ -42,7 +41,7 @@ public class ActivityCoordinator(
     private DateTime _lastPollTime = DateTime.MinValue;
     private ActivitySnapshot? _latestSnapshot;
     private string _currentUsername = string.Empty;
-    
+
     // Recovery tracking
     private DateTime _lastAgentPathResolveAttempt = DateTime.MinValue;
     private string _cachedAgentPath = string.Empty;
@@ -72,27 +71,31 @@ public class ActivityCoordinator(
             // Send PREVIOUS activity if it had a meaningful duration
             if (_serverConnection.IsConnected && duration > 0)
             {
-                _ = _serverConnection.SendActivityAsync(new ActivityPayload
-                {
-                    Timestamp = new DateTimeOffset(_currentActivityStart),
-                    ActiveWindow = _currentWindow,
-                    ProcessName = _currentProcess,
-                    Duration = duration,
-                    Username = !string.IsNullOrEmpty(_currentUsername) ? _currentUsername : data.Username
-                });
+                _ = _serverConnection.SendActivityAsync(
+                    new ActivityPayload
+                    {
+                        Timestamp = new DateTimeOffset(_currentActivityStart),
+                        ActiveWindow = _currentWindow,
+                        ProcessName = _currentProcess,
+                        Duration = duration,
+                        Username = !string.IsNullOrEmpty(_currentUsername)
+                            ? _currentUsername
+                            : data.Username,
+                    }
+                );
             }
 
             _currentWindow = data.ActiveWindow;
             _currentProcess = data.ProcessName;
             _currentActivityStart = now;
         }
-        
+
         // Update snapshot for polling
-        _latestSnapshot = new ActivitySnapshot 
-        { 
-            ActiveWindowTitle = data.ActiveWindow, 
+        _latestSnapshot = new ActivitySnapshot
+        {
+            ActiveWindowTitle = data.ActiveWindow,
             ProcessName = data.ProcessName,
-            Timestamp = now
+            Timestamp = now,
         };
     }
 
@@ -107,11 +110,11 @@ public class ActivityCoordinator(
             {
                 var now = DateTime.UtcNow;
                 var settings = await _settingsManager.GetSettingsAsync();
-                
+
                 // Monitor loop - check connection and send heartbeat
                 // Activity updates are event-driven via UpdateActivity, but we need to keep connection alive
                 // and potentially send heartbeat if interval elapsed (though server might handle pings)
-                
+
                 // Let's assume we send a heartbeat every 30 seconds
                 if (now - _lastPollTime > TimeSpan.FromSeconds(30))
                 {
@@ -121,31 +124,48 @@ public class ActivityCoordinator(
                     if (_serverConnection.IsConnected && _latestSnapshot != null)
                     {
                         // Get version from assembly
-                        var version = System.Reflection.Assembly.GetExecutingAssembly()
-                            .GetName().Version?.ToString() ?? "Unknown";
-                        
+                        var version =
+                            System
+                                .Reflection.Assembly.GetExecutingAssembly()
+                                .GetName()
+                                .Version?.ToString()
+                            ?? "Unknown";
+
                         // Populate HealthStatus object
-                        var healthStatus = new HealthStatus 
+                        var healthStatus = new HealthStatus
                         {
                             // Uptime provides useful signal for service restarts/crashes that pings may miss
-                            Uptime = (DateTime.UtcNow - System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime()).TotalSeconds
+                            Uptime = (
+                                DateTime.UtcNow
+                                - System
+                                    .Diagnostics.Process.GetCurrentProcess()
+                                    .StartTime.ToUniversalTime()
+                            ).TotalSeconds,
                         };
 
-                        await _serverConnection.SendHeartbeatAsync(new StatePayload
-                        {
-                            LastActivityTime = new DateTimeOffset(_latestSnapshot.Value.Timestamp),
-                            ActiveWindow = _latestSnapshot.Value.ActiveWindowTitle,
-                            ScreenshotCount = 0,
-                            UploadCount = 0,
-                            Version = version,
-                            Health = healthStatus
-                        });
+                        await _serverConnection.SendHeartbeatAsync(
+                            new StatePayload
+                            {
+                                LastActivityTime = new DateTimeOffset(
+                                    _latestSnapshot.Value.Timestamp
+                                ),
+                                ActiveWindow = _latestSnapshot.Value.ActiveWindowTitle,
+                                ScreenshotCount = 0,
+                                UploadCount = 0,
+                                Version = version,
+                                Health = healthStatus,
+                            }
+                        );
                     }
                 }
 
                 // Check for Timed Screenshot (only if enabled)
                 var screenshotInterval = TimeSpan.FromSeconds(settings.Screenshots.IntervalSeconds);
-                if (settings.Screenshots.IntervalSeconds > 0 && now - _lastTimedScreenshot > screenshotInterval && _latestSnapshot != null)
+                if (
+                    settings.Screenshots.IntervalSeconds > 0
+                    && now - _lastTimedScreenshot > screenshotInterval
+                    && _latestSnapshot != null
+                )
                 {
                     monitorLogger.LogDebug("Timed interval elapsed");
                     _lastTimedScreenshot = now;
@@ -159,19 +179,21 @@ public class ActivityCoordinator(
                 break;
             }
         }
-        
+
         monitorLogger.LogInformation("Activity monitoring stopped");
     }
 
     public async Task RequestManualScreenshotAsync(string source)
     {
-        var snapshot = _latestSnapshot ?? new ActivitySnapshot 
-        { 
-            ActiveWindowTitle = "Manual Trigger", 
-            ProcessName = "System",
-            Timestamp = DateTime.UtcNow 
-        };
-        
+        var snapshot =
+            _latestSnapshot
+            ?? new ActivitySnapshot
+            {
+                ActiveWindowTitle = "Manual Trigger",
+                ProcessName = "System",
+                Timestamp = DateTime.UtcNow,
+            };
+
         await RequestScreenshotAsync(source, snapshot);
     }
 
@@ -180,7 +202,7 @@ public class ActivityCoordinator(
         try
         {
             var agentPath = ResolveAgentPath();
-            if (string.IsNullOrEmpty(agentPath)) 
+            if (string.IsNullOrEmpty(agentPath))
             {
                 logger.LogWarning("Cannot request screenshot: Agent not found");
                 return;
@@ -189,7 +211,7 @@ public class ActivityCoordinator(
             var metadata = $"Type:{triggerType}|Title:{snapshot.ActiveWindowTitle}";
             // Launch Agent in one-shot screenshot mode
             var args = $"screenshot \"{metadata}\"";
-            
+
             _commandExecutor.RunCommandAsUser(agentPath, args);
             await Task.CompletedTask;
         }
@@ -210,7 +232,7 @@ public class ActivityCoordinator(
             {
                 return configuredPath;
             }
-            
+
             // Try as relative path from base directory
             var absolutePath = Path.Combine(AppContext.BaseDirectory, configuredPath);
             if (File.Exists(absolutePath))
@@ -227,14 +249,24 @@ public class ActivityCoordinator(
         }
 
         // Fallback 2: Look for Vorsight.Agent.exe in dev environment
-        var devPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"));
+        var devPath = Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"
+            )
+        );
         if (File.Exists(devPath))
         {
             return devPath;
         }
 
         // Fallback 3: Look for wuapihost.exe in dev environment (if renamed manually)
-        var devPathRenamed = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"));
+        var devPathRenamed = Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"
+            )
+        );
         if (File.Exists(devPathRenamed))
         {
             return devPathRenamed;
@@ -242,7 +274,6 @@ public class ActivityCoordinator(
 
         return string.Empty;
     }
-
 
     public ActivitySnapshot? GetCurrentActivity() => _latestSnapshot;
 }

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-
 using Vorsight.Service.Agents;
 using Vorsight.Service.SystemOperations;
 
@@ -19,7 +18,8 @@ public class ServerCommandProcessor : IServerCommandProcessor
     public ServerCommandProcessor(
         IAgentLauncher agentLauncher,
         ICommandExecutor commandExecutor,
-        ILogger<ServerCommandProcessor> logger)
+        ILogger<ServerCommandProcessor> logger
+    )
     {
         _agentLauncher = agentLauncher;
         _commandExecutor = commandExecutor;

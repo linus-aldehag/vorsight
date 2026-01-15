@@ -1,13 +1,13 @@
+using System.Collections.Concurrent;
+using System.IO;
 using Microsoft.Extensions.Logging;
+using Vorsight.Contracts.DTOs;
 using Vorsight.Contracts.IPC;
+using Vorsight.Infrastructure.Contracts;
+using Vorsight.Service.Monitoring;
 using Vorsight.Service.Server;
 using Vorsight.Service.Storage;
-using Vorsight.Service.Monitoring;
 using Vorsight.Service.Utilities;
-using Vorsight.Infrastructure.Contracts;
-using System.IO;
-using System.Collections.Concurrent;
-using Vorsight.Contracts.DTOs;
 
 namespace Vorsight.Service.Agents;
 
@@ -20,7 +20,7 @@ public class ScreenshotHandler
     private readonly IPerceptualHashService _hashService;
     private readonly ISettingsManager _settingsManager;
     private readonly ILogger<ScreenshotHandler> _logger;
-    
+
     // Track last hash per machine ID for duplicate detection
     private readonly ConcurrentDictionary<string, string> _lastHashPerMachine = new();
 
@@ -31,7 +31,8 @@ public class ScreenshotHandler
         IGoogleDriveService driveService,
         IPerceptualHashService hashService,
         ISettingsManager settingsManager,
-        ILogger<ScreenshotHandler> logger)
+        ILogger<ScreenshotHandler> logger
+    )
     {
         _serverConnection = serverConnection;
         _uploadQueueProcessor = uploadQueueProcessor;
@@ -48,7 +49,8 @@ public class ScreenshotHandler
             "Screenshot received from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
             sessionId,
             message.Payload?.Length ?? 0,
-            message.MessageId);
+            message.MessageId
+        );
 
         // Write to temp file and enqueue for upload
         try
@@ -58,7 +60,7 @@ public class ScreenshotHandler
                 // Check if duplicate filtering is enabled
                 var settings = await _settingsManager.GetSettingsAsync();
                 var machineId = _serverConnection.MachineId ?? "unknown";
-                
+
                 if (settings.Screenshots.FilterDuplicates)
                 {
                     // Calculate perceptual hash
@@ -66,30 +68,45 @@ public class ScreenshotHandler
                     try
                     {
                         currentHash = _hashService.ComputeHash(message.Payload);
-                        _logger.LogDebug("Computed pHash for screenshot: {HashPrefix}...", currentHash.Substring(0, Math.Min(10, currentHash.Length)));
+                        _logger.LogDebug(
+                            "Computed pHash for screenshot: {HashPrefix}...",
+                            currentHash.Substring(0, Math.Min(10, currentHash.Length))
+                        );
                     }
                     catch (Exception hashEx)
                     {
-                        _logger.LogWarning(hashEx, "Failed to compute perceptual hash, proceeding with upload");
+                        _logger.LogWarning(
+                            hashEx,
+                            "Failed to compute perceptual hash, proceeding with upload"
+                        );
                         currentHash = string.Empty;
                     }
-                    
+
                     // Compare with last hash if available
-                    if (!string.IsNullOrEmpty(currentHash) && _lastHashPerMachine.TryGetValue(machineId, out var lastHash))
+                    if (
+                        !string.IsNullOrEmpty(currentHash)
+                        && _lastHashPerMachine.TryGetValue(machineId, out var lastHash)
+                    )
                     {
-                        var similarity = _hashService.GetSimilarityPercentage(currentHash, lastHash);
-                        
-                        _logger.LogInformation("Duplicate Check: Similarity={Similarity:F2}%, Threshold=5%. CurrentHash={CurrentPrefix}, LastHash={LastPrefix}", 
-                            similarity, 
-                            currentHash.Substring(0, Math.Min(8, currentHash.Length)), 
-                            lastHash.Substring(0, Math.Min(8, lastHash.Length)));
+                        var similarity = _hashService.GetSimilarityPercentage(
+                            currentHash,
+                            lastHash
+                        );
+
+                        _logger.LogInformation(
+                            "Duplicate Check: Similarity={Similarity:F2}%, Threshold=5%. CurrentHash={CurrentPrefix}, LastHash={LastPrefix}",
+                            similarity,
+                            currentHash.Substring(0, Math.Min(8, currentHash.Length)),
+                            lastHash.Substring(0, Math.Min(8, lastHash.Length))
+                        );
 
                         if (_hashService.IsSimilar(currentHash, lastHash))
                         {
                             _logger.LogInformation(
                                 "Screenshot skipped - too similar to previous ({Similarity:F2}% difference, threshold: 5%). Machine: {MachineId}",
                                 similarity,
-                                machineId);
+                                machineId
+                            );
                             _healthMonitor.RecordScreenshotSuccess(); // Still count as success (system working correctly)
                             return;
                         }
@@ -98,18 +115,22 @@ public class ScreenshotHandler
                             _logger.LogDebug(
                                 "Screenshot different enough to upload ({Similarity:F2}% difference). Machine: {MachineId}",
                                 similarity,
-                                machineId);
+                                machineId
+                            );
                         }
                     }
                     else if (string.IsNullOrEmpty(currentHash))
                     {
-                         _logger.LogDebug("Current hash empty, skipping duplicate check.");
+                        _logger.LogDebug("Current hash empty, skipping duplicate check.");
                     }
                     else
                     {
-                         _logger.LogDebug("No previous hash found for machine {MachineId}, skipping comparison.", machineId);
+                        _logger.LogDebug(
+                            "No previous hash found for machine {MachineId}, skipping comparison.",
+                            machineId
+                        );
                     }
-                    
+
                     // Update last hash for this machine
                     if (!string.IsNullOrEmpty(currentHash))
                     {
@@ -134,56 +155,79 @@ public class ScreenshotHandler
 
                 // Sanitize filename
                 var invalidChars = Path.GetInvalidFileNameChars();
-                var sanitizedTitle = new string(windowTitle.Where(ch => !invalidChars.Contains(ch)).ToArray());
+                var sanitizedTitle = new string(
+                    windowTitle.Where(ch => !invalidChars.Contains(ch)).ToArray()
+                );
                 // Truncate if too long (max 50 chars for title)
-                if (sanitizedTitle.Length > 50) sanitizedTitle = sanitizedTitle.Substring(0, 50);
-                if (string.IsNullOrWhiteSpace(sanitizedTitle)) sanitizedTitle = "Unknown";
+                if (sanitizedTitle.Length > 50)
+                    sanitizedTitle = sanitizedTitle.Substring(0, 50);
+                if (string.IsNullOrWhiteSpace(sanitizedTitle))
+                    sanitizedTitle = "Unknown";
 
                 // Create Date-based folder structure
                 var dateFolder = DateTime.Now.ToString("yyyy-MM-dd");
-                var tempPath = Path.Combine(Vorsight.Infrastructure.IO.PathConfiguration.GetScreenshotTempPath(), dateFolder);
+                var tempPath = Path.Combine(
+                    Vorsight.Infrastructure.IO.PathConfiguration.GetScreenshotTempPath(),
+                    dateFolder
+                );
                 Directory.CreateDirectory(tempPath);
-                
+
                 // Format: HH-mm-ss - {Title}.png (using local time for readability)
                 var timestamp = DateTime.Now.ToString("HH-mm-ss");
                 var fileName = $"{timestamp} - {sanitizedTitle}.png";
                 var filePath = Path.Combine(tempPath, fileName);
-                
+
                 await File.WriteAllBytesAsync(filePath, message.Payload);
                 _logger.LogInformation("Screenshot saved: {FilePath}", filePath);
-                
+
                 // Upload to Google Drive
                 string? driveFileId = null;
                 try
                 {
-                    driveFileId = await _driveService.UploadFileAsync(filePath, CancellationToken.None);
-                    
+                    driveFileId = await _driveService.UploadFileAsync(
+                        filePath,
+                        CancellationToken.None
+                    );
+
                     if (!string.IsNullOrEmpty(driveFileId))
                     {
-                        _logger.LogInformation("Screenshot uploaded to Google Drive: {DriveFileId}", driveFileId);
-                        
+                        _logger.LogInformation(
+                            "Screenshot uploaded to Google Drive: {DriveFileId}",
+                            driveFileId
+                        );
+
                         // Only notify server (and save to DB) on successful upload
-                        await _serverConnection.SendScreenshotNotificationAsync(new ScreenshotPayload
-                        {
-                            Id = driveFileId, // Use Drive ID as screenshot ID
-                            CaptureTime = DateTimeOffset.UtcNow,
-                            TriggerType = "Auto",
-                            GoogleDriveFileId = driveFileId,
-                            IsUploaded = true
-                        });
-                        
-                        _logger.LogInformation("Screenshot notification sent to server: DriveID={DriveFileId}", driveFileId);
+                        await _serverConnection.SendScreenshotNotificationAsync(
+                            new ScreenshotPayload
+                            {
+                                Id = driveFileId, // Use Drive ID as screenshot ID
+                                CaptureTime = DateTimeOffset.UtcNow,
+                                TriggerType = "Auto",
+                                GoogleDriveFileId = driveFileId,
+                                IsUploaded = true,
+                            }
+                        );
+
+                        _logger.LogInformation(
+                            "Screenshot notification sent to server: DriveID={DriveFileId}",
+                            driveFileId
+                        );
                         _healthMonitor.RecordScreenshotSuccess();
                     }
                     else
                     {
-                        _logger.LogWarning("Google Drive upload returned empty file ID - not saving to database");
+                        _logger.LogWarning(
+                            "Google Drive upload returned empty file ID - not saving to database"
+                        );
                         _healthMonitor.RecordScreenshotFailure();
                     }
                 }
                 catch (Exception driveEx)
                 {
-                    _logger.LogError(driveEx, "Failed to upload screenshot to Google Drive - not saving to database");
+                    _logger.LogError(
+                        driveEx,
+                        "Failed to upload screenshot to Google Drive - not saving to database"
+                    );
                     _healthMonitor.RecordScreenshotFailure();
                 }
 
@@ -195,12 +239,19 @@ public class ScreenshotHandler
                 }
                 catch (Exception deleteEx)
                 {
-                    _logger.LogWarning(deleteEx, "Failed to delete temp screenshot file: {FilePath}", filePath);
+                    _logger.LogWarning(
+                        deleteEx,
+                        "Failed to delete temp screenshot file: {FilePath}",
+                        filePath
+                    );
                 }
             }
             else
             {
-                _logger.LogWarning("Received empty screenshot payload from session {SessionId}", sessionId);
+                _logger.LogWarning(
+                    "Received empty screenshot payload from session {SessionId}",
+                    sessionId
+                );
                 _healthMonitor.RecordScreenshotFailure();
             }
         }

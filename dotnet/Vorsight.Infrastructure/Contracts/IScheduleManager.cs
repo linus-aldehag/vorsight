@@ -85,7 +85,9 @@ namespace Vorsight.Infrastructure.Contracts
         /// <summary>
         /// Update schedule from Settings object (merged into MachineSettings).
         /// </summary>
-        Task UpdateScheduleFromSettingsAsync(Vorsight.Contracts.Settings.AccessControlSettings settings);
+        Task UpdateScheduleFromSettingsAsync(
+            Vorsight.Contracts.Settings.AccessControlSettings settings
+        );
     }
 
     /// <summary>
@@ -98,4 +100,3 @@ namespace Vorsight.Infrastructure.Contracts
         public DateTime EventTime { get; set; }
     }
 }
-

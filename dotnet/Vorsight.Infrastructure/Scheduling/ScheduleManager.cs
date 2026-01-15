@@ -6,12 +6,11 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Vorsight.Interop;
-
-using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.Extensions;
 using Vorsight.Infrastructure.Identity;
+using Vorsight.Interop;
 
 namespace Vorsight.Infrastructure.Scheduling
 {
@@ -36,9 +35,7 @@ namespace Vorsight.Infrastructure.Scheduling
         public bool IsEnforcementRunning => _isEnforcementRunning;
 
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public ScheduleManager(
-            ILogger<ScheduleManager> logger, 
-            ISettingsManager settingsManager)
+        public ScheduleManager(ILogger<ScheduleManager> logger, ISettingsManager settingsManager)
         {
             _logger = logger;
             _settingsManager = settingsManager;
@@ -55,7 +52,7 @@ namespace Vorsight.Infrastructure.Scheduling
                 {
                     _currentSchedule = settings.AccessControl;
                     _logger.LogInformation("Loaded schedule from SettingsManager");
-                    
+
                     if (_currentSchedule.Enabled && !_isEnforcementRunning)
                     {
                         await StartEnforcementAsync();
@@ -71,8 +68,6 @@ namespace Vorsight.Infrastructure.Scheduling
                 _logger.LogError(ex, "Error initializing schedule");
             }
         }
-
-
 
         public async Task<AccessControlSettings> UpdateScheduleAsync(AccessControlSettings settings)
         {
@@ -110,7 +105,7 @@ namespace Vorsight.Infrastructure.Scheduling
             if (_currentSchedule != null)
             {
                 _currentSchedule.Enabled = false;
-                
+
                 var fullSettings = await _settingsManager.GetSettingsAsync();
                 if (fullSettings.AccessControl != null)
                 {
@@ -157,22 +152,24 @@ namespace Vorsight.Infrastructure.Scheduling
             try
             {
                 _logger.LogWarning("Forcing logoff of interactive user");
-                
+
                 // Use TryForceLogoffInteractiveUser to target the console user session
                 // (not the service's LocalSystem session)
                 var result = ShutdownHelper.TryForceLogoffInteractiveUser();
-                
+
                 if (result)
                 {
                     _logger.LogInformation("Interactive user logoff initiated successfully");
-                    AccessTimeExpired?.Invoke(this, new AccessThresholdEventArgs
-                    {
-                        EventTime = DateTime.UtcNow
-                    });
+                    AccessTimeExpired?.Invoke(
+                        this,
+                        new AccessThresholdEventArgs { EventTime = DateTime.UtcNow }
+                    );
                 }
                 else
                 {
-                    _logger.LogError("Failed to force logoff interactive user (may not be logged in)");
+                    _logger.LogError(
+                        "Failed to force logoff interactive user (may not be logged in)"
+                    );
                 }
 
                 return await Task.FromResult(result);
@@ -187,7 +184,7 @@ namespace Vorsight.Infrastructure.Scheduling
         public async Task PreventReloginAsync()
         {
             ThrowIfDisposed();
-            await Task.CompletedTask; 
+            await Task.CompletedTask;
         }
 
         public async Task StartEnforcementAsync()
@@ -248,18 +245,24 @@ namespace Vorsight.Infrastructure.Scheduling
                             if (timeRemaining.HasValue)
                             {
                                 // Still within access window
-                                if (timeRemaining.Value < warningThreshold && 
-                                    DateTime.UtcNow - lastWarningTime > TimeSpan.FromMinutes(1))
+                                if (
+                                    timeRemaining.Value < warningThreshold
+                                    && DateTime.UtcNow - lastWarningTime > TimeSpan.FromMinutes(1)
+                                )
                                 {
                                     _logger.LogWarning(
                                         "Access expiring soon: {TimeRemaining} remaining",
-                                        timeRemaining.Value);
+                                        timeRemaining.Value
+                                    );
 
-                                    AccessTimeExpiring?.Invoke(this, new AccessThresholdEventArgs
-                                    {
-                                        TimeRemaining = timeRemaining,
-                                        EventTime = DateTime.UtcNow
-                                    });
+                                    AccessTimeExpiring?.Invoke(
+                                        this,
+                                        new AccessThresholdEventArgs
+                                        {
+                                            TimeRemaining = timeRemaining,
+                                            EventTime = DateTime.UtcNow,
+                                        }
+                                    );
 
                                     lastWarningTime = DateTime.UtcNow;
                                 }
@@ -267,13 +270,21 @@ namespace Vorsight.Infrastructure.Scheduling
                             else if (!schedule.IsAccessAllowedNow())
                             {
                                 // Access time expired or outside window
-                                _logger.LogWarning("Access denied (Outside Allowed Hours). Action: {Action}", schedule.ViolationAction);
-                                
+                                _logger.LogWarning(
+                                    "Access denied (Outside Allowed Hours). Action: {Action}",
+                                    schedule.ViolationAction
+                                );
+
                                 if (schedule.ViolationAction == ViolationAction.Shutdown)
                                 {
                                     // Initiate shutdown if not already shutting down
                                     // 60 second warning to user
-                                    ShutdownHelper.TryInitiateShutdown(0, "Computer usage time limit exceeded. System will shut down.", true, false);
+                                    ShutdownHelper.TryInitiateShutdown(
+                                        0,
+                                        "Computer usage time limit exceeded. System will shut down.",
+                                        true,
+                                        false
+                                    );
                                 }
                                 else
                                 {
@@ -305,11 +316,15 @@ namespace Vorsight.Infrastructure.Scheduling
         public async Task UpdateScheduleFromSettingsAsync(AccessControlSettings settings)
         {
             ThrowIfDisposed();
-            if (settings == null) return;
-            
+            if (settings == null)
+                return;
+
             _currentSchedule = settings;
-            _logger.LogInformation("Schedule updated from Settings (Enabled: {Enabled})", _currentSchedule.Enabled);
-            
+            _logger.LogInformation(
+                "Schedule updated from Settings (Enabled: {Enabled})",
+                _currentSchedule.Enabled
+            );
+
             if (_currentSchedule.Enabled && !_isEnforcementRunning)
             {
                 await StartEnforcementAsync();
@@ -346,4 +361,3 @@ namespace Vorsight.Infrastructure.Scheduling
         }
     }
 }
-

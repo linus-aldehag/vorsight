@@ -3,12 +3,11 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-
-using Vorsight.Infrastructure.IO;
-using Vorsight.Infrastructure.Contracts;
 using Vorsight.Contracts.Models;
-using Vorsight.Contracts.Settings;
 using Vorsight.Contracts.Screenshots;
+using Vorsight.Contracts.Settings;
+using Vorsight.Infrastructure.Contracts;
+using Vorsight.Infrastructure.IO;
 
 namespace Vorsight.Infrastructure.Settings
 {
@@ -21,9 +20,7 @@ namespace Vorsight.Infrastructure.Settings
         public SettingsManager(ILogger<SettingsManager> logger)
         {
             _logger = logger;
-            _settingsPath = Path.Combine(
-                PathConfiguration.GetBaseDataDirectory(),
-                "settings.json");
+            _settingsPath = Path.Combine(PathConfiguration.GetBaseDataDirectory(), "settings.json");
         }
 
         public async Task InitializeAsync()
@@ -50,14 +47,17 @@ namespace Vorsight.Infrastructure.Settings
             {
                 _logger.LogError(ex, "Error loading settings - configuration may be corrupted");
 
-                try 
+                try
                 {
                     // Backup broken file
                     if (File.Exists(_settingsPath))
                     {
                         var backupPath = _settingsPath + ".bak";
                         File.Copy(_settingsPath, backupPath, true);
-                        _logger.LogWarning("Corrupted settings backed up to {BackupPath}", backupPath);
+                        _logger.LogWarning(
+                            "Corrupted settings backed up to {BackupPath}",
+                            backupPath
+                        );
                     }
 
                     // Reset to defaults
@@ -89,9 +89,13 @@ namespace Vorsight.Infrastructure.Settings
             try
             {
                 var dir = Path.GetDirectoryName(_settingsPath);
-                if (dir != null) Directory.CreateDirectory(dir);
+                if (dir != null)
+                    Directory.CreateDirectory(dir);
 
-                var json = JsonSerializer.Serialize(_currentSettings, new JsonSerializerOptions { WriteIndented = true });
+                var json = JsonSerializer.Serialize(
+                    _currentSettings,
+                    new JsonSerializerOptions { WriteIndented = true }
+                );
                 await File.WriteAllTextAsync(_settingsPath, json);
             }
             catch (Exception ex)

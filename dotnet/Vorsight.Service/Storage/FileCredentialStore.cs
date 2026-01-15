@@ -11,15 +11,17 @@ public class FileCredentialStore : ICredentialStore
     public FileCredentialStore(ILogger<FileCredentialStore> logger)
     {
         _logger = logger;
-        
-        var commonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+        var commonAppData = Environment.GetFolderPath(
+            Environment.SpecialFolder.CommonApplicationData
+        );
         var vorsightData = Path.Combine(commonAppData, "Vorsight");
-        
+
         if (!Directory.Exists(vorsightData))
         {
             Directory.CreateDirectory(vorsightData);
         }
-        
+
         _credentialsPath = Path.Combine(vorsightData, "credentials.json");
     }
 
@@ -31,12 +33,15 @@ public class FileCredentialStore : ICredentialStore
             {
                 MachineId = machineId,
                 ApiKey = apiKey,
-                LastUpdated = DateTime.UtcNow
+                LastUpdated = DateTime.UtcNow,
             };
-            
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+
+            var json = JsonSerializer.Serialize(
+                data,
+                new JsonSerializerOptions { WriteIndented = true }
+            );
             await File.WriteAllTextAsync(_credentialsPath, json);
-            
+
             _logger.LogInformation("Credentials saved to {Path}", _credentialsPath);
         }
         catch (Exception ex)
@@ -58,10 +63,13 @@ public class FileCredentialStore : ICredentialStore
 
             var json = await File.ReadAllTextAsync(_credentialsPath);
             var data = JsonSerializer.Deserialize<CredentialsModel>(json);
-            
+
             if (data != null && !string.IsNullOrEmpty(data.ApiKey))
             {
-                _logger.LogInformation("Loaded credentials for machine {MachineId}", data.MachineId);
+                _logger.LogInformation(
+                    "Loaded credentials for machine {MachineId}",
+                    data.MachineId
+                );
                 return (data.MachineId, data.ApiKey);
             }
         }
@@ -69,7 +77,7 @@ public class FileCredentialStore : ICredentialStore
         {
             _logger.LogError(ex, "Failed to load credentials");
         }
-        
+
         return (null, null);
     }
 

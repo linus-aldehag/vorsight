@@ -19,7 +19,7 @@ public class UserActivityMonitor : IUserActivityMonitor
 {
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
-    
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
 
@@ -33,7 +33,7 @@ public class UserActivityMonitor : IUserActivityMonitor
         {
             ActiveWindowTitle = GetActiveWindowTitle(handle),
             ProcessName = GetProcessName(handle),
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
         };
     }
 
@@ -48,7 +48,8 @@ public class UserActivityMonitor : IUserActivityMonitor
         try
         {
             GetWindowThreadProcessId(handle, out var processId);
-            if (processId == 0) return string.Empty;
+            if (processId == 0)
+                return string.Empty;
             return System.Diagnostics.Process.GetProcessById((int)processId).ProcessName;
         }
         catch

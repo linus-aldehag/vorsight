@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Vorsight.Contracts.DTOs;
-
 using Vorsight.Contracts.Settings;
 
 namespace Vorsight.Infrastructure.Contracts
@@ -65,4 +64,3 @@ namespace Vorsight.Infrastructure.Contracts
         public required string AffectedUsername { get; set; }
     }
 }
-

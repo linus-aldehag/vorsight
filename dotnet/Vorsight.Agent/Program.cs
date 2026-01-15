@@ -3,9 +3,9 @@ using Serilog;
 using Vorsight.Agent.Cli;
 using Vorsight.Agent.Contracts;
 using Vorsight.Agent.Services;
-using Vorsight.Interop;
 using Vorsight.Infrastructure.IO;
 using Vorsight.Infrastructure.Monitoring;
+using Vorsight.Interop;
 
 namespace Vorsight.Agent;
 
@@ -24,23 +24,23 @@ static class Program
             // Setup DI (Manual for simplicity in this CLI tool)
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
-                builder.AddSerilog(); 
+                builder.AddSerilog();
                 builder.SetMinimumLevel(LogLevel.Warning);
             });
 
             var ipcService = new IpcService();
-            
+
             // Create typed logger for ScreenshotService
             var screenshotLogger = loggerFactory.CreateLogger<IScreenshotService>();
             var screenshotService = new ScreenshotService(screenshotLogger);
-            
+
             var userActivityMonitor = new UserActivityMonitor();
             var activityService = new ActivityService(ipcService, userActivityMonitor);
-            
+
             var dispatcher = new CommandDispatcher(screenshotService, activityService, ipcService);
 
             var result = await dispatcher.DispatchAsync(args);
-            
+
             Log.Information("Vörsight Agent exiting with code {Code}", result);
             return result;
         }
