@@ -131,38 +131,88 @@ export function AccessControlPage() {
                         </span>
                     </div>
                     {/* Simplified display - in reality we might want to iterate days if they differ */}
-                    <div className="font-mono text-lg">
-                        {accessControl.schedule?.length > 0
-                            ? (
-                                <>
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-muted-foreground w-16 text-xs">
-                                                {accessControl.scheduleMode === 'custom' ? 'Custom' : 'Every Day'}
-                                            </span>
-                                            <span>
-                                                {accessControl.scheduleMode === 'simple' || accessControl.schedule.length === 1 ? (
-                                                    // Simple mode or single enty
-                                                    <>
-                                                        <span className="text-foreground">{getStartTime(accessControl)}</span> - <span className="text-foreground">{getEndTime(accessControl)}</span>
-                                                    </>
-                                                ) : (
-                                                    // Custom mode summary
-                                                    <span className="text-sm">
-                                                        {accessControl.schedule.length} active windows
-                                                    </span>
-                                                )}
-                                            </span>
+                    {/* Detailed Schedule Summary */}
+                    <div className="font-mono text-sm space-y-1">
+                        {accessControl.schedule?.length > 0 ? (
+                            (() => {
+                                // Helper to group days with identical times
+                                const orderedDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
+                                type DayOfWeek = typeof orderedDays[number];
+                                const groups: { days: DayOfWeek[], start: string, end: string }[] = [];
+                                const dayShortMap: Record<string, string> = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat', sunday: 'Sun' };
+
+                                // Create a map of day -> schedule
+                                // Key needs to be compatible, let's cast key to string if needed or rely on 'as const'
+                                const scheduleMap = new Map(accessControl.schedule.map(s => [s.dayOfWeek, s]));
+
+                                orderedDays.forEach(day => {
+                                    const sched = scheduleMap.get(day);
+                                    if (!sched) return;
+
+                                    const lastGroup = groups[groups.length - 1];
+                                    if (lastGroup && lastGroup.start === sched.startTime && lastGroup.end === sched.endTime) {
+                                        // Check if this day is consecutive to the last day in the group (based on orderedDays index)
+                                        const lastDayIndex = orderedDays.indexOf(lastGroup.days[lastGroup.days.length - 1]);
+                                        const currentDayIndex = orderedDays.indexOf(day);
+
+                                        if (currentDayIndex === lastDayIndex + 1) {
+                                            lastGroup.days.push(day);
+                                        } else {
+                                            // Not consecutive (e.g. Mon and Wed have same times), create new group or handle differently?
+                                            // For simplest UI, we might just list them. Or we can group by time regardless of continuity.
+                                            // Let's group by time regardless of continuity for compactness, but then the "Mon-Fri" label logic needs to be smart.
+                                            // Actually, standard practice is usually consecutive grouping. Let's stick to consecutive grouping for "Mon-Fri" style ranges.
+                                            // If "Mon" and "Wed" are same, they become separate entries "Mon: ..." "Wed: ...".
+                                            // Let's try to append if identical time?
+                                            // Let's keep it simple: if time matches last group, add to group.
+                                            lastGroup.days.push(day);
+                                        }
+                                    } else {
+                                        groups.push({ days: [day], start: sched.startTime, end: sched.endTime });
+                                    }
+                                });
+
+                                return groups.map((g, i) => {
+                                    // Format day label
+                                    let label = "";
+                                    if (g.days.length === 1) {
+                                        label = dayShortMap[g.days[0]];
+                                    } else if (g.days.length === 7) {
+                                        label = "Every Day";
+                                    } else {
+                                        // Check for continuity to decide between "Mon-Fri" or "Mon, Wed"
+                                        // Simple heuristic: if length > 2 and they are consecutive, use range.
+                                        // We added them in order, so we just check indices.
+                                        let isConsecutive = true;
+                                        for (let k = 0; k < g.days.length - 1; k++) {
+                                            if (orderedDays.indexOf(g.days[k + 1]) !== orderedDays.indexOf(g.days[k]) + 1) {
+                                                isConsecutive = false;
+                                                break;
+                                            }
+                                        }
+
+                                        if (isConsecutive) {
+                                            label = `${dayShortMap[g.days[0]]} - ${dayShortMap[g.days[g.days.length - 1]]}`;
+                                        } else {
+                                            label = g.days.map(d => dayShortMap[d]).join(', ');
+                                        }
+                                    }
+
+                                    return (
+                                        <div key={i} className="flex justify-between items-center text-muted-foreground/80 hover:text-foreground transition-colors">
+                                            <span className="font-medium text-xs uppercase tracking-wide">{label}</span>
+                                            <span className="text-foreground">{g.start} - {g.end}</span>
                                         </div>
-                                    </div>
-                                </>
-                            )
-                            : <span className="text-muted-foreground italic">No restrictions set</span>
-                        }
+                                    );
+                                });
+                            })()
+                        ) : (
+                            <span className="text-muted-foreground italic">No restrictions set</span>
+                        )}
                     </div>
-                    <div className="text-xs text-muted-foreground pt-1 border-t border-border/30 mt-2 flex items-center gap-2">
-                        <span>Policy:</span>
-                        <span className={accessControl.violationAction === 'shutdown' ? 'text-red-500 font-medium' : 'text-foreground'}>
+                    <div className="text-xs text-muted-foreground pt-2 border-t border-border/30 mt-2 flex items-center justify-between">
+                        <span>Violation Action:</span>
+                        <span className={`font-medium ${accessControl.violationAction === 'shutdown' ? 'text-destructive' : 'text-primary'}`}>
                             {accessControl.violationAction === 'logoff' ? 'Force Logoff' : 'Shutdown System'}
                         </span>
                     </div>
