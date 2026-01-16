@@ -168,7 +168,7 @@ begin
       end;
       end;
     end;
-  end;
+
 end;
 
 procedure ConfigureAppSettings();
