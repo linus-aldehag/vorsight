@@ -66,10 +66,7 @@ Name: "{commonappdata}\Vorsight\screenshots"
 [Code]
 var
   ServerConfigPage: TInputQueryWizardPage;
-  PresharedKeyPage: TInputQueryWizardPage;
-  
   ConfiguredServerUrl: String;
-  ConfiguredPSK: String;
 
 const
   RegKey = 'Software\Vorsight';
@@ -126,14 +123,6 @@ begin
     ServerConfigPage.Add('Server Port:', False);
     ServerConfigPage.Values[0] := '';  // Server address - empty by default
     ServerConfigPage.Values[1] := '3000';  // Port - defaults to 3000
-
-    // Page 2: Pre-Shared Key
-    PresharedKeyPage := CreateInputQueryPage(ServerConfigPage.ID,
-      'Authentication', 
-      'Configure authentication key',
-      'Enter the pre-shared key (PSK) that matches your server configuration.');
-    PresharedKeyPage.Add('Pre-shared Key:', False);
-    PresharedKeyPage.Values[0] := '';
   end;
 end;
 
@@ -177,17 +166,7 @@ begin
           ConfiguredServerUrl := 'http://' + ServerAddress + ':' + ServerPort;
         end;
       end;
-    end;
-    
-    if CurPageID = PresharedKeyPage.ID then
-    begin
-      if Trim(PresharedKeyPage.Values[0]) = '' then
-      begin
-        MsgBox('Please enter a pre-shared key.', mbError, MB_OK);
-        Result := False;
-      end
-      else
-        ConfiguredPSK := Trim(PresharedKeyPage.Values[0]);
+      end;
     end;
   end;
 end;
@@ -214,7 +193,6 @@ begin
   
   // Replace placeholders with user-provided values
   StringChangeEx(JsonContent, '"Url": "http://localhost:3000"', '"Url": "' + ConfiguredServerUrl + '"', True);
-  StringChangeEx(JsonContent, '"PresharedKey": "your-secure-key"', '"PresharedKey": "' + ConfiguredPSK + '"', True);
   
   // Set standard agent executable path
   StringChangeEx(JsonContent, '"ExecutablePath": "Vorsight.Agent.exe"', '"ExecutablePath": "Agent\\Vorsight.Agent.exe"', True);

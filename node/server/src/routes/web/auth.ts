@@ -14,13 +14,13 @@ router.post('/login', async (req: Request, res: Response) => {
         // Use trim() to handle potential whitespace issues from env or input
         if (passphrase && validPassword && passphrase.trim() === validPassword.trim()) {
             // Get secret dynamically to ensure dotenv is loaded
-            const secret = (process.env.SERVICE_KEY || 'vorsight-secret-key-change-me').trim();
+            const secret = (process.env.JWT_SECRET || 'vorsight-secret-key-change-me').trim();
 
             // Generate JWT
             const token = jwt.sign(
                 { role: 'admin' },
                 secret,
-                { expiresIn: '7d' }
+                { expiresIn: (process.env.JWT_EXPIRATION || '30d') as any }
             );
 
             return res.json({
@@ -48,7 +48,7 @@ router.get('/status', (req: Request, res: Response) => {
         }
 
         try {
-            const secret = process.env.SERVICE_KEY || 'vorsight-secret-key-change-me';
+            const secret = process.env.JWT_SECRET || 'vorsight-secret-key-change-me';
             jwt.verify(token, secret);
             return res.json({ authenticated: true });
         } catch (err) {
