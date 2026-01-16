@@ -43,7 +43,7 @@ export const authenticateBrowser = (req: Request, res: Response, next: NextFunct
 
     try {
         // Get secret dynamically to ensure dotenv is loaded
-        const secret = (process.env.SERVICE_KEY || 'vorsight-secret-key-change-me').trim();
+        const secret = (process.env.JWT_SECRET || 'vorsight-secret-key-change-me').trim();
 
         const decoded = jwt.verify(token, secret);
         req.user = decoded as any;
@@ -76,7 +76,7 @@ export const authenticateAny = async (req: Request, res: Response, next: NextFun
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (token) {
         try {
-            const secret = (process.env.SERVICE_KEY || 'vorsight-secret-key-change-me').trim();
+            const secret = (process.env.JWT_SECRET || 'vorsight-secret-key-change-me').trim();
             const decoded = jwt.verify(token, secret);
             req.user = decoded as any;
             return next();

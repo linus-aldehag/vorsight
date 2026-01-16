@@ -256,8 +256,16 @@ export default (io: Server) => {
                     select: { status: true }
                 });
 
-                if (machine?.status === 'archived') {
-                    console.log(`⚠ Heartbeat rejected from archived machine: ${machineId}`);
+                if (machine?.status !== 'active') {
+                    // Allow pending machines to update LastSeen so they appear "Online (Pending)"
+                    // But ignore the actual state payload (settings, activity, etc) until adopted.
+                    if (machine?.status === 'pending') {
+                        await prisma.machine.update({
+                            where: { id: machineId },
+                            data: { lastSeen: new Date() }
+                        });
+                    }
+                    console.log(`🔒 Heartbeat payload ignored from non-active machine: ${machineId} (${machine?.status})`);
                     return;
                 }
 
@@ -325,7 +333,7 @@ export default (io: Server) => {
                     select: { status: true }
                 });
 
-                if (machine?.status === 'archived') {
+                if (machine?.status !== 'active') {
                     return;
                 }
 
@@ -415,7 +423,7 @@ export default (io: Server) => {
                 if (!machineId || !auditEvent) return;
 
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-                if (machine?.status === 'archived') return;
+                if (machine?.status !== 'active') return;
 
                 const { eventId, eventType, username, timestamp, details, sourceLogName, isFlagged } = auditEvent;
 
@@ -460,7 +468,7 @@ export default (io: Server) => {
                 if (!machineId) return;
 
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
-                if (machine?.status === 'archived') return;
+                if (machine?.status !== 'active') return;
 
                 const { id, captureTime, triggerType, googleDriveFileId, isUploaded } = screenshot;
 

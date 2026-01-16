@@ -66,9 +66,13 @@ The setup script will:
 - Create and enable systemd service
 - Start the service
 
-### 4. Configure Environment
+### 4. Configuration
 
-Edit `/opt/vorsight/.env` with your settings:
+The setup script (`setup.sh`) automatically generates the configuration and asks you for essential settings (like your Web UI passphrase) interactively.
+
+**Manual Configuration (Advanced/Troubleshooting)**
+
+If you need to change settings later or manually adjust configurations, you can edit the `.env` file:
 
 ```bash
 sudo nano /opt/vorsight/.env
@@ -82,7 +86,7 @@ HOST=0.0.0.0                                 # Listen on all interfaces
 NODE_ENV=production
 CLIENT_ORIGIN=http://your-server-ip:3000    # CORS origin
 WEB_PASSPHRASE=your-secure-passphrase       # Web UI login passphrase
-SERVICE_KEY=your-secure-random-secret       # Auto-generated during setup
+JWT_SECRET=your-secure-random-secret       # Auto-generated during setup
 DATABASE_URL=file:./data/vorsight.db        # SQLite database path
 
 # Google Drive OAuth (configure via web UI Settings page)
@@ -93,7 +97,7 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
 
 **Important**: 
 - The `WEB_PASSPHRASE` is used to log into the web dashboard
-- The `SERVICE_KEY` is auto-generated during installation and used for machine authentication
+- The `JWT_SECRET` is auto-generated during installation and used for behind the scenes browser authentication
 - Google Drive credentials can be configured through the web UI Settings page after initial setup
 
 After editing, restart the service:

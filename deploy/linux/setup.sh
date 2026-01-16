@@ -190,22 +190,13 @@ else
             sed -i "s|DATABASE_URL=.*|DATABASE_URL=$ABS_DB_PATH|" "$INSTALL_DIR/.env"
             echo -e "${GREEN}   ✓ Set absolute database path${NC}"
             
-            # Auto-generate service key
-            echo -e "${CYAN}🔐 Generating service key...${NC}"
-            SERVICE_KEY=$(openssl rand -base64 32)
-            sed -i "s|SERVICE_KEY=CHANGE_ME_OR_LET_INSTALLER_GENERATE|SERVICE_KEY=$SERVICE_KEY|" "$INSTALL_DIR/.env"
-            echo -e "${GREEN}   ✓ Service key generated${NC}"
-            echo ""
-            echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
-            echo -e "${YELLOW}┃ 🔒 IMPORTANT: Save this service key for Windows client installs ┃${NC}"
-            echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
-            echo -e "${CYAN}   ${SERVICE_KEY}${NC}"
-            echo ""
-            echo -e "${YELLOW}   ⚠️  This is a SECRET - treat it like a password!${NC}"
-            echo -e "${YELLOW}   ⚠️  Windows clients need this to authenticate with the server${NC}"
-            echo -e "${YELLOW}   ⚠️  Copy it now before continuing${NC}"
-            echo ""
-            read -p "Press Enter once you've saved the service key..."
+            # Auto-generate JWT secret
+            echo -e "${CYAN}🔐 Generating JWT secret...${NC}"
+            JWT_SECRET=$(openssl rand -base64 32)
+            sed -i "s|JWT_SECRET=CHANGE_ME_OR_LET_INSTALLER_GENERATE|JWT_SECRET=$JWT_SECRET|" "$INSTALL_DIR/.env"
+            echo -e "${GREEN}   ✓ JWT secret generated${NC}"
+
+
             
             echo ""
             echo -e "${CYAN}🔑 Web UI Authentication Setup${NC}"
@@ -314,8 +305,6 @@ else
     fi
     echo -e "${GREEN}   ✓ Permissions set${NC}"
 
-
-
     setup_service
     echo -e "${GREEN}   ✓ Service file created${NC}"
 
@@ -340,16 +329,7 @@ else
     echo ""
     echo -e "${GREEN}✅ Installation complete!${NC}"
     echo ""
-    echo -e "${YELLOW}┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓${NC}"
-    echo -e "${YELLOW}┃ 🔐 CRITICAL: Windows Client Configuration Secret              ┃${NC}"
-    echo -e "${YELLOW}┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛${NC}"
-    echo -e "${CYAN}   ${SERVICE_KEY}${NC}"
-    echo ""
-    echo -e "${YELLOW}   ⚠️  SECURITY WARNING: This is a SENSITIVE SECRET!${NC}"
-    echo -e "${YELLOW}   ⚠️  Windows clients REQUIRE this to authenticate${NC}"
-    echo -e "${YELLOW}   ⚠️  Store it securely (password manager, encrypted notes)${NC}"
-    echo -e "${YELLOW}   ⚠️  Never commit this to version control or share publicly${NC}"
-    echo -e "${YELLOW}   ⚠️  If compromised, regenerate it and reconfigure all clients${NC}"
+    echo -e "${YELLOW}   ⚠️  Store your Web UI Passphrase securely!${NC}"
     echo ""
 fi
 
