@@ -15,6 +15,9 @@ export interface AuditEvent {
     createdAt: string;
 }
 
+import { useEffect } from 'react';
+import { socketService } from '@/services/socket';
+
 export function useRecentAuditEvents(machineId: string) {
     const { data, error, isLoading, mutate } = useSWR<AuditEvent[]>(
         machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=5&flaggedOnly=true` : null,
@@ -24,6 +27,15 @@ export function useRecentAuditEvents(machineId: string) {
             revalidateOnFocus: true
         }
     );
+
+    useEffect(() => {
+        if (!machineId) return;
+        const handleAudit = () => mutate();
+        socketService.on('audit:alert', handleAudit);
+        return () => {
+            socketService.off('audit:alert', handleAudit);
+        };
+    }, [machineId, mutate]);
 
     return {
         auditEvents: data ?? [],
@@ -38,6 +50,15 @@ export function useAuditEvents(machineId: string, limit = 100, offset = 0) {
         machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=${limit}&offset=${offset}` : null,
         fetcher
     );
+
+    useEffect(() => {
+        if (!machineId) return;
+        const handleAudit = () => mutate();
+        socketService.on('audit:alert', handleAudit);
+        return () => {
+            socketService.off('audit:alert', handleAudit);
+        };
+    }, [machineId, mutate]);
 
     return {
         auditEvents: data ?? [],

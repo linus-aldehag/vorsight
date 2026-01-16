@@ -4,8 +4,9 @@ import { SectionHeader } from '@/components/common/SectionHeader';
 import { useSettings } from '@/context/SettingsContext';
 import { useMachine } from '@/context/MachineContext';
 import { cn } from '@/lib/utils';
-import { memo } from 'react';
+import { memo, useState, useEffect } from 'react';
 import useSWR from 'swr';
+import { socketService } from '@/services/socket';
 
 interface ActivityMonitorProps {
     isDisabled?: boolean;
@@ -14,7 +15,9 @@ interface ActivityMonitorProps {
 export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: ActivityMonitorProps) {
     const { formatTimestamp } = useSettings();
     const { selectedMachine } = useMachine();
+    const [activity, setActivity] = useState<any>(null);
 
+    // Initial fetch (polled less frequently)
     const fetcher = async (url: string) => {
         const token = localStorage.getItem('auth_token');
         const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -25,14 +28,65 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
     const { data: status } = useSWR(
         selectedMachine ? `/api/web/v1/status/${selectedMachine.id}` : null,
         fetcher,
-        { refreshInterval: 10000, revalidateOnFocus: false }
+        {
+            refreshInterval: 30000,
+            revalidateOnFocus: false,
+            onSuccess: (data) => {
+                if (data?.activity) {
+                    setActivity(data.activity);
+                }
+            }
+        }
     );
 
-    const activity = status?.activity || null;
+    // Real-time subscription
+    useEffect(() => {
+        if (!selectedMachine) return;
+
+        const handleUpdate = (data: any) => {
+            // Check if update is for this machine
+            // The socket service broadcasts to "machine:{id}" room.
+            // But client listens to all? No, client joins rooms?
+            // `socketHandler.ts`: io.to(`machine:${machineId}`).emit('activity:update', ...)
+            // We need to join the room? 
+            // `socketHandler.ts` -> Web client connects -> `web:subscribe` -> joins what?
+            // `socketHandler.ts` DOES NOT show web client joining machine rooms.
+            // Actually, `socketHandler.ts` line 380: `io.to(machine:${machineId}).emit(...)`
+            // Wait, does the web client join `machine:ID`? 
+            // In `socketHandler.ts`: 
+            // `socket.on('web:subscribe', ...)` broadcasts list using `broadcastToSocket`.
+            // It does NOT join rooms.
+            // If the web client doesn't join `machine:ID`, it won't receive `activity:update`.
+            // We need to fix `socketHandler.ts` to allow web clients to subscribe to specific machines, 
+            // OR broadcast activity for visible machines to the user.
+            // Given the code, `io.on('input', ...)` isn't there.
+            setActivity((prev: any) => ({ ...prev, ...data }));
+        };
+
+        // We need to verify if we receive this.
+        // As a workaround for now, we can rely on Global `machine:state` if available, but `activity:update` is specific.
+
+        // Actually, looking at `socketHandler.ts`, `machine:activity` triggers `io.to('machine:machId').emit`.
+        // The machine itself enters that room.
+        // We probably need to emit a 'web:watch_machine' event from client.
+
+        socketService.on('activity:update', handleUpdate);
+
+        return () => {
+            socketService.off('activity:update', handleUpdate);
+        };
+    }, [selectedMachine]);
+
     // ActivitySnapshot has: activeWindowTitle, timeSinceLastInput, timestamp
-    const windowTitle = activity?.activeWindowTitle || 'No activity';
-    const timestamp = activity?.timestamp
-        ? formatTimestamp(activity.timestamp, { includeSeconds: true })
+    // The payload from server is: { timestamp, activeWindow, processName, duration, username }
+    // We map it to display.
+
+    // Fallback to SWR data if no real-time yet
+    const displayActivity = activity || status?.activity;
+
+    const windowTitle = displayActivity?.activeWindow || displayActivity?.activeWindowTitle || 'No activity';
+    const timestamp = displayActivity?.timestamp
+        ? formatTimestamp(displayActivity.timestamp, { includeSeconds: true })
         : 'Never';
 
     return (

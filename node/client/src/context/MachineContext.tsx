@@ -58,6 +58,17 @@ export function MachineProvider({ children }: { children: ReactNode }) {
     // Keep ref in sync with state
     useEffect(() => {
         selectedMachineRef.current = selectedMachine;
+
+        // Subscription logic for real-time updates (Activity, Screenshots)
+        if (selectedMachine && socketService.isConnected) {
+            socketService.emit('web:watch', selectedMachine.id);
+        }
+
+        return () => {
+            if (selectedMachine && socketService.isConnected) {
+                socketService.emit('web:unwatch', selectedMachine.id);
+            }
+        };
     }, [selectedMachine]);
 
     useEffect(() => {
@@ -138,6 +149,9 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         // Handler for socket connection
         const handleConnect = () => {
             socketService.emit('web:subscribe');
+            if (selectedMachineRef.current) {
+                socketService.emit('web:watch', selectedMachineRef.current.id);
+            }
         };
 
         // Handler for machine discovery
@@ -159,12 +173,39 @@ export function MachineProvider({ children }: { children: ReactNode }) {
             }
         };
 
+        // Handler for activity update
+        // const handleActivityUpdate = (data: { machineId: string; timestamp: string; activeWindow: string; processName: string; duration: number }) => { ... }
+
+        /* setMachines(prev => prev.map(m => {
+            if (m.id === data.machineId) {
+                // We need to parse 'm.state' which is likely a JSON string or object
+                // In the type definition, state fields are flattened on Machine?
+                // No, Machine interface has 'state' inside 'status' or metadata?
+                // Looking at types at top of file: Machine has NO 'state' object field.
+                // But it has `settings`, `appliedSettings`.
+                // The machine list from socketHandler puts everything flat properly?
+                // Let's look at `socketHandler.ts`:
+                // machineObj = { ... isOnline, connectionStatus, ... }
+                // It does NOT include detailed activity.
+                // Wait, `ActivityMonitor` fetches `/api/web/v1/status/${id}` which returns `status` object.
+                // We are NOT storing activity in `Machine` state in `MachineContext`.
+                // We should probably emit an event that `ActivityMonitor` can listen to, OR update current machine state if we want to store it.
+                // If we want `ActivityMonitor` to be real-time, it should subscribe to the socket event directly?
+                // YES. `ActivityMonitor` should listen to `activity:update`.
+                return m;
+            }
+            return m;
+        })); */
+        // };
+
         // Subscribe to events
         socketService.on('connect', handleConnect);
         socketService.on('machines:list', handleMachinesList);
         socketService.on('machine:online', handleMachineOnline);
         socketService.on('machine:offline', handleMachineOffline);
         socketService.on('machine:discovered', handleMachineDiscovered);
+        // We aren't handling activity update here because MachineContext doesn't track live activity details.
+        // Leaving it to ActivityMonitor.
 
         // Don't emit here - wait for connection event
         // The handleConnect function will emit when socket connects

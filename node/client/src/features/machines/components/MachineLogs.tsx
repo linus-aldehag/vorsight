@@ -14,16 +14,25 @@ interface MachineLogsProps {
 
 export function MachineLogs({ machineId, className, minimal = false, lastViewedTimestamp }: MachineLogsProps) {
     const { logs, loading } = useMachineLogs(machineId);
-    // Default to Warning and Error only, as requested
-    const [filterLevels, setFilterLevels] = useState<string[]>(['warning', 'error']);
+    // Default to Warning and Error only, or load from storage
+    const [filterLevels, setFilterLevels] = useState<string[]>(() => {
+        try {
+            const saved = localStorage.getItem('logFilterLevels');
+            return saved ? JSON.parse(saved) : ['warning', 'error'];
+        } catch {
+            return ['warning', 'error'];
+        }
+    });
     const [searchTerm, setSearchTerm] = useState('');
 
     const handleFilterToggle = (level: string) => {
-        setFilterLevels(prev =>
-            prev.includes(level)
+        setFilterLevels(prev => {
+            const next = prev.includes(level)
                 ? prev.filter(l => l !== level)
-                : [...prev, level]
-        );
+                : [...prev, level];
+            localStorage.setItem('logFilterLevels', JSON.stringify(next));
+            return next;
+        });
     };
 
     const filteredLogs = logs.filter(log => {

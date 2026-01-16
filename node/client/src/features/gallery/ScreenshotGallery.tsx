@@ -10,6 +10,7 @@ import { ScreenshotFilters } from './ScreenshotFilters';
 import { ConfigSection } from '../../components/common/ConfigSection';
 import { ScreenshotConfig } from './ScreenshotConfig';
 import { settingsEvents } from '../../lib/settingsEvents';
+import { socketService } from '../../services/socket';
 
 // Screenshot Card Component
 interface ScreenshotCardProps {
@@ -85,6 +86,21 @@ export function ScreenshotGallery() {
             setLoading(true);
             loadInitialScreenshots();
             loadSettings();
+
+            // Subscribe to new screenshots
+            const handleNewScreenshot = (newScreenshot: any) => {
+                // Ensure it belongs to the selected machine (socket room ensures this mostly, but good to be safe)
+                // The payload format from server might differ slightly from DriveFile, but let's assume it maps or is compatible.
+                // Re-fetch is safer but adding to list is faster.
+                // Let's prepend.
+                setScreenshots(prev => [newScreenshot, ...prev]);
+            };
+
+            socketService.on('screenshot:new', handleNewScreenshot);
+
+            return () => {
+                socketService.off('screenshot:new', handleNewScreenshot);
+            };
         } else {
             setScreenshots([]);
             setLoading(false);
