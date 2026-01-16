@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { TimeInput } from '@/components/ui/time-input';
+import { LogOut, Power } from 'lucide-react';
 import type { AccessControlSettings } from '@/api/client';
 
 interface AccessControlConfigProps {
@@ -231,22 +232,33 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
             <div className="space-y-3 pt-4 border-t border-border/50">
                 <label className="text-sm font-medium">Action on Violation</label>
                 <div className="grid grid-cols-2 gap-3">
-                    <Button
-                        variant={violationAction === 'logoff' ? 'default' : 'outline'}
+                    <div
                         onClick={() => setViolationAction('logoff')}
-                        className="w-full transition-all"
-                        type="button"
+                        className={`
+                            cursor-pointer rounded-lg border p-4 transition-all duration-200 flex flex-col items-center gap-2
+                            ${violationAction === 'logoff'
+                                ? 'bg-primary/10 border-primary text-primary'
+                                : 'bg-muted/30 border-border/50 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                            }
+                        `}
                     >
-                        Log Off
-                    </Button>
-                    <Button
-                        variant={violationAction === 'shutdown' ? 'destructive' : 'outline'}
+                        <LogOut size={24} />
+                        <span className="font-medium text-sm">Force Logoff</span>
+                    </div>
+
+                    <div
                         onClick={() => setViolationAction('shutdown')}
-                        className="w-full transition-all"
-                        type="button"
+                        className={`
+                            cursor-pointer rounded-lg border p-4 transition-all duration-200 flex flex-col items-center gap-2
+                            ${violationAction === 'shutdown'
+                                ? 'bg-destructive/10 border-destructive text-destructive'
+                                : 'bg-muted/30 border-border/50 hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                            }
+                        `}
                     >
-                        Shut Down
-                    </Button>
+                        <Power size={24} />
+                        <span className="font-medium text-sm">Shutdown System</span>
+                    </div>
                 </div>
             </div>
 
