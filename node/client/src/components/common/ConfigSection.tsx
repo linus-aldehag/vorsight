@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Settings2 } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 interface ConfigSectionProps {
     icon?: React.ReactNode;
@@ -18,7 +17,10 @@ export function ConfigSection({ icon, title = "Configuration", description, badg
         <Card variant="glass">
             <CardContent className="p-0">
                 {/* Header */}
-                <div className="p-6">
+                <div
+                    className="group p-6 cursor-pointer hover:bg-muted/50 transition-colors duration-200"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                >
                     <div className="flex items-center gap-4">
                         {icon && <div className="text-primary">{icon}</div>}
                         <div className="flex-1 min-w-0">
@@ -30,16 +32,9 @@ export function ConfigSection({ icon, title = "Configuration", description, badg
                                 <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
                             )}
                         </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsExpanded(!isExpanded)}
-                            className="gap-1.5 shrink-0"
-                            title={isExpanded ? "Hide configuration" : "Show configuration"}
-                        >
-                            <Settings2 size={14} />
-                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </Button>
+                        <div className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                            <ChevronDown size={20} />
+                        </div>
                     </div>
                 </div>
 
