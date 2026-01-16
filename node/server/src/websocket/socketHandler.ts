@@ -145,6 +145,24 @@ export default (io: Server) => {
             }
         });
 
+        // Web client wants to watch a specific machine (for high-frequency updates like activity/screenshots)
+        socket.on('web:watch', (machineId: string) => {
+            if (machineId) {
+                // Leave other machine rooms? 
+                // For simplicity, we can just join. Ideally we might want to leave others if we only view one.
+                // But user might have multiple tabs or want alerts.
+                // Let's just join.
+                socket.join(`machine:${machineId}`);
+                // console.log(`Socket ${socket.id} joined room machine:${machineId}`);
+            }
+        });
+
+        socket.on('web:unwatch', (machineId: string) => {
+            if (machineId) {
+                socket.leave(`machine:${machineId}`);
+            }
+        });
+
         // Machine connects
         socket.on('machine:connect', async (data) => {
             try {

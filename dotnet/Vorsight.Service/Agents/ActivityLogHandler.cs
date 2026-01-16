@@ -23,8 +23,8 @@ public class ActivityLogHandler
 
     public void HandleActivity(uint sessionId, PipeMessage message)
     {
-        _logger.LogInformation(
-            "Audit log from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
+        _logger.LogDebug(
+            "Activity data from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
             sessionId,
             message.Payload?.Length ?? 0,
             message.MessageId

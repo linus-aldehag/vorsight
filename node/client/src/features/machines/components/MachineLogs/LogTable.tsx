@@ -1,3 +1,4 @@
+import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,48 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
         }
     };
 
+
+    const scrollEndRef = React.useRef<HTMLDivElement>(null);
+    const [shouldAutoScroll, setShouldAutoScroll] = React.useState(true);
+    const prevLogCountRef = React.useRef(logs.length);
+
+    // Auto-scroll effect
+    React.useEffect(() => {
+        if (loading) return;
+
+        // If generic new logs arrived (length increased)
+        if (logs.length > prevLogCountRef.current) {
+            if (shouldAutoScroll) {
+                requestAnimationFrame(() => {
+                    scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                });
+            }
+        }
+        prevLogCountRef.current = logs.length;
+    }, [logs.length, shouldAutoScroll, loading]);
+
+    // Initial scroll to bottom on mount/load
+    React.useEffect(() => {
+        if (!loading && logs.length > 0) {
+            // Check if we have unread logs - if so, don't auto scroll to bottom, let user see the divider
+            // Unless we are just opening it? 
+            // Better UX: If filtered logs are small, just show them.
+            // If we have "New Logs" line, we might want to scroll TO that line?
+            // For now, sticky bottom is standard for log tails.
+            requestAnimationFrame(() => {
+                scrollEndRef.current?.scrollIntoView({ behavior: 'auto' });
+            });
+        }
+    }, [loading]);
+
+    const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+        // If user scrolls up, disable auto-scroll
+        // Threshold of 50px
+        const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+        setShouldAutoScroll(isAtBottom);
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
@@ -48,11 +91,8 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
         );
     }
 
-    // Sort logs descending just in case, though they likely come sorted
-    // Assuming logs are sorted DESC (newest first)
-
     return (
-        <ScrollArea className="h-full w-full">
+        <ScrollArea className="h-full w-full" onScrollCapture={handleScroll}>
             {/* Desktop Table View */}
             <div className="hidden md:block">
                 <Table variant="glass">
@@ -70,22 +110,24 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
                             const logTime = new Date(log.timestamp).getTime();
                             const isNew = lastViewedTimestamp && logTime > lastViewedTimestamp;
 
-                            // Check if next log (older) is OLD while this one is NEW -> Separator after this one?
-                            // Wait, if sorting is DESC, newest is at top. 
-                            // If logTime > lastViewed, it is NEW.
-                            // Separator should be displayed when we transition from NEW to OLD.
-                            // i.e., current is NEW, next is OLD.
-                            // OR if all are NEW, no separator? Or separator at bottom?
-                            // Let's allow separator if we encounter the boundary.
+                            // Check if this is the FIRST new log (boundary)
+                            const prevLog = logs[index + 1]; // Older log
+                            const prevLogTime = prevLog ? new Date(prevLog.timestamp).getTime() : 0;
+                            // Since we map in order (assuming logs are sorted DESCENDING, index+1 is OLDER)
+                            // We want the separator BELOW the last "Old" log? 
+                            // Or ABOVE the first "New" log?
+                            // If logs are DESC (Newest at top):
+                            // New Log A
+                            // New Log B
+                            // --- Divider ---
+                            // Old Log C
 
-                            const nextLog = logs[index + 1];
-                            const nextLogTime = nextLog ? new Date(nextLog.timestamp).getTime() : 0;
-                            const showSeparator = isNew && nextLog && (!lastViewedTimestamp || nextLogTime <= lastViewedTimestamp);
+                            // So if current log is New, and next log is Old (or doesn't exist/is older than timestamp)
+                            const showSeparator = isNew && (!prevLog || (lastViewedTimestamp && prevLogTime <= lastViewedTimestamp));
 
                             return (
-                                <>
+                                <React.Fragment key={log.id}>
                                     <TableRow
-                                        key={log.id}
                                         className={cn(
                                             logRowVariants({ level }),
                                             "border-b-[var(--glass-border)]",
@@ -118,15 +160,20 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
                                             <TableCell colSpan={4} className="py-1 text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <div className="h-[1px] flex-1 bg-border/50"></div>
-                                                    <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">Last Viewed</span>
+                                                    <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">New Logs Above</span>
                                                     <div className="h-[1px] flex-1 bg-border/50"></div>
                                                 </div>
                                             </TableCell>
                                         </TableRow>
                                     )}
-                                </>
+                                </React.Fragment>
                             );
                         })}
+                        <TableRow>
+                            <TableCell colSpan={4} className="p-0 border-0">
+                                <div ref={scrollEndRef} />
+                            </TableCell>
+                        </TableRow>
                     </TableBody>
                 </Table>
             </div>
@@ -167,6 +214,7 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
                         </div>
                     </div>
                 ))}
+                <div ref={scrollEndRef} />
             </div>
         </ScrollArea>
     );

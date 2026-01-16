@@ -32,7 +32,7 @@ public class IpcMessageRouter : IIpcMessageRouter
     {
         try
         {
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Agent message received from session {SessionId}: Type={MessageType}, Size={PayloadSize} bytes",
                 e.SessionId,
                 e.Message.Type,
