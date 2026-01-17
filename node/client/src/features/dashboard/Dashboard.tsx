@@ -6,6 +6,8 @@ import { AuditAlert } from './AuditAlert';
 import { ScreenshotViewer } from './ScreenshotViewer';
 import { FeaturesWidget } from './FeaturesWidget';
 import { useActivitySummary, ActivityTimelineCard, TopProcessesCard } from './ActivityStats';
+import { Button } from '@/components/ui/button';
+import { Monitor, Download } from 'lucide-react';
 
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
@@ -16,8 +18,12 @@ import { LogsDrawer } from '../machines/components/LogsDrawer';
 import { FloatingLogButton } from '../machines/components/FloatingLogButton';
 import { settingsEvents } from '@/lib/settingsEvents';
 
-export function Dashboard() {
-    const { selectedMachine } = useMachine();
+interface DashboardProps {
+    onManageMachines?: (tab?: 'active' | 'pending' | 'archived') => void;
+}
+
+export function Dashboard({ onManageMachines }: DashboardProps) {
+    const { selectedMachine, machines, pendingMachines } = useMachine();
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [machineVersion, setMachineVersion] = useState<string | null>(null);
     const [isLogsOpen, setIsLogsOpen] = useState(false);
@@ -57,6 +63,72 @@ export function Dashboard() {
         const unsubscribe = settingsEvents.subscribe(loadSettings);
         return unsubscribe;
     }, [selectedMachine]);
+
+    // Empty State Handling: No Active Machines
+    if (!selectedMachine && machines.length === 0) {
+        const hasPending = pendingMachines.length > 0;
+
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+                <div className="max-w-md w-full space-y-8">
+                    <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse" />
+                        <div className="relative bg-background p-4 rounded-full border-2 border-primary/50 text-primary">
+                            <Monitor size={48} />
+                            {hasPending && (
+                                <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-sm ring-4 ring-background">
+                                    {pendingMachines.length}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            {hasPending ? "New Machine Detected" : "Welcome to Vorsight"}
+                        </h2>
+                        <p className="text-muted-foreground">
+                            {hasPending
+                                ? "One or more machines are waiting for your approval to join the network."
+                                : "No machines are currently connected. Install the agent on a computer to get started."}
+                        </p>
+                    </div>
+
+                    <div className="flex gap-4 justify-center">
+                        {hasPending ? (
+                            <Button
+                                size="lg"
+                                onClick={() => onManageMachines?.('pending')}
+                                className="w-full sm:w-auto min-w-[200px]"
+                            >
+                                Review Pending Machines
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                className="gap-2"
+                                onClick={() => window.open('https://github.com/linus-aldehag/vorsight/releases', '_blank')}
+                            >
+                                <Download size={16} />
+                                Download Agent
+                            </Button>
+                        )}
+                    </div>
+
+                    {!hasPending && (
+                        <Card className="p-4 bg-muted/30 border-dashed">
+                            <div className="text-xs text-muted-foreground text-left space-y-2 font-mono">
+                                <p>1. Download the agent installer</p>
+                                <p>2. Run setup on the target machine</p>
+                                <p>3. Enter this server address: <span className="text-foreground select-all">{window.location.origin}</span></p>
+                                <p>4. Approve the machine here</p>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-4 sm:gap-6 h-full pb-4">

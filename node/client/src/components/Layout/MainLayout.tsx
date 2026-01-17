@@ -133,7 +133,14 @@ export function MainLayout() {
 
             {/* Main Content */}
             <main className="flex-1 p-4 md:p-6 container mx-auto overflow-hidden">
-                {currentView === 'dashboard' && <Dashboard />}
+                {currentView === 'dashboard' && (
+                    <Dashboard
+                        onManageMachines={(tab) => {
+                            if (tab) setManagerStartTab(tab);
+                            setManagerOpen(true);
+                        }}
+                    />
+                )}
                 {currentView === 'gallery' && <ScreenshotGallery />}
                 {currentView === 'activity' && <ActivityPage />}
                 {currentView === 'audit' && <AuditPage />}

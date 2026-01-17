@@ -23,7 +23,7 @@ class GoogleDriveService {
     constructor() {
         this.clientId = process.env.GOOGLE_CLIENT_ID || '';
         this.clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
-        this.redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/oauth/google/callback';
+        this.redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/web/v1/oauth/google/callback';
     }
 
     async getDriveClient() {
@@ -32,7 +32,7 @@ class GoogleDriveService {
         });
 
         if (!tokenData) {
-            throw new Error('Google Drive not connected. Please authenticate via /api/oauth/google');
+            throw new Error('Google Drive not connected. Please authenticate via /api/web/v1/oauth/google');
         }
 
         const oauth2Client = new google.auth.OAuth2(
