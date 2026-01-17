@@ -24,7 +24,7 @@ public interface IPerceptualHashService
     /// <summary>
     /// Check if two hashes are similar based on threshold.
     /// </summary>
-    bool IsSimilar(string hash1, string hash2, double thresholdPercent = 5.0);
+    bool IsSimilar(string hash1, string hash2, double thresholdPercent = 95.0);
 }
 
 public class PerceptualHashService : IPerceptualHashService
@@ -85,7 +85,7 @@ public class PerceptualHashService : IPerceptualHashService
     {
         var similarity = GetSimilarityPercentage(hash1, hash2);
 
-        // If similarity percentage < threshold, images are considered similar
-        return similarity < thresholdPercent;
+        // If similarity percentage >= threshold, images are considered similar
+        return similarity >= thresholdPercent;
     }
 }
