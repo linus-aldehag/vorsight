@@ -19,7 +19,9 @@ import machineScheduleRouter from './routes/machine/schedule';
 import machineLogsRouter from './routes/machine/logs';
 import machineActivityRouter from './routes/machine/activity';
 import machineMediaRouter from './routes/machine/media';
+
 import machineOAuthRouter from './routes/machine/oauth';
+
 
 // Import Web Routes
 import webMachinesRouter from './routes/web/machines';
@@ -75,7 +77,9 @@ app.use('/api/machine/v1/schedule', machineScheduleRouter);
 app.use('/api/machine/v1/logs', machineLogsRouter);
 app.use('/api/machine/v1/activity', machineActivityRouter);
 app.use('/api/machine/v1/media', machineMediaRouter);
+
 app.use('/api/machine/v1/oauth', machineOAuthRouter);
+
 
 // ==========================================
 // WEB API (Browser Authentication)
@@ -129,6 +133,11 @@ socketHandler(io);
 scheduleCleanup();
 schedulePingMonitor();
 scheduleHeartbeatCleanup();
+
+// 404 for unhandled API requests (must be before SPA fallback)
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'Endpoint not found' });
+});
 
 // Serve React app for all other routes (must be last)
 app.use((_req, res) => {
