@@ -48,11 +48,14 @@ export function MachineSelector({ onClick }: MachineSelectorProps) {
             </>
         );
     } else if (machines.length === 0) {
+        const hasPending = pendingMachines.length > 0;
         triggerContent = (
             <>
                 <div className="flex items-center gap-2 truncate">
-                    <Monitor size={16} className="shrink-0 text-muted-foreground" />
-                    <span className="truncate text-muted-foreground">No active machines</span>
+                    <Monitor size={16} className={cn("shrink-0", hasPending ? "text-primary" : "text-muted-foreground")} />
+                    <span className={cn("truncate", hasPending ? "text-foreground font-medium" : "text-muted-foreground")}>
+                        {hasPending ? "Setup Required" : "No active machines"}
+                    </span>
                 </div>
             </>
         );

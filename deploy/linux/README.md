@@ -92,7 +92,7 @@ DATABASE_URL=file:./data/vorsight.db        # SQLite database path
 # Google Drive OAuth (configure via web UI Settings page)
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/web/v1/oauth/google/callback
 ```
 
 **Important**: 

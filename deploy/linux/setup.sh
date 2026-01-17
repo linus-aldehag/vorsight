@@ -241,7 +241,7 @@ else
             echo -e "${YELLOW}   2. Create/select a project${NC}"
             echo -e "${YELLOW}   3. Enable 'Google Drive API'${NC}"
             echo -e "${YELLOW}   4. Credentials → Create OAuth 2.0 Client ID (Web application)${NC}"
-            echo -e "${YELLOW}   5. Authorized redirect URI: ${CYAN}http://localhost:3000/api/oauth/google/callback${NC}"
+            echo -e "${YELLOW}   5. Authorized redirect URI: ${CYAN}http://localhost:3000/api/web/v1/oauth/google/callback${NC}"
             echo -e "${YELLOW}   6. Copy Client ID and Client Secret${NC}"
             echo ""
             
@@ -256,7 +256,7 @@ else
                         # Replace Google OAuth values
                         sed -i "s|GOOGLE_CLIENT_ID=.*|GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID|" "$INSTALL_DIR/.env"
                         sed -i "s|GOOGLE_CLIENT_SECRET=.*|GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET|" "$INSTALL_DIR/.env"
-                        sed -i "s|GOOGLE_REDIRECT_URI=.*|GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback|" "$INSTALL_DIR/.env"
+                        sed -i "s|GOOGLE_REDIRECT_URI=.*|GOOGLE_REDIRECT_URI=http://localhost:3000/api/web/v1/oauth/google/callback|" "$INSTALL_DIR/.env"
                         echo -e "${GREEN}   ✓ Google Drive OAuth configured${NC}"
                         echo -e "${CYAN}   After installation completes, connect via web dashboard${NC}"
                         break
