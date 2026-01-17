@@ -44,20 +44,43 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                             {format(new Date(activity.timestamp), "HH:mm:ss")}
                                         </div>
                                         <div className="rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md">
-                                            <div className="flex items-center gap-2">
-                                                <AppIcon name={activity.process_name} />
-                                                <span className="font-semibold">{activity.process_name || 'Unknown Process'}</span>
+                                            <div className="flex items-start gap-3 w-full overflow-hidden">
+                                                <div className="mt-0.5 shrink-0">
+                                                    <AppIcon name={activity.process_name} />
+                                                </div>
+                                                <div className="min-w-0 flex-1 overflow-hidden">
+                                                    <div
+                                                        className="font-semibold text-foreground leading-tight truncate"
+                                                        title={activity.active_window || activity.process_name || 'Unknown Activity'}
+                                                    >
+                                                        {activity.active_window || activity.process_name || 'Unknown Activity'}
+                                                    </div>
+
+                                                    {/* Show process name as subtitle only if we have a window title */}
+                                                    {activity.active_window && activity.process_name && (
+                                                        <div
+                                                            className="text-xs text-muted-foreground mt-0.5 font-mono truncate"
+                                                            title={activity.process_name}
+                                                        >
+                                                            {activity.process_name}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Duration */}
+                                                    {activity.duration > 0 && (
+                                                        <div className="mt-1.5 inline-flex items-center rounded-sm bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/50">
+                                                            {formatDuration(activity.duration)}
+                                                        </div>
+                                                    )}
+
+                                                    {/* User (optional, maybe redundant if single user filter?) */}
+                                                    {activity.username && (
+                                                        <div className="mt-1 text-[10px] text-muted-foreground/60">
+                                                            {activity.username}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            {activity.active_window && (
-                                                <div className="mt-1 text-sm text-foreground/80 truncate" title={activity.active_window}>
-                                                    {activity.active_window}
-                                                </div>
-                                            )}
-                                            {activity.duration > 0 && (
-                                                <div className="mt-1 text-xs text-muted-foreground">
-                                                    Duration: {formatDuration(activity.duration)}
-                                                </div>
-                                            )}
                                             {activity.username && (
                                                 <div className="mt-1 text-xs text-muted-foreground">
                                                     User: {activity.username}

@@ -43,23 +43,10 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
     useEffect(() => {
         if (!selectedMachine) return;
 
+        // Subscribe to machine room for updates
+        socketService.emit('web:watch', selectedMachine.id);
+
         const handleUpdate = (data: any) => {
-            // Check if update is for this machine
-            // The socket service broadcasts to "machine:{id}" room.
-            // But client listens to all? No, client joins rooms?
-            // `socketHandler.ts`: io.to(`machine:${machineId}`).emit('activity:update', ...)
-            // We need to join the room? 
-            // `socketHandler.ts` -> Web client connects -> `web:subscribe` -> joins what?
-            // `socketHandler.ts` DOES NOT show web client joining machine rooms.
-            // Actually, `socketHandler.ts` line 380: `io.to(machine:${machineId}).emit(...)`
-            // Wait, does the web client join `machine:ID`? 
-            // In `socketHandler.ts`: 
-            // `socket.on('web:subscribe', ...)` broadcasts list using `broadcastToSocket`.
-            // It does NOT join rooms.
-            // If the web client doesn't join `machine:ID`, it won't receive `activity:update`.
-            // We need to fix `socketHandler.ts` to allow web clients to subscribe to specific machines, 
-            // OR broadcast activity for visible machines to the user.
-            // Given the code, `io.on('input', ...)` isn't there.
             setActivity((prev: any) => ({ ...prev, ...data }));
         };
 
@@ -73,6 +60,7 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
         socketService.on('activity:update', handleUpdate);
 
         return () => {
+            socketService.emit('web:unwatch', selectedMachine.id);
             socketService.off('activity:update', handleUpdate);
         };
     }, [selectedMachine]);

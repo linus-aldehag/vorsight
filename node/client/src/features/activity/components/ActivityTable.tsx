@@ -9,6 +9,7 @@ import {
 import { useSettings } from "@/context/SettingsContext";
 import type { ActivityLogEntry } from "@/hooks/useActivity";
 import { mergeSequentialActivities } from "../utils/mergeActivities";
+import { Monitor, Terminal, FileText } from "lucide-react";
 
 interface ActivityTableProps {
     activities: ActivityLogEntry[];
@@ -24,10 +25,9 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                 <TableHeader className="bg-[var(--glass-bg)] backdrop-blur sticky top-0 z-10 border-b border-[var(--glass-border)]">
                     <TableRow className="hover:bg-transparent border-b-[var(--glass-border)]">
                         <TableHead className="w-[180px]">Time</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Process</TableHead>
-                        <TableHead>Window Title</TableHead>
-                        <TableHead className="text-right">Duration</TableHead>
+                        <TableHead className="w-[120px]">User</TableHead>
+                        <TableHead>Activity</TableHead>
+                        <TableHead className="text-right w-[100px]">Duration</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -46,10 +46,29 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                 <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                                     {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
                                 </TableCell>
-                                <TableCell className="font-medium">{activity.username || '-'}</TableCell>
-                                <TableCell className="font-medium text-primary">{activity.process_name}</TableCell>
-                                <TableCell className="max-w-[300px] truncate text-muted-foreground" title={activity.active_window}>
-                                    {activity.active_window}
+                                <TableCell className="font-medium text-xs">{activity.username || '-'}</TableCell>
+                                <TableCell className="max-w-[400px]">
+                                    <div className="flex items-start gap-3 w-full overflow-hidden">
+                                        <div className="mt-1 shrink-0">
+                                            <AppIcon name={activity.process_name} />
+                                        </div>
+                                        <div className="min-w-0 flex-1 overflow-hidden">
+                                            <div
+                                                className="font-medium text-foreground leading-tight truncate"
+                                                title={activity.active_window || activity.process_name || 'Unknown Activity'}
+                                            >
+                                                {activity.active_window || activity.process_name || 'Unknown Activity'}
+                                            </div>
+                                            {activity.active_window && activity.process_name && (
+                                                <div
+                                                    className="text-xs text-muted-foreground mt-0.5 font-mono truncate"
+                                                    title={activity.process_name}
+                                                >
+                                                    {activity.process_name}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </TableCell>
                                 <TableCell className="text-right font-mono text-xs">{formatDuration(activity.duration)}</TableCell>
                             </TableRow>
@@ -71,4 +90,11 @@ function formatDuration(seconds: number): string {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
+function AppIcon({ name }: { name: string }) {
+    const n = (name || '').toLowerCase();
+    if (n.includes("chrome") || n.includes("edge") || n.includes("firefox")) return <Monitor className="h-4 w-4 text-blue-500" />;
+    if (n.includes("code") || n.includes("visual")) return <Terminal className="h-4 w-4 text-cyan-500" />;
+    return <FileText className="h-4 w-4 text-slate-500" />;
 }
