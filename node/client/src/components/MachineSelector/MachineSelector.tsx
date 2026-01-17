@@ -77,7 +77,10 @@ export function MachineSelector({ onClick }: MachineSelectorProps) {
             <div className="flex-1 min-w-0 flex items-center">{triggerContent}</div>
 
             {pendingCount > 0 && (
-                <Badge className="ml-1 h-5 min-w-5 px-1 bg-primary text-primary-foreground shrink-0">{pendingCount}</Badge>
+                <div className="ml-2 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    <span className="text-[10px] font-bold tracking-tight">PENDING ({pendingCount})</span>
+                </div>
             )}
         </Button>
     );

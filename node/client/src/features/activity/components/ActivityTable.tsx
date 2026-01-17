@@ -25,9 +25,9 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                 <TableHeader className="bg-[var(--glass-bg)] backdrop-blur sticky top-0 z-10 border-b border-[var(--glass-border)]">
                     <TableRow className="hover:bg-transparent border-b-[var(--glass-border)]">
                         <TableHead className="w-[180px]">Time</TableHead>
-                        <TableHead className="w-[120px]">User</TableHead>
                         <TableHead>Activity</TableHead>
                         <TableHead className="text-right w-[100px]">Duration</TableHead>
+                        <TableHead className="w-[120px] text-right">User</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -46,7 +46,6 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                 <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                                     {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
                                 </TableCell>
-                                <TableCell className="font-medium text-xs">{activity.username || '-'}</TableCell>
                                 <TableCell className="max-w-[400px]">
                                     <div className="flex items-start gap-3 w-full overflow-hidden">
                                         <div className="mt-1 shrink-0">
@@ -71,6 +70,7 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right font-mono text-xs">{formatDuration(activity.duration)}</TableCell>
+                                <TableCell className="font-medium text-xs text-right text-muted-foreground">{activity.username || '-'}</TableCell>
                             </TableRow>
                         ))
                     )}

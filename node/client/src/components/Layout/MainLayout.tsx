@@ -187,22 +187,7 @@ export function MainLayout() {
                 </div>
             )}
 
-            {/* Pending Machines Indicator */}
-            {pendingMachines.length > 0 && !toastVisible && (
-                <div className="fixed bottom-4 right-4 z-40">
-                    <button
-                        onClick={() => {
-                            setDiscoveredMachine(pendingMachines[0]);
-                            setManagerStartTab('pending');
-                            setManagerOpen(true);
-                        }}
-                        className="bg-primary text-primary-foreground rounded-full px-4 py-2 shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2 text-sm font-medium"
-                    >
-                        <span>🔍</span>
-                        <span>{pendingMachines.length} Pending Machine{pendingMachines.length !== 1 ? 's' : ''}</span>
-                    </button>
-                </div>
-            )}
+            {/* Pending Machines Floating Indicator removed to prevent overlap with logs */}
 
             {/* Machine Manager Dialog */}
             {managerOpen && (

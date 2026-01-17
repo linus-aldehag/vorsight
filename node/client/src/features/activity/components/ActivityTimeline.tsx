@@ -81,11 +81,6 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                                     )}
                                                 </div>
                                             </div>
-                                            {activity.username && (
-                                                <div className="mt-1 text-xs text-muted-foreground">
-                                                    User: {activity.username}
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                 ))}
