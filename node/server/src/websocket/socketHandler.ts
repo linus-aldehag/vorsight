@@ -278,24 +278,32 @@ export default (io: Server) => {
                 const existingSettings = existingState?.settings || undefined;
 
                 // Update machine state
+                const s = state as any;
+                const lastActivityTime = s.lastActivityTime || s.LastActivityTime;
+                const activeWindow = s.activeWindow || s.ActiveWindow;
+                const screenshotCount = s.screenshotCount || s.ScreenshotCount || 0;
+                const uploadCount = s.uploadCount || s.UploadCount || 0;
+                // Health might be JSON payload or object
+                const health = s.health || s.Health;
+
                 await prisma.machineState.upsert({
                     where: { machineId: machineId },
                     create: {
                         machineId,
-                        lastActivityTime: state.lastActivityTime ? new Date(state.lastActivityTime) : new Date(),
-                        activeWindow: state.activeWindow,
-                        screenshotCount: state.screenshotCount || 0,
-                        uploadCount: state.uploadCount || 0,
-                        healthStatus: JSON.stringify(state.health),
+                        lastActivityTime: lastActivityTime ? new Date(lastActivityTime) : new Date(),
+                        activeWindow: activeWindow,
+                        screenshotCount: screenshotCount,
+                        uploadCount: uploadCount,
+                        healthStatus: JSON.stringify(health),
                         settings: existingSettings,
                         updatedAt: new Date()
                     },
                     update: {
-                        lastActivityTime: state.lastActivityTime ? new Date(state.lastActivityTime) : new Date(),
-                        activeWindow: state.activeWindow,
-                        screenshotCount: state.screenshotCount || 0,
-                        uploadCount: state.uploadCount || 0,
-                        healthStatus: JSON.stringify(state.health),
+                        lastActivityTime: lastActivityTime ? new Date(lastActivityTime) : new Date(),
+                        activeWindow: activeWindow,
+                        screenshotCount: screenshotCount,
+                        uploadCount: uploadCount,
+                        healthStatus: JSON.stringify(health),
                         updatedAt: new Date()
                         // settings: not updated here to preserve it
                     }
@@ -337,8 +345,13 @@ export default (io: Server) => {
                     return;
                 }
 
-                // Extract fields (Strictly typed now)
-                const { timestamp, activeWindow, processName, duration, username } = activity;
+                // Extract fields (Strictly typed now - wrapped in any for PascalCase fallback)
+                const a = activity as any;
+                const timestamp = a.timestamp || a.Timestamp;
+                const activeWindow = a.activeWindow || a.ActiveWindow;
+                const processName = a.processName || a.ProcessName;
+                const duration = a.duration || a.Duration;
+                const username = a.username || a.Username;
 
                 // 1. Store raw heartbeat
                 await prisma.activityHistory.create({
@@ -425,7 +438,14 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status !== 'active') return;
 
-                const { eventId, eventType, username, timestamp, details, sourceLogName, isFlagged } = auditEvent;
+                const ae = auditEvent as any;
+                const eventId = ae.eventId || ae.EventId;
+                const eventType = ae.eventType || ae.EventType;
+                const username = ae.username || ae.Username;
+                const timestamp = ae.timestamp || ae.Timestamp;
+                const details = ae.details || ae.Details;
+                const sourceLogName = ae.sourceLogName || ae.SourceLogName;
+                const isFlagged = ae.isFlagged !== undefined ? ae.isFlagged : ae.IsFlagged;
 
                 // Deduplicate based on eventId
                 const existingEvent = await prisma.auditEvent.findFirst({
@@ -470,7 +490,12 @@ export default (io: Server) => {
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status !== 'active') return;
 
-                const { id, captureTime, triggerType, googleDriveFileId, isUploaded } = screenshot;
+                const s = screenshot as any;
+                const id = s.id || s.Id;
+                const captureTime = s.captureTime || s.CaptureTime;
+                const triggerType = s.triggerType || s.TriggerType;
+                const googleDriveFileId = s.googleDriveFileId || s.GoogleDriveFileId;
+                const isUploaded = s.isUploaded !== undefined ? s.isUploaded : s.IsUploaded;
 
                 await prisma.screenshot.create({
                     data: {
