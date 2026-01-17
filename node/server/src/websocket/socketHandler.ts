@@ -386,7 +386,7 @@ export default (io: Server) => {
 
                 if (shouldExtend) {
                     // Extend existing session
-                    const newEndTime = timeSeconds;
+                    const newEndTime = timeSeconds + duration;
                     const newDuration = newEndTime - recentSession.startTime;
                     const newHeartbeatCount = recentSession.heartbeatCount + 1;
 
@@ -405,8 +405,9 @@ export default (io: Server) => {
                         data: {
                             machineId: machineId,
                             startTime: timeSeconds,
-                            endTime: timeSeconds,
-                            durationSeconds: 0,
+                            // Use the duration provided by the agent (which is accurate for finished activities)
+                            endTime: timeSeconds + duration,
+                            durationSeconds: duration,
                             processName: processName,
                             activeWindow: activeWindow,
                             username: username || null,
@@ -433,7 +434,14 @@ export default (io: Server) => {
             try {
                 const { machineId, auditEvent } = data;
 
-                if (!machineId || !auditEvent) return;
+                if (!machineId) {
+                    console.log('Received audit event without machineId:', Object.keys(data));
+                    return;
+                }
+
+                // Debug log
+                console.log(`Audit Payload Keys:`, Object.keys(data));
+                console.log(`Audit Event Content Keys:`, data.auditEvent ? Object.keys(data.auditEvent) : 'missing');
 
                 const machine = await prisma.machine.findUnique({ where: { id: machineId } });
                 if (machine?.status !== 'active') return;
