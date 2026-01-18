@@ -5,7 +5,6 @@ import { ActivityTable } from "./components/ActivityTable";
 import { ActivityTimeline } from "./components/ActivityTimeline";
 import { ActivityFilters } from "./ActivityFilters";
 import { VorsightApi, type AgentSettings } from "@/api/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Activity } from "lucide-react";
 import { ConfigSection } from "@/components/common/ConfigSection";
@@ -18,8 +17,6 @@ export function ActivityPage() {
     const { selectedMachine } = useMachine();
     const { activities, isLoading, isError } = useActivity(selectedMachine?.id);
     const {
-        activityViewMode: activeTab,
-        setActivityViewMode: setActiveTab,
         activityDateRange: dateRangeFilter,
         setActivityDateRange: setDateRangeFilter
     } = useUIState();
@@ -32,26 +29,6 @@ export function ActivityPage() {
             loadSettings();
         }
     }, [selectedMachine]);
-
-    // Auto-switch to timeline view on mobile
-    // Auto-switch to timeline view on mobile
-    useEffect(() => {
-        const mediaQuery = window.matchMedia('(min-width: 768px)'); // Match Tailwind 'md' breakpoint
-
-        const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
-            // If strictly mobile (< 768px) and in table view, switch to timeline
-            if (!e.matches && activeTab === 'table') {
-                setActiveTab('timeline');
-            }
-        };
-
-        // Check initial state
-        handleChange(mediaQuery);
-
-        // Listen for changes
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [activeTab]);
 
     const loadSettings = async () => {
         if (!selectedMachine) return;
@@ -126,42 +103,35 @@ export function ActivityPage() {
                 onDateRangeFilterChange={setDateRangeFilter}
             />
 
-            <Tabs defaultValue={activeTab} onValueChange={(val) => setActiveTab(val as 'timeline' | 'table')}>
-                <div className="hidden md:block mb-4">
-                    <TabsList className="w-full grid grid-cols-1 md:grid-cols-2">
-                        <TabsTrigger value="timeline">Timeline View</TabsTrigger>
-                        <TabsTrigger value="table" className="hidden md:flex">Table View</TabsTrigger>
-                    </TabsList>
-                </div>
+            <Card>
+                <CardContent>
+                    {isLoading && (
+                        <div className="flex items-center justify-center p-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    )}
 
-                <Card>
-                    <CardContent>
-                        {isLoading && (
-                            <div className="flex items-center justify-center p-12">
-                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    {isError && (
+                        <div className="p-8 text-center text-destructive">
+                            Failed to load activity data.
+                        </div>
+                    )}
+
+                    {!isLoading && !isError && (
+                        <>
+                            {/* Desktop View: Table */}
+                            <div className="hidden md:block">
+                                <ActivityTable activities={filteredActivities} />
                             </div>
-                        )}
 
-                        {isError && (
-                            <div className="p-8 text-center text-destructive">
-                                Failed to load activity data.
+                            {/* Mobile View: Timeline */}
+                            <div className="md:hidden">
+                                <ActivityTimeline activities={filteredActivities} />
                             </div>
-                        )}
-
-                        {!isLoading && !isError && (
-                            <>
-                                <TabsContent value="timeline" className="mt-0">
-                                    <ActivityTimeline activities={filteredActivities} />
-                                </TabsContent>
-
-                                <TabsContent value="table" className="mt-0">
-                                    <ActivityTable activities={filteredActivities} />
-                                </TabsContent>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
-            </Tabs>
+                        </>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

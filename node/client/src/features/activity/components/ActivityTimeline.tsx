@@ -8,9 +8,9 @@ interface ActivityTimelineProps {
 }
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
-    const mergedActivities = mergeSequentialActivities(activities);
+    const mergedActivities = mergeSequentialActivities(activities).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    // Group activities by date (not hour)
+    // Group activities by date
     const groupedActivities = mergedActivities.reduce((acc, activity) => {
         const date = new Date(activity.timestamp);
         const key = format(date, "yyyy-MM-dd");
@@ -36,49 +36,56 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                     {format(new Date(key), "EEEE, MMMM d, yyyy")}
                                 </span>
                             </div>
-                            <div className="ml-4 space-y-4 border-l-2 pl-4">
+
+                            {/* Timeline Container */}
+                            <div className="ml-4 border-l-2 border-border pl-4 space-y-8 pb-4">
                                 {groupedActivities[key].map((activity) => (
                                     <div key={activity.id} className="relative">
-                                        <div className="absolute -left-[25px] mt-1.5 h-4 w-4 rounded-full border bg-background" />
-                                        <div className="mb-1 text-sm font-medium leading-none text-muted-foreground">
-                                            {format(new Date(activity.timestamp), "HH:mm:ss")}
-                                        </div>
-                                        <div className="rounded-lg border bg-card p-3 shadow-sm transition-all hover:shadow-md">
+                                        {/* Dot: 
+                                            Container has pl-4 (16px).
+                                            Border is 2px.
+                                            Relative parent starts inside the padding.
+                                            Border center is at -17px from content start (16px padding + 1px half-border).
+                                            Dot radius is 6px.
+                                            Center of dot needs to be at -17px.
+                                            Left of dot needs to be -17px - 6px = -23px.
+                                        */}
+                                        <div className="absolute -left-[23px] top-1 h-3 w-3 rounded-full border-2 border-primary bg-background" />
+
+                                        <div className="rounded-lg border bg-card p-3 shadow-sm">
                                             <div className="flex items-start gap-3 w-full overflow-hidden">
                                                 <div className="mt-0.5 shrink-0">
                                                     <AppIcon name={activity.process_name} />
                                                 </div>
                                                 <div className="min-w-0 flex-1 overflow-hidden">
-                                                    <div
-                                                        className="font-semibold text-foreground leading-tight truncate"
-                                                        title={activity.active_window || activity.process_name || 'Unknown Activity'}
-                                                    >
-                                                        {activity.active_window || activity.process_name || 'Unknown Activity'}
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="font-semibold text-foreground leading-tight truncate text-sm">
+                                                            {activity.active_window || activity.process_name || 'Unknown Activity'}
+                                                        </div>
+                                                        <div className="text-[10px] text-muted-foreground font-mono whitespace-nowrap shrink-0">
+                                                            {format(new Date(activity.timestamp), "HH:mm:ss")}
+                                                        </div>
                                                     </div>
 
-                                                    {/* Show process name as subtitle only if we have a window title */}
                                                     {activity.active_window && activity.process_name && (
-                                                        <div
-                                                            className="text-xs text-muted-foreground mt-0.5 font-mono truncate"
-                                                            title={activity.process_name}
-                                                        >
+                                                        <div className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
                                                             {activity.process_name}
                                                         </div>
                                                     )}
 
-                                                    {/* Duration */}
-                                                    {activity.duration > 0 && (
-                                                        <div className="mt-1.5 inline-flex items-center rounded-sm bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/50">
-                                                            {formatDuration(activity.duration)}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        {activity.duration > 0 && (
+                                                            <div className="inline-flex items-center rounded-sm bg-muted/50 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/50">
+                                                                {formatDuration(activity.duration)}
+                                                            </div>
+                                                        )}
 
-                                                    {/* User (optional, maybe redundant if single user filter?) */}
-                                                    {activity.username && (
-                                                        <div className="mt-1 text-[10px] text-muted-foreground/60">
-                                                            {activity.username}
-                                                        </div>
-                                                    )}
+                                                        {activity.username && (
+                                                            <div className="text-[10px] text-muted-foreground/60 truncate ml-auto pl-2 max-w-[50%]">
+                                                                {activity.username}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
