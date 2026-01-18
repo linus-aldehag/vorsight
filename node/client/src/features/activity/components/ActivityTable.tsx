@@ -24,10 +24,10 @@ export function ActivityTable({ activities }: ActivityTableProps) {
             <Table variant="glass">
                 <TableHeader className="bg-[var(--glass-bg)] backdrop-blur sticky top-0 z-10 border-b border-[var(--glass-border)]">
                     <TableRow className="hover:bg-transparent border-b-[var(--glass-border)]">
-                        <TableHead className="w-[180px]">Time</TableHead>
-                        <TableHead>Activity</TableHead>
-                        <TableHead className="text-right w-[100px]">Duration</TableHead>
-                        <TableHead className="w-[120px] text-right">User</TableHead>
+                        <TableHead className="w-[180px] h-auto py-2">Time</TableHead>
+                        <TableHead className="h-auto py-2">Activity</TableHead>
+                        <TableHead className="text-right w-[100px] h-auto py-2">Duration</TableHead>
+                        <TableHead className="w-[120px] text-right h-auto py-2">User</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -43,10 +43,10 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                 key={activity.id}
                                 className="border-b-[var(--glass-border)] hover:bg-muted/10 transition-colors"
                             >
-                                <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+                                <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground py-2 h-auto">
                                     {formatTimestamp(activity.timestamp, { includeDate: true, includeSeconds: true })}
                                 </TableCell>
-                                <TableCell className="max-w-[400px]">
+                                <TableCell className="max-w-[400px] py-2 h-auto">
                                     <div className="flex items-start gap-3 w-full overflow-hidden">
                                         <div className="mt-1 shrink-0">
                                             <AppIcon name={activity.process_name} />
@@ -69,8 +69,8 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right font-mono text-xs">{formatDuration(activity.duration)}</TableCell>
-                                <TableCell className="font-medium text-xs text-right text-muted-foreground">{activity.username || '-'}</TableCell>
+                                <TableCell className="text-right font-mono text-xs py-2 h-auto">{formatDuration(activity.duration)}</TableCell>
+                                <TableCell className="font-medium text-xs text-right text-muted-foreground py-2 h-auto">{activity.username || '-'}</TableCell>
                             </TableRow>
                         ))
                     )}
