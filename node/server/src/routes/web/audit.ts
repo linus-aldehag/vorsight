@@ -7,11 +7,12 @@ const router = express.Router();
 // Get recent audit events (with optional filtering)
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const { machineId, limit = '50', offset = '0', flaggedOnly } = req.query;
+        const { machineId, limit = '50', offset = '0', flaggedOnly, unacknowledgedOnly } = req.query;
 
         const where: any = {};
         if (machineId) where.machineId = machineId;
         if (flaggedOnly === 'true') where.isFlagged = true;
+        if (unacknowledgedOnly === 'true') where.acknowledged = false;
 
         const events = await prisma.auditEvent.findMany({
             where,
