@@ -20,7 +20,7 @@ import { socketService } from '@/services/socket';
 
 export function useRecentAuditEvents(machineId: string) {
     const { data, error, isLoading, mutate } = useSWR<AuditEvent[]>(
-        machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=5&flaggedOnly=true` : null,
+        machineId ? `/api/web/v1/audit?machineId=${machineId}&limit=5&unacknowledgedOnly=true` : null,
         fetcher,
         {
             refreshInterval: 10000, // Refresh every 10 seconds
