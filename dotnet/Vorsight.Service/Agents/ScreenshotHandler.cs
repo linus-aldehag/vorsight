@@ -45,7 +45,7 @@ public class ScreenshotHandler
 
     public async Task HandleScreenshotMessageAsync(uint sessionId, PipeMessage message)
     {
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Screenshot received from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
             sessionId,
             message.Payload?.Length ?? 0,
@@ -93,7 +93,7 @@ public class ScreenshotHandler
                             lastHash
                         );
 
-                        _logger.LogInformation(
+                        _logger.LogDebug(
                             "Duplicate Check: Similarity={Similarity:F2}%, Threshold=5%. CurrentHash={CurrentPrefix}, LastHash={LastPrefix}",
                             similarity,
                             currentHash.Substring(0, Math.Min(8, currentHash.Length)),
@@ -102,7 +102,7 @@ public class ScreenshotHandler
 
                         if (_hashService.IsSimilar(currentHash, lastHash))
                         {
-                            _logger.LogInformation(
+                            _logger.LogDebug(
                                 "Screenshot skipped - too similar to previous ({Similarity:F2}% difference, threshold: 5%). Machine: {MachineId}",
                                 similarity,
                                 machineId

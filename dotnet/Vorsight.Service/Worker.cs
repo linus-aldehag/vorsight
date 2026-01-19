@@ -117,7 +117,7 @@ public class Worker : BackgroundService
             // Hook up schedule updates - Now handled via settings, but keep for fallback triggers
             _serverConnection.ScheduleUpdateReceived += async (sender, args) =>
             {
-                _logger.LogInformation(
+                _logger.LogDebug(
                     "Schedule update event received - reloading settings to get new schedule"
                 );
                 await FetchAndApplySettingsAsync();
@@ -126,7 +126,7 @@ public class Worker : BackgroundService
             // Hook up settings updates
             _serverConnection.SettingsUpdateReceived += async (sender, args) =>
             {
-                _logger.LogInformation("Settings update event received - reloading from server");
+                _logger.LogDebug("Settings update event received - reloading from server");
                 await FetchAndApplySettingsAsync();
             };
 
@@ -160,7 +160,7 @@ public class Worker : BackgroundService
                 );
                 if (_serverConnection.IsConnected)
                 {
-                    _logger.LogInformation(
+                    _logger.LogDebug(
                         "Sending audit event to server: EventId={EventId}, Type={EventType}",
                         args.Event.EventId,
                         args.Event.EventType
@@ -168,7 +168,7 @@ public class Worker : BackgroundService
 
                     await _serverConnection.SendAuditEventAsync(args.Event);
 
-                    _logger.LogInformation("Audit event sent successfully");
+                    _logger.LogDebug("Audit event sent successfully");
                 }
                 else
                 {
@@ -305,9 +305,9 @@ public class Worker : BackgroundService
     {
         try
         {
-            _logger.LogInformation("Starting component: {Name}", name);
+            _logger.LogDebug("Starting component: {Name}", name);
             await startupAction();
-            _logger.LogInformation("Component started: {Name}", name);
+            _logger.LogDebug("Component started: {Name}", name);
         }
         catch (Exception ex)
         {

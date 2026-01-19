@@ -293,7 +293,7 @@ public class HealthMonitor : IHealthMonitor
                     ? DateTime.Now - _lastActivityReceived
                     : TimeSpan.Zero;
 
-            _logger.LogInformation(
+            _logger.LogDebug(
                 "Health Report - Period: {PeriodDuration:hh\\:mm\\:ss} | "
                     + "Screenshots: {ScreenshotSuccess}/{ScreenshotTotal} ({ScreenshotRate:F1}%) | "
                     + "Uploads: {UploadSuccess}/{UploadTotal} ({UploadRate:F1}%) | "

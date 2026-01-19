@@ -32,7 +32,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
                 bitmap = CaptureScreenInternal();
 
                 // Convert to PNG bytes
-                using var memoryStream = new System.IO.MemoryStream();
+                using var memoryStream = new MemoryStream();
                 bitmap.Save(memoryStream, ImageFormat.Png);
                 var pngData = memoryStream.ToArray();
 

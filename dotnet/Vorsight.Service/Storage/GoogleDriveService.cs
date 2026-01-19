@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
@@ -203,7 +204,7 @@ public class GoogleDriveService : IGoogleDriveService
                     cancellationToken
                 );
 
-                _logger.LogInformation(
+                _logger.LogDebug(
                     "Starting upload of file: {FilePath} to folder: {FolderPath} ({FolderId})",
                     filePath,
                     folderPath,
@@ -232,7 +233,7 @@ public class GoogleDriveService : IGoogleDriveService
                 if (response.Status == Google.Apis.Upload.UploadStatus.Completed)
                 {
                     var file = request.ResponseBody;
-                    _logger.LogInformation(
+                    _logger.LogDebug(
                         "File uploaded successfully. ID: {FileId}, Link: {Link}",
                         file.Id,
                         file.WebViewLink
@@ -281,7 +282,7 @@ public class GoogleDriveService : IGoogleDriveService
                 return await action(accessToken);
             }
             catch (Google.GoogleApiException ex)
-                when (ex.HttpStatusCode == System.Net.HttpStatusCode.Unauthorized && !retried)
+                when (ex.HttpStatusCode == HttpStatusCode.Unauthorized && !retried)
             {
                 _logger.LogWarning(
                     "Got 401 Unauthorized from Google API. Invalidating cached access token and retrying..."
@@ -315,7 +316,7 @@ public class GoogleDriveService : IGoogleDriveService
         var baseEx = ex.GetBaseException();
         if (
             baseEx is Google.GoogleApiException gaEx
-            && gaEx.HttpStatusCode == System.Net.HttpStatusCode.Unauthorized
+            && gaEx.HttpStatusCode == HttpStatusCode.Unauthorized
         )
             return true;
 
@@ -441,7 +442,7 @@ public class GoogleDriveService : IGoogleDriveService
         };
 
         var folder = await service.Files.Create(folderMetadata).ExecuteAsync(cancellationToken);
-        _logger.LogInformation("Created folder '{Name}': {FolderId}", name, folder.Id);
+        _logger.LogDebug("Created folder '{Name}': {FolderId}", name, folder.Id);
         return folder.Id;
     }
 

@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
@@ -363,10 +364,7 @@ public class ServerConnection : IServerConnection
                                     this,
                                     new CommandReceivedEventArgs { CommandType = type, Data = data }
                                 );
-                                _logger.LogInformation(
-                                    "Received command from server: {Type}",
-                                    type
-                                );
+                                _logger.LogDebug("Received command from server: {Type}", type);
                             }
                         }
                     }
@@ -496,9 +494,9 @@ public class ServerConnection : IServerConnection
 
         if (_socket?.Connected == true)
         {
-            _logger.LogInformation("Emitting audit event via Socket.IO");
+            _logger.LogDebug("Emitting audit event via Socket.IO");
             await _socket.EmitAsync("machine:audit", new { machineId = _machineId, auditEvent });
-            _logger.LogInformation("Audit event emitted successfully");
+            _logger.LogDebug("Audit event emitted successfully");
         }
         else
         {
@@ -523,9 +521,7 @@ public class ServerConnection : IServerConnection
         {
             using var content = new MultipartFormDataContent();
             using var fileContent = new ByteArrayContent(fileData);
-            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
-                "image/png"
-            );
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/png");
             content.Add(fileContent, "file", fileName);
 
             var request = new HttpRequestMessage(
