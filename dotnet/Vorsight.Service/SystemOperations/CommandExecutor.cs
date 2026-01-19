@@ -14,7 +14,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
     {
         try
         {
-            logger.LogInformation(
+            logger.LogDebug(
                 "Attempting to run command as user: {Command} {Args}",
                 command,
                 arguments
@@ -33,26 +33,26 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             logger.LogDebug("Active console session ID: {SessionId}", sessionId);
 
             // Optimization: If we are already in the target session, just start the process directly
-            if (System.Diagnostics.Process.GetCurrentProcess().SessionId == sessionId)
+            if (Process.GetCurrentProcess().SessionId == sessionId)
             {
                 logger.LogInformation(
                     "Service is running in target session {SessionId}. Using direct Process.Start.",
                     sessionId
                 );
-                var psi = new System.Diagnostics.ProcessStartInfo
+                var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
                     Arguments = $"/c {command} {arguments}",
-                    UseShellExecute = false,
-                    CreateNoWindow = true, // Or false if we want to see it
+                    UseShellExecute = false, // Must be false for CreateNoWindow to work
+                    CreateNoWindow = true,
                 };
-                System.Diagnostics.Process.Start(psi);
+                Process.Start(psi);
                 return true;
             }
 
             // 2. Find a process in that session (Explorer is best bet)
-            var userProcess = System
-                .Diagnostics.Process.GetProcessesByName("explorer")
+            var userProcess = Process
+                .GetProcessesByName("explorer")
                 .FirstOrDefault(p => p.SessionId == sessionId);
 
             if (userProcess == null)
@@ -72,8 +72,8 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 }
 
                 // Log all processes in the session for diagnostics
-                var sessionProcesses = System
-                    .Diagnostics.Process.GetProcesses()
+                var sessionProcesses = Process
+                    .GetProcesses()
                     .Where(p => p.SessionId == sessionId)
                     .Select(p => p.ProcessName)
                     .Take(10)
@@ -164,10 +164,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                             )
                         )
                         {
-                            logger.LogInformation(
-                                "Successfully started process {Pid} as user",
-                                pid
-                            );
+                            logger.LogDebug("Successfully started process {Pid} as user", pid);
                             return true;
                         }
                         else
