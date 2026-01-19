@@ -57,11 +57,40 @@ public class ScreenshotHandler
         {
             if (message.Payload != null && message.Payload.Length > 0)
             {
+                // Parse metadata first to determine Trigger Type
+                string windowTitle = "Unknown";
+                string triggerType = "Auto"; // Default
+
+                if (!string.IsNullOrEmpty(message.Metadata))
+                {
+                    var parts = message.Metadata.Split('|');
+                    foreach (var part in parts)
+                    {
+                        var kvp = part.Split(':', 2);
+                        if (kvp.Length == 2)
+                        {
+                            if (kvp[0] == "Title")
+                            {
+                                windowTitle = kvp[1];
+                            }
+                            else if (kvp[0] == "Type")
+                            {
+                                triggerType = kvp[1];
+                            }
+                        }
+                    }
+                }
+
                 // Check if duplicate filtering is enabled
                 var settings = await _settingsManager.GetSettingsAsync();
                 var machineId = _serverConnection.MachineId ?? "unknown";
+                bool isManual = string.Equals(
+                    triggerType,
+                    "Manual",
+                    StringComparison.OrdinalIgnoreCase
+                );
 
-                if (settings.Screenshots.FilterDuplicates)
+                if (settings.Screenshots.FilterDuplicates && !isManual)
                 {
                     // Calculate perceptual hash
                     string currentHash;
@@ -137,20 +166,9 @@ public class ScreenshotHandler
                         _lastHashPerMachine[machineId] = currentHash;
                     }
                 }
-                // Parse metadata for Title
-                string windowTitle = "Unknown";
-                if (!string.IsNullOrEmpty(message.Metadata))
+                else if (isManual)
                 {
-                    var parts = message.Metadata.Split('|');
-                    foreach (var part in parts)
-                    {
-                        var kvp = part.Split(':', 2);
-                        if (kvp.Length == 2 && kvp[0] == "Title")
-                        {
-                            windowTitle = kvp[1];
-                            break;
-                        }
-                    }
+                    _logger.LogDebug("Manual screenshot detected - bypassing duplicate check.");
                 }
 
                 // Sanitize filename
@@ -202,7 +220,7 @@ public class ScreenshotHandler
                             {
                                 Id = driveFileId, // Use Drive ID as screenshot ID
                                 CaptureTime = DateTimeOffset.UtcNow,
-                                TriggerType = "Auto",
+                                TriggerType = triggerType, // Use parsed trigger type
                                 GoogleDriveFileId = driveFileId,
                                 IsUploaded = true,
                             }
