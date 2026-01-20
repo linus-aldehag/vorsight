@@ -3,10 +3,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Info } from 'lucide-react';
-import { format } from 'date-fns';
+
 import type { LogEntry } from './types';
 import { cn } from '@/lib/utils';
 import { logRowVariants } from '@/components/ui/variants/log';
+import { format } from 'date-fns';
 
 interface LogTableProps {
     logs: LogEntry[];
@@ -179,41 +180,43 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
             </div>
 
             {/* Mobile Card View */}
-            <div className="md:hidden space-y-3 p-4">
-                {logs.map((log) => (
-                    <div key={log.id} className="bg-card/50 border border-border/50 rounded-lg overflow-hidden shadow-sm backdrop-blur-sm">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-3 bg-muted/30 border-b border-border/50">
-                            <span className="font-mono text-xs text-muted-foreground">
-                                {format(new Date(log.timestamp), 'HH:mm:ss')}
-                            </span>
-                            {getLevelBadge(log.level)}
+            <div className="md:hidden space-y-2 p-2">
+                {logs.map((log) => {
+                    return (
+                        <div key={log.id} className="bg-card/40 border border-border/60 rounded-lg overflow-hidden shadow-sm">
+                            {/* Header */}
+                            <div className="flex items-center justify-between p-2.5 bg-muted/20 border-b border-border/40">
+                                <span className="font-mono text-xs text-muted-foreground">
+                                    {format(new Date(log.timestamp), 'HH:mm:ss')}
+                                </span>
+                                {getLevelBadge(log.level)}
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-3 space-y-2">
+                                <p className="text-sm font-medium text-foreground leading-relaxed break-words">
+                                    {log.message}
+                                </p>
+
+                                {log.exception && (
+                                    <div className="p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 mt-2 overflow-x-auto">
+                                        <pre className="text-[10px] font-mono text-red-400 whitespace-pre-wrap break-all">
+                                            {log.exception}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                {log.sourceContext && (
+                                    <div className="flex justify-end pt-1">
+                                        <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground max-w-full truncate">
+                                            {log.sourceContext.split('.').pop()}
+                                        </Badge>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-                        {/* Body */}
-                        <div className="p-3 space-y-2">
-                            <p className="text-sm font-medium text-foreground leading-relaxed break-words">
-                                {log.message}
-                            </p>
-
-                            {log.exception && (
-                                <div className="p-2 bg-black/5 dark:bg-black/30 rounded border border-border/50 mt-2 overflow-x-auto">
-                                    <pre className="text-[10px] font-mono text-red-400 whitespace-pre-wrap break-all">
-                                        {log.exception}
-                                    </pre>
-                                </div>
-                            )}
-
-                            {log.sourceContext && (
-                                <div className="flex justify-end pt-1">
-                                    <Badge variant="outline" className="text-[10px] font-mono text-muted-foreground max-w-full truncate">
-                                        {log.sourceContext.split('.').pop()}
-                                    </Badge>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 <div ref={scrollEndRef} />
             </div>
         </ScrollArea>
