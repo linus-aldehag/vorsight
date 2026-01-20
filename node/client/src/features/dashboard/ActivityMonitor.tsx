@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Activity as ActivityIcon } from 'lucide-react';
 import { SectionHeader } from '@/components/common/SectionHeader';
+import { HeartbeatProgress } from './components/HeartbeatProgress';
 import { useSettings } from '@/context/SettingsContext';
 import { useMachine } from '@/context/MachineContext';
 import { cn } from '@/lib/utils';
@@ -99,8 +100,9 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
                     <div className="flex items-start gap-3 p-3 rounded-md border border-[var(--glass-border)] bg-surface/30">
                         <Clock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                         <div className="flex-1 min-w-0">
-                            <div className="text-xs text-muted-foreground">Last Snapshot</div>
-                            <div className="text-sm font-mono">{timestamp}</div>
+                            {/* <div className="text-xs text-muted-foreground">Last Snapshot</div> */}
+                            <div className="text-sm font-mono mb-1.5">{timestamp}</div>
+                            <HeartbeatProgress lastSeen={displayActivity?.timestamp} className="h-0.5" />
                         </div>
                     </div>
                 </div>
