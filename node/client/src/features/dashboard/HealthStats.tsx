@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { AlertCircle, AlertTriangle, LogOut, Power } from 'lucide-react';
 import { VorsightApi } from '@/api/client';
 import { LiveStatusText } from './components/LiveStatusText';
+import { HeartbeatProgress } from './components/HeartbeatProgress';
 
 
 interface HealthStatsProps {
@@ -42,8 +43,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
         const lastViewedStr = localStorage.getItem('lastLogsViewed');
         const lastViewedTime = lastViewedStr ? new Date(lastViewedStr).getTime() : 0;
 
-        // Check last 5 mins or last few logs
-        const recentLogs = logs.slice(0, 10); // Check slightly more to be safe
+        const recentLogs = logs.slice(0, 10);
 
         // Filter for NEW logs only (newer than last viewed)
         const newError = recentLogs.find(l => {
@@ -101,29 +101,55 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                         )}
                     </div>
 
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-3">
+                        {/* Service Status Row */}
                         <div className="flex items-center gap-3">
                             <LiveStatusText
-                                status={effectiveStatus}
+                                status={machineStatus}
                                 statusText={statusText}
-                                icon={logHealth?.type === 'error' ? AlertCircle : logHealth?.type === 'warning' ? AlertTriangle : undefined}
                                 timestamp={lastSeenTime}
                             />
+                            {/* Heartbeat Progress (only if online/reachable) */}
+                            {effectiveStatus !== 'offline' && (
+                                <div className="flex-1 max-w-[100px] mt-0.5">
+                                    <HeartbeatProgress lastSeen={lastSeenTime} className="h-0.5" />
+                                </div>
+                            )}
                         </div>
 
-                        {/* Log Warnings/Errors Link */}
+                        {/* Log Health Row (if issues exist) */}
                         {logHealth && (
-                            <div
-                                onClick={onToggleLogs}
-                                className={cn(
-                                    "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 flex items-center gap-1.5 w-fit transition-colors ml-1",
-                                    logHealth.type === 'error' ? "text-destructive hover:text-destructive/80" : "text-warning hover:text-warning/80"
+                            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/40 border border-border/40">
+                                {logHealth.type === 'error' ? (
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                ) : (
+                                    <AlertTriangle className="h-4 w-4 text-warning" />
                                 )}
-                            >
-                                View Log Details
+                                <span className="text-xs font-medium flex-1">
+                                    {logHealth.message}
+                                </span>
+                                <div
+                                    onClick={onToggleLogs}
+                                    className={cn(
+                                        "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 transition-colors",
+                                        logHealth.type === 'error' ? "text-destructive hover:text-destructive/80" : "text-warning hover:text-warning/80"
+                                    )}
+                                >
+                                    View
+                                </div>
                             </div>
                         )}
                     </div>
+
+                    {/* Ping / Reachability (if distinct from service status) */}
+                    {selectedMachine?.pingStatus === 'reachable' && (
+                        <div className="flex items-center gap-2 px-1">
+                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60 shadow-[0_0_4px_rgba(16,185,129,0.3)]" />
+                            <span className="text-[10px] text-muted-foreground/80 font-mono tracking-tight">
+                                MACHINE PINGABLE
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Uptime Stats */}
@@ -156,6 +182,6 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                     <span>Shutdown</span>
                 </button>
             </div>
-        </Card>
+        </Card >
     );
 });
