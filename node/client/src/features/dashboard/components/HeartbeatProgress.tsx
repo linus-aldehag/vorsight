@@ -21,26 +21,30 @@ export function HeartbeatProgress({
             return;
         }
 
-        const calculateProgress = () => {
+        let animationFrameId: number;
+
+        const updateProgress = () => {
             const last = new Date(lastSeen).getTime();
             const now = new Date().getTime();
             const diff = now - last;
             const totalMs = intervalSeconds * 1000;
 
             // Calculate percentage remaining (starts at 100, goes to 0)
-            // If we are past the interval, we go into negative/zero
             const percentRemaining = Math.max(0, Math.min(100, 100 - (diff / totalMs) * 100));
 
             setProgress(percentRemaining);
+
+            if (percentRemaining > 0) {
+                animationFrameId = requestAnimationFrame(updateProgress);
+            }
         };
 
-        // Initial calculation
-        calculateProgress();
+        // Start loop
+        updateProgress();
 
-        // Update frequently for smooth animation
-        const timer = setInterval(calculateProgress, 100);
-
-        return () => clearInterval(timer);
+        return () => {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        };
     }, [lastSeen, intervalSeconds]);
 
     // Determine color based on freshness
@@ -48,9 +52,6 @@ export function HeartbeatProgress({
     // 33-66% = Yellow (Aging)
     // < 33% = Red (Stale)
     // 0% = Red/Empty
-
-    // Actually, for a "heartbeat" effect, maybe it's better to just be subtle accent color?
-    // Let's stick to standard progress styling for now, maybe subtle gradient.
 
     const getColor = (p: number) => {
         if (p > 66) return "bg-primary shadow-[0_0_8px_hsl(var(--primary)/0.4)]";
@@ -61,7 +62,7 @@ export function HeartbeatProgress({
     return (
         <div className={cn("h-1 w-full bg-secondary/30 rounded-full overflow-hidden", className)}>
             <div
-                className={cn("h-full transition-all duration-300 ease-linear", getColor(progress))}
+                className={cn("h-full", getColor(progress))}
                 style={{ width: `${progress}%` }}
             />
         </div>
