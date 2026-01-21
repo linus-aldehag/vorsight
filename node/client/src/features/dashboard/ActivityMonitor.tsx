@@ -102,7 +102,19 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
                         <div className="flex-1 min-w-0">
                             {/* <div className="text-xs text-muted-foreground">Last Snapshot</div> */}
                             <div className="text-sm font-mono mb-1.5">{timestamp}</div>
-                            <HeartbeatProgress lastSeen={displayActivity?.timestamp} className="h-0.5" />
+                            <HeartbeatProgress
+                                lastSeen={displayActivity?.timestamp}
+                                intervalSeconds={(() => {
+                                    if (!selectedMachine?.settings) return 30;
+                                    try {
+                                        const s = typeof selectedMachine.settings === 'string'
+                                            ? JSON.parse(selectedMachine.settings)
+                                            : selectedMachine.settings;
+                                        return s.activity?.intervalSeconds || 30;
+                                    } catch { return 30; }
+                                })()}
+                                className="h-0.5"
+                            />
                         </div>
                     </div>
                 </div>

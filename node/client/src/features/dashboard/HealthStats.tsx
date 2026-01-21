@@ -110,9 +110,21 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                                 timestamp={lastSeenTime}
                             />
                             {/* Heartbeat Progress (only if online/reachable) */}
-                            {effectiveStatus !== 'offline' && (
+                            {machineStatus !== 'offline' && (
                                 <div className="flex-1 max-w-[100px] mt-0.5">
-                                    <HeartbeatProgress lastSeen={lastSeenTime} className="h-0.5" />
+                                    <HeartbeatProgress
+                                        lastSeen={lastSeenTime}
+                                        intervalSeconds={(() => {
+                                            if (!selectedMachine?.settings) return 30;
+                                            try {
+                                                const s = typeof selectedMachine.settings === 'string'
+                                                    ? JSON.parse(selectedMachine.settings)
+                                                    : selectedMachine.settings;
+                                                return s.monitoring?.pingIntervalSeconds || s.pingIntervalSeconds || 30;
+                                            } catch { return 30; }
+                                        })()}
+                                        className="h-0.5"
+                                    />
                                 </div>
                             )}
                         </div>
