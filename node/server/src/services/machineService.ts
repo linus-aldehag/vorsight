@@ -234,7 +234,7 @@ export class MachineService {
             },
             accessControl: {
                 enabled: !!enableAccessControl,
-                violationAction: (accessControlAction as ViolationAction) || ViolationAction.Logoff,
+                violationAction: (accessControlAction as ViolationAction) || 'logoff',
                 schedule: schedule || []
             }
         };

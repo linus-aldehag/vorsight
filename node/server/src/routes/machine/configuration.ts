@@ -25,7 +25,7 @@ router.get('/', authenticateMachine, async (req: Request, res: Response) => {
 
             activity: { enabled: false, intervalSeconds: 10 },
             audit: { enabled: false, filters: { security: true, system: true, application: true } },
-            accessControl: { enabled: false, violationAction: ViolationAction.Logoff, schedule: [] }
+            accessControl: { enabled: false, violationAction: 'logoff', schedule: [] }
         };
 
         // Merge stored settings with defaults

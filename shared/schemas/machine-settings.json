@@ -10,6 +10,9 @@
         "activity": {
             "$ref": "#/definitions/ActivitySettings"
         },
+        "network": {
+            "$ref": "#/definitions/NetworkSettings"
+        },
         "audit": {
             "$ref": "#/definitions/AuditSettings"
         },
@@ -61,6 +64,18 @@
             "required": [
                 "enabled",
                 "intervalSeconds"
+            ]
+        },
+        "NetworkSettings": {
+            "type": "object",
+            "properties": {
+                "pingIntervalSeconds": {
+                    "type": "integer",
+                    "default": 300
+                }
+            },
+            "required": [
+                "pingIntervalSeconds"
             ]
         },
         "AuditSettings": {
@@ -117,12 +132,7 @@
                     "default": "simple"
                 },
                 "violationAction": {
-                    "type": "string",
-                    "enum": [
-                        "logoff",
-                        "shutdown"
-                    ],
-                    "default": "logoff"
+                    "$ref": "#/definitions/ViolationAction"
                 },
                 "schedule": {
                     "type": "array",
@@ -141,17 +151,7 @@
             "type": "object",
             "properties": {
                 "dayOfWeek": {
-                    "type": "string",
-                    "enum": [
-                        "monday",
-                        "tuesday",
-                        "wednesday",
-                        "thursday",
-                        "friday",
-                        "saturday",
-                        "sunday"
-                    ],
-                    "description": "Day of week (monday-sunday)"
+                    "$ref": "#/definitions/DayOfWeek"
                 },
                 "startTime": {
                     "type": "string",
@@ -169,6 +169,27 @@
                 "startTime",
                 "endTime"
             ]
+        },
+        "DayOfWeek": {
+            "type": "string",
+            "enum": [
+                "monday",
+                "tuesday",
+                "wednesday",
+                "thursday",
+                "friday",
+                "saturday",
+                "sunday"
+            ],
+            "description": "Day of week (monday-sunday)"
+        },
+        "ViolationAction": {
+            "type": "string",
+            "enum": [
+                "logoff",
+                "shutdown"
+            ],
+            "default": "logoff"
         }
     }
 }
