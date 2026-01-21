@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { TimeInput } from '@/components/ui/time-input';
+import { TimePicker } from '@/components/ui/time-picker/time-picker';
 import { LogOut, Power } from 'lucide-react';
 import type { AccessControlSettings } from '@/api/client';
 
@@ -136,6 +136,21 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
         }
     };
 
+    const timeStringToDate = (timeStr: string) => {
+        if (!timeStr) return undefined;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    };
+
+    const handleTimeChange = (date: Date | undefined, setter: (val: string) => void) => {
+        if (!date) return;
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        setter(`${hours}:${minutes}`);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -165,20 +180,18 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
                 <div className="space-y-3 animate-in fade-in duration-300">
                     <label className="text-sm font-medium">Daily Time Window</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex flex-col items-center sm:items-start">
                             <label className="text-xs text-muted-foreground">Start Time</label>
-                            <TimeInput
-                                value={simpleStart}
-                                onChange={setSimpleStart}
-                                className="font-mono bg-background/50"
+                            <TimePicker
+                                date={timeStringToDate(simpleStart)}
+                                setDate={(d) => handleTimeChange(d, setSimpleStart)}
                             />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 flex flex-col items-center sm:items-start">
                             <label className="text-xs text-muted-foreground">End Time</label>
-                            <TimeInput
-                                value={simpleEnd}
-                                onChange={setSimpleEnd}
-                                className="font-mono bg-background/50"
+                            <TimePicker
+                                date={timeStringToDate(simpleEnd)}
+                                setDate={(d) => handleTimeChange(d, setSimpleEnd)}
                             />
                         </div>
                     </div>
@@ -205,17 +218,15 @@ export function AccessControlConfig({ settings, onSave, saving }: AccessControlC
                                 </div>
 
                                 {dayWindow.enabled ? (
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <TimeInput
-                                            value={dayWindow.start}
-                                            onChange={(val) => updateCustomDay(dayWindow.day, 'start', val)}
-                                            className="h-8 max-w-[100px] text-xs font-mono"
+                                    <div className="flex items-center gap-2 flex-1 flex-wrap">
+                                        <TimePicker
+                                            date={timeStringToDate(dayWindow.start)}
+                                            setDate={(d) => handleTimeChange(d, (val) => updateCustomDay(dayWindow.day, 'start', val))}
                                         />
-                                        <span className="text-muted-foreground text-xs">-</span>
-                                        <TimeInput
-                                            value={dayWindow.end}
-                                            onChange={(val) => updateCustomDay(dayWindow.day, 'end', val)}
-                                            className="h-8 max-w-[100px] text-xs font-mono"
+                                        <span className="text-muted-foreground text-xs mx-2">-</span>
+                                        <TimePicker
+                                            date={timeStringToDate(dayWindow.end)}
+                                            setDate={(d) => handleTimeChange(d, (val) => updateCustomDay(dayWindow.day, 'end', val))}
                                         />
                                     </div>
                                 ) : (
