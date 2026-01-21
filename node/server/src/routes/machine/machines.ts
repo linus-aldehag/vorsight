@@ -9,13 +9,13 @@ const router = express.Router();
 // but for this architecture it is the entry point.
 router.post('/register', async (req: Request, res: Response) => {
     try {
-        const { machineId, name, hostname, metadata } = req.body as RegisterDTO;
+        const { machineId, name, hostname } = req.body as RegisterDTO;
 
         if (!machineId || !name) {
             return res.status(400).json({ error: 'machineId and name are required' });
         }
 
-        const result = await machineService.register({ machineId, name, hostname, metadata });
+        const result = await machineService.register({ machineId, name, hostname });
 
         if (!result.isNew) {
             return res.json({
