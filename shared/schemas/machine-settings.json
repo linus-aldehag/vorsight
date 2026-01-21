@@ -10,9 +10,6 @@
         "activity": {
             "$ref": "#/definitions/ActivitySettings"
         },
-        "network": {
-            "$ref": "#/definitions/NetworkSettings"
-        },
         "audit": {
             "$ref": "#/definitions/AuditSettings"
         },
@@ -64,18 +61,6 @@
             "required": [
                 "enabled",
                 "intervalSeconds"
-            ]
-        },
-        "NetworkSettings": {
-            "type": "object",
-            "properties": {
-                "pingIntervalSeconds": {
-                    "type": "integer",
-                    "default": 300
-                }
-            },
-            "required": [
-                "pingIntervalSeconds"
             ]
         },
         "AuditSettings": {

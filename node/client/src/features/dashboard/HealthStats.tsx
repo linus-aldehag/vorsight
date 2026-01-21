@@ -114,15 +114,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                                 <div className="flex-1 max-w-[100px] mt-0.5">
                                     <HeartbeatProgress
                                         lastSeen={lastSeenTime}
-                                        intervalSeconds={(() => {
-                                            if (!selectedMachine?.settings) return 10;
-                                            try {
-                                                const s = typeof selectedMachine.settings === 'string'
-                                                    ? JSON.parse(selectedMachine.settings)
-                                                    : selectedMachine.settings;
-                                                return s.activity?.intervalSeconds || 10;
-                                            } catch { return 10; }
-                                        })()}
+                                        intervalSeconds={10}
                                         className="h-0.5"
                                     />
                                 </div>

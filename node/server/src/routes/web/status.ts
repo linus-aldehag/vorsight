@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../db/database';
 import { getConnectionStatus, getStatusText } from '../../utils/statusHelper';
-import { MachineSettings } from '../../types';
 
 const router = express.Router();
 
@@ -19,16 +18,7 @@ router.get('/:machineId', async (req: Request, res: Response) => {
             return res.status(404).json({ error: 'Machine not found' });
         }
 
-        // Calculate status
-        let pingIntervalSeconds = 30;
-        try {
-            if (machine.state?.settings) {
-                const settings = JSON.parse(machine.state.settings) as MachineSettings;
-                pingIntervalSeconds = settings.network?.pingIntervalSeconds || (settings as any).monitoring?.pingIntervalSeconds || 300;
-            }
-        } catch (e) { }
-
-        const status = getConnectionStatus(machine.lastSeen, pingIntervalSeconds);
+        const status = getConnectionStatus(machine.lastSeen, 10);
 
         // Prepare object for status text helper
         const machineData = {

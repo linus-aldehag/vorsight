@@ -29,26 +29,12 @@ export {
 };
 
 // Machine Metadata Structure
-export interface MachineMetadata {
-    os?: string;
-    osVersion?: string;
-    arch?: string;
-    cpus?: number;
-    memory?: number;
-    [key: string]: any;
-}
+
 
 export * from './settings.gen';
 export * from './payloads.gen';
 
-// Machine Settings Structure (Legacy - for migration)
-export interface LegacyMachineSettings {
-    screenshotIntervalSeconds: number;
-    pingIntervalSeconds: number;
-    isMonitoringEnabled: boolean;
-    isAuditEnabled: boolean;
-    [key: string]: any;
-}
+
 
 // Health Status Structure
 export interface HealthStatus {
