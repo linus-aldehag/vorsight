@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Monitor, Camera, Activity, Shield, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { TimeInput } from '@/components/ui/time-input';
+import { TimePicker } from '@/components/ui/time-picker/time-picker';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -49,6 +49,21 @@ export function PendingMachineItem({ machine, onAdopt }: PendingMachineItemProps
             console.error('Failed to adopt machine:', error);
             setIsAdopting(false);
         }
+    };
+
+    const timeStringToDate = (timeStr: string) => {
+        if (!timeStr) return undefined;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    };
+
+    const handleTimeChange = (date: Date | undefined, setter: (val: string) => void) => {
+        if (!date) return;
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        setter(`${hours}:${minutes}`);
     };
 
     return (
@@ -156,20 +171,18 @@ export function PendingMachineItem({ machine, onAdopt }: PendingMachineItemProps
 
                                     {enableAccessControl && (
                                         <div className="grid grid-cols-2 gap-2 mt-1 animate-in slide-in-from-top-1">
-                                            <div className="space-y-1">
+                                            <div className="space-y-1 flex flex-col items-center sm:items-start">
                                                 <label className="text-[10px] text-muted-foreground">Start Time</label>
-                                                <TimeInput
-                                                    value={startTime}
-                                                    onChange={setStartTime}
-                                                    className="h-7 text-xs bg-background"
+                                                <TimePicker
+                                                    date={timeStringToDate(startTime)}
+                                                    setDate={(d) => handleTimeChange(d, setStartTime)}
                                                 />
                                             </div>
-                                            <div className="space-y-1">
+                                            <div className="space-y-1 flex flex-col items-center sm:items-start">
                                                 <label className="text-[10px] text-muted-foreground">End Time</label>
-                                                <TimeInput
-                                                    value={endTime}
-                                                    onChange={setEndTime}
-                                                    className="h-7 text-xs bg-background"
+                                                <TimePicker
+                                                    date={timeStringToDate(endTime)}
+                                                    setDate={(d) => handleTimeChange(d, setEndTime)}
                                                 />
                                             </div>
                                         </div>
