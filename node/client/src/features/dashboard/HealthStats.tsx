@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { useMachine } from '@/context/MachineContext';
-import { UptimeDisplay } from './components/UptimeDisplay';
+import { Network } from 'lucide-react';
 import { useHealthStats } from './hooks/useHealthStats';
 import useSWR from 'swr';
 import { memo } from 'react';
@@ -63,7 +63,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
 
     const logHealth = checkLogHealth();
 
-    const uptime = status?.uptime || { currentStart: null };
+
     const machineStatus = selectedMachine?.connectionStatus ?? 'offline';
     const statusText = selectedMachine?.statusText;
 
@@ -72,6 +72,10 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
 
     // Last seen timestamp for "Offline for X" calculation
     const lastSeenTime = status?.lastPingTime || status?.lastActivityTime || selectedMachine?.lastSeen;
+
+    const pingLatency = selectedMachine?.pingLatency;
+    const ipAddress = selectedMachine?.ipAddress;
+    const isPingable = selectedMachine?.pingStatus === 'reachable';
 
     const handleSystem = async (action: 'shutdown' | 'logout') => {
         if (!selectedMachine) return;
@@ -146,22 +150,56 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                     </div>
 
                     {/* Ping / Reachability (if distinct from service status) */}
-                    {selectedMachine?.pingStatus === 'reachable' && (
-                        <div className="flex items-center gap-2 px-1">
-                            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/60 shadow-[0_0_4px_rgba(16,185,129,0.3)]" />
-                            <span className="text-[10px] text-muted-foreground/80 font-mono tracking-tight">
-                                MACHINE PINGABLE
-                            </span>
+                    {(isPingable || pingLatency) && (
+                        <div className="pt-3 mt-1 border-t border-border/40">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className={cn(
+                                        "flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 border border-border/50",
+                                        isPingable && machineStatus === 'offline' && "bg-success/10 border-success/20"
+                                    )}>
+                                        <Network size={13} className={cn(
+                                            "text-muted-foreground",
+                                            isPingable && machineStatus === 'offline' && "text-success"
+                                        )} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                                            Ping Monitor
+                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={cn(
+                                                "text-xs font-medium font-mono",
+                                                isPingable ? "text-foreground" : "text-muted-foreground"
+                                            )}>
+                                                {ipAddress || 'Unknown IP'}
+                                            </span>
+                                            {isPingable && (
+                                                <span className="px-1 py-px rounded text-[10px] bg-success/10 text-success font-medium">
+                                                    Active
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {pingLatency !== undefined && (
+                                    <div className="flex flex-col items-end">
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider">
+                                            Latency
+                                        </div>
+                                        <span className={cn(
+                                            "text-xs font-mono font-medium",
+                                            pingLatency < 50 ? "text-success" :
+                                                pingLatency < 150 ? "text-warning" : "text-destructive"
+                                        )}>
+                                            {pingLatency}ms
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
-                </div>
-
-                {/* Uptime Stats */}
-                <div className="pt-2 border-t border-border/50">
-                    <UptimeDisplay
-                        currentStart={uptime.currentStart}
-                        isDisabled={false}
-                    />
                 </div>
             </CardContent>
 

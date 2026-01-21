@@ -121,7 +121,6 @@ export function MainLayout() {
                     setManagerStartTab(machines.length === 0 && pendingMachines.length > 0 ? 'pending' : 'active');
                     setManagerOpen(true);
                 }}
-                showSelector={machines.length !== 1 || pendingMachines.length > 0}
             />
 
             <NavigationTabs

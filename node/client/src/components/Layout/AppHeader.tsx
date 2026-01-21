@@ -12,8 +12,7 @@ interface AppHeaderProps {
 export function AppHeader({
     onSettingsClick,
     onMachineSelectorClick,
-    isSettingsPage = false,
-    showSelector = true
+    isSettingsPage = false
 }: AppHeaderProps) {
     return (
         <header className="border-b border-border/10 min-h-16 flex items-center px-4 md:px-6 shrink-0 bg-surface/50 backdrop-blur-sm z-50">
@@ -23,7 +22,7 @@ export function AppHeader({
                 </h1>
 
                 <div className="flex-1 flex justify-center min-w-0 px-2">
-                    {showSelector && <MachineSelector onClick={onMachineSelectorClick} />}
+                    <MachineSelector onClick={onMachineSelectorClick} />
                 </div>
 
                 <Button
