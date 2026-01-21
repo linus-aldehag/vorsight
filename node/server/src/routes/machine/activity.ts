@@ -27,7 +27,7 @@ router.post('/', authenticateMachine, async (req: Request, res: Response) => {
         let heartbeatTime: Date;
         let timeSeconds: number;
 
-        if (typeof timestamp === 'string' || timestamp instanceof Date) {
+        if (typeof timestamp === 'string') {
             heartbeatTime = new Date(timestamp);
             timeSeconds = Math.floor(heartbeatTime.getTime() / 1000);
         } else {

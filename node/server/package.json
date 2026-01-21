@@ -5,10 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "lint": "eslint . --ext .ts",
-    "generate-types": "quicktype -s schema -l ts -o src/types/settings.gen.ts ../../shared/schemas/machine-settings.json --top-level MachineSettings && quicktype -s schema -l ts -o src/types/payloads.gen.ts ../../shared/schemas/api-payloads.json --just-types",
+    "generate-types": "json2ts -i ../../shared/schemas/machine-settings.json -o src/types/settings.gen.ts && json2ts -i ../../shared/schemas/api-payloads.json -o src/types/payloads.gen.ts",
     "prebuild": "npm run generate-types",
     "start": "node dist/server.js",
-    "dev": "npm run generate-types && ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "npm run generate-types && tsx watch src/server.ts",
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "build:web": "cd ..\\client && npm run build",
@@ -48,11 +48,11 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.3",
     "@types/node-schedule": "^2.1.8",
+    "json-schema-to-typescript": "^15.0.4",
     "nodemon": "^3.1.11",
     "prisma": "^5.22.0",
-    "quicktype": "^23.2.6",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
