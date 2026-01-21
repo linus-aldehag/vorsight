@@ -192,12 +192,7 @@ public class ServerConnection : IServerConnection
                 machineId = _machineId,
                 name = Environment.MachineName,
                 hostname = Environment.MachineName,
-                metadata = new
-                {
-                    os = Environment.OSVersion.ToString(),
-                    version = "1.0.0",
-                    dotnetVersion = Environment.Version.ToString(),
-                },
+                metadata = new { },
             };
 
             var response = await _httpClient.PostAsJsonAsync(

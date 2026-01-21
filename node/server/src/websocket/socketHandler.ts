@@ -18,18 +18,9 @@ async function broadcastMachineList(io: Server) {
         });
 
         const machinesList = machines.map(m => {
-            // Parse settings to get pingIntervalSeconds
-            let pingIntervalSeconds = 30; // default
-            try {
-                if (m.state?.settings) {
-                    const settings = JSON.parse(m.state.settings);
-                    pingIntervalSeconds = settings.monitoring?.pingIntervalSeconds || settings.pingIntervalSeconds || 30;
-                }
-            } catch (e) {
-                // Use default
-            }
 
-            const status = getConnectionStatus(m.lastSeen, pingIntervalSeconds);
+
+            const status = getConnectionStatus(m.lastSeen, 10);
 
             let pingReachable = false;
             if (m.state?.healthStatus) {
@@ -58,7 +49,7 @@ async function broadcastMachineList(io: Server) {
                 settings: m.state?.settings,
                 lastSeen: m.lastSeen,
                 status: m.status || 'active',
-                metadata: m.metadata ? JSON.parse(m.metadata) : {},
+
                 statusText: ''
             };
 
@@ -82,15 +73,9 @@ async function broadcastToSocket(socket: Socket) {
         });
 
         const machinesList = machines.map(m => {
-            let pingIntervalSeconds = 30;
-            try {
-                if (m.state?.settings) {
-                    const settings = JSON.parse(m.state.settings);
-                    pingIntervalSeconds = settings.pingIntervalSeconds || 30;
-                }
-            } catch (e) { }
 
-            const status = getConnectionStatus(m.lastSeen, pingIntervalSeconds);
+
+            const status = getConnectionStatus(m.lastSeen, 10);
             let pingReachable = false;
             if (m.state?.healthStatus) {
                 try {
@@ -118,7 +103,7 @@ async function broadcastToSocket(socket: Socket) {
                 settings: m.state?.settings,
                 lastSeen: m.lastSeen,
                 status: m.status || 'active',
-                metadata: m.metadata ? JSON.parse(m.metadata) : {},
+
                 statusText: ''
             };
 
@@ -366,7 +351,7 @@ export default (io: Server) => {
                 });
 
                 // 2. Aggregate into Sessions
-                const pingIntervalSeconds = 30; // Default or fetch from settings if needed
+                const pingIntervalSeconds = 10; // Standardized heartbeat interval
 
                 // Get most recent session for this machine
                 const recentSession = await prisma.activitySession.findFirst({

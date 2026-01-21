@@ -1,13 +1,12 @@
 import crypto from 'crypto';
 import { prisma } from '../db/database';
-import { MachineMetadata, MachineSettings, ViolationAction, DayOfWeek } from '../types';
+import { MachineSettings, ViolationAction, DayOfWeek } from '../types';
 import { Prisma } from '@prisma/client';
 
 export interface RegisterDTO {
     machineId: string;
     name: string;
     hostname?: string;
-    metadata?: MachineMetadata;
 }
 
 export interface AdoptDTO {
@@ -25,13 +24,12 @@ export interface AdoptDTO {
 export interface UpdateMachineDTO {
     name?: string;
     hostname?: string;
-    metadata?: MachineMetadata;
 }
 
 export class MachineService {
 
     async register(data: RegisterDTO) {
-        const { machineId, name, hostname, metadata } = data;
+        const { machineId, name, hostname } = data;
 
         // 1. Check if machine already exists by ID
         const existingById = await prisma.machine.findUnique({
@@ -76,7 +74,7 @@ export class MachineService {
                 apiKey,
                 status: 'pending',
                 registrationDate: new Date(),
-                metadata: JSON.stringify(metadata || {})
+
             }
         });
 
@@ -115,8 +113,7 @@ export class MachineService {
                 hostname: row.hostname,
                 lastSeen: row.lastSeen,
                 isOnline: !!isOnline,
-                status: row.status || 'active',
-                metadata: row.metadata ? JSON.parse(row.metadata) : {}
+                status: row.status || 'active'
             };
         });
     }
@@ -134,12 +131,11 @@ export class MachineService {
     }
 
     async update(id: string, data: UpdateMachineDTO) {
-        const { name, hostname, metadata } = data;
+        const { name, hostname } = data;
         const dataToUpdate: Prisma.MachineUpdateInput = {};
 
         if (name) dataToUpdate.name = name;
         if (hostname) dataToUpdate.hostname = hostname;
-        if (metadata) dataToUpdate.metadata = JSON.stringify(metadata);
 
         return prisma.machine.update({
             where: { id },
@@ -217,9 +213,7 @@ export class MachineService {
                 intervalSeconds: enableScreenshots ? 300 : 0,
                 filterDuplicates: true
             },
-            network: {
-                pingIntervalSeconds: enableActivity ? 300 : 0
-            },
+
             activity: {
                 enabled: enableActivity,
                 intervalSeconds: 10

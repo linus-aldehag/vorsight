@@ -42,7 +42,7 @@ model Machine {
   apiKey            String   @unique @map("api_key")
   
   /// Additional metadata as JSON string
-  metadata          String?
+
   
   /// Record creation timestamp
   createdAt         DateTime @default(now()) @map("created_at")

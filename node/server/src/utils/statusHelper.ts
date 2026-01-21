@@ -130,7 +130,7 @@ export function getStatusText(machine: MachineWithState): string {
  * Get connection status details from last_seen timestamp
  * Optionally provide pingIntervalSeconds for dynamic timeout calculation
  */
-export function getConnectionStatus(lastSeen: Date | string | null, pingIntervalSeconds: number = 30): ConnectionStatus {
+export function getConnectionStatus(lastSeen: Date | string | null, pingIntervalSeconds: number = 10): ConnectionStatus {
     if (!lastSeen) {
         return {
             isOnline: false,
@@ -142,7 +142,7 @@ export function getConnectionStatus(lastSeen: Date | string | null, pingInterval
     const now = new Date();
     const elapsed = now.getTime() - lastSeenDate.getTime();
 
-    // Online if seen within 1 heartbeat interval (default 30s)
+    // Online if seen within 1 heartbeat interval (default 10s)
     const onlineThreshold = pingIntervalSeconds * 1000;
     if (elapsed < onlineThreshold) {
         return {
