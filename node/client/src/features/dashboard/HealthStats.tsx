@@ -115,13 +115,13 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                                     <HeartbeatProgress
                                         lastSeen={lastSeenTime}
                                         intervalSeconds={(() => {
-                                            if (!selectedMachine?.settings) return 30;
+                                            if (!selectedMachine?.settings) return 10;
                                             try {
                                                 const s = typeof selectedMachine.settings === 'string'
                                                     ? JSON.parse(selectedMachine.settings)
                                                     : selectedMachine.settings;
-                                                return s.monitoring?.pingIntervalSeconds || s.pingIntervalSeconds || 30;
-                                            } catch { return 30; }
+                                                return s.activity?.intervalSeconds || 10;
+                                            } catch { return 10; }
                                         })()}
                                         className="h-0.5"
                                     />
