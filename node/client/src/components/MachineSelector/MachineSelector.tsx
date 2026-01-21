@@ -30,11 +30,8 @@ export function MachineSelector({ onClick }: MachineSelectorProps) {
             <>
                 <div className="flex items-center gap-2 truncate min-w-0">
                     <Monitor size={16} className="shrink-0" />
-                    <span className="truncate font-medium hidden sm:inline">
+                    <span className="truncate font-medium">
                         {selectedMachine.displayName || selectedMachine.name}
-                    </span>
-                    <span className="truncate font-medium sm:hidden">
-                        {(selectedMachine.displayName || selectedMachine.name).substring(0, 8)}...
                     </span>
                     <Circle
                         size={8}
@@ -72,12 +69,12 @@ export function MachineSelector({ onClick }: MachineSelectorProps) {
             variant="outline"
             role="combobox"
             className={cn(
-                "justify-between gap-2 w-auto sm:min-w-[200px] max-w-[160px] sm:max-w-[260px]",
+                "justify-between gap-2 w-auto sm:min-w-[200px] max-w-[220px] sm:max-w-[260px]",
                 !selectedMachine && "text-muted-foreground"
             )}
             onClick={onClick}
         >
-            <div className="flex-1 min-w-0 flex items-center">{triggerContent}</div>
+            <div className="flex-1 min-w-0 flex items-center justify-between">{triggerContent}</div>
 
             {pendingCount > 0 && (
                 <div className="ml-1 sm:ml-2 flex items-center gap-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 animate-pulse shrink-0">
