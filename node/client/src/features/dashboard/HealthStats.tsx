@@ -150,7 +150,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                     </div>
 
                     {/* Ping / Reachability (if distinct from service status) */}
-                    {(isPingable || pingLatency) && (
+                    {(ipAddress || isPingable || pingLatency !== undefined) && (
                         <div className="pt-3 mt-1 border-t border-border/40">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                                             )}>
                                                 {ipAddress || 'Unknown IP'}
                                             </span>
-                                            {isPingable && (
+                                            {isPingable && machineStatus === 'offline' && (
                                                 <span className="px-1 py-px rounded text-[10px] bg-success/10 text-success font-medium">
                                                     Active
                                                 </span>
