@@ -23,6 +23,7 @@ namespace Vorsight.Infrastructure.Scheduling
     {
         private readonly ILogger<ScheduleManager> _logger;
         private readonly ISettingsManager _settingsManager;
+        private readonly IShutdownHelper _shutdownHelper;
         private AccessControlSettings? _currentSchedule;
         private CancellationTokenSource? _enforcementCts;
         private Task? _enforcementTask;
@@ -35,10 +36,15 @@ namespace Vorsight.Infrastructure.Scheduling
         public bool IsEnforcementRunning => _isEnforcementRunning;
 
         [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-        public ScheduleManager(ILogger<ScheduleManager> logger, ISettingsManager settingsManager)
+        public ScheduleManager(
+            ILogger<ScheduleManager> logger,
+            ISettingsManager settingsManager,
+            IShutdownHelper shutdownHelper
+        )
         {
             _logger = logger;
             _settingsManager = settingsManager;
+            _shutdownHelper = shutdownHelper;
         }
 
         public async Task InitializeAsync()
@@ -155,7 +161,7 @@ namespace Vorsight.Infrastructure.Scheduling
 
                 // Use TryForceLogoffInteractiveUser to target the console user session
                 // (not the service's LocalSystem session)
-                var result = ShutdownHelper.TryForceLogoffInteractiveUser();
+                var result = _shutdownHelper.TryForceLogoffInteractiveUser();
 
                 if (result)
                 {
@@ -279,7 +285,7 @@ namespace Vorsight.Infrastructure.Scheduling
                                 {
                                     // Initiate shutdown if not already shutting down
                                     // 60 second warning to user
-                                    ShutdownHelper.TryInitiateShutdown(
+                                    _shutdownHelper.TryInitiateShutdown(
                                         0,
                                         "Computer usage time limit exceeded. System will shut down.",
                                         true,

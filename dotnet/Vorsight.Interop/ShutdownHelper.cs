@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 
 namespace Vorsight.Interop
 {
@@ -7,17 +8,26 @@ namespace Vorsight.Interop
     /// Safe wrapper utilities for shutdown and session management operations.
     /// Provides managed error handling and privilege elevation helpers.
     /// </summary>
-    public static class ShutdownHelper
+    public class ShutdownHelper : IShutdownHelper
     {
+        private readonly ILogger<ShutdownHelper> _logger;
+        private readonly IProcessHelper _processHelper;
+
+        public ShutdownHelper(ILogger<ShutdownHelper> logger, IProcessHelper processHelper)
+        {
+            _logger = logger;
+            _processHelper = processHelper;
+        }
+
         /// <summary>
         /// Safely forces logoff of a specific session.
         /// </summary>
-        public static bool TryLogoffSession(uint sessionId, bool wait = true)
+        public bool TryLogoffSession(uint sessionId, bool wait = true)
         {
             try
             {
                 // Ensure we have shutdown privilege
-                ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
+                _processHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
 
                 // Get the current server handle
                 var serverHandle = SessionInterop.WTS_CURRENT_SERVER_HANDLE;
@@ -27,7 +37,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryLogoffSession failed: {ex.Message}");
+                _logger.LogError(ex, "TryLogoffSession failed");
                 return false;
             }
         }
@@ -38,12 +48,12 @@ namespace Vorsight.Interop
         /// For interactive user logoff, use TryForceLogoffInteractiveUser() instead.
         /// </summary>
         [Obsolete("Use TryForceLogoffInteractiveUser for service-initiated logoffs")]
-        public static bool TryForceLogoff()
+        public bool TryForceLogoff()
         {
             try
             {
                 // Ensure we have shutdown privilege
-                ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
+                _processHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
 
                 // Force logoff without saving
                 return ShutdownInterop.ExitWindowsEx(
@@ -54,7 +64,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryForceLogoff failed: {ex.Message}");
+                _logger.LogError(ex, "TryForceLogoff failed");
                 return false;
             }
         }
@@ -63,12 +73,12 @@ namespace Vorsight.Interop
         /// Safely forces logoff of the active interactive user session.
         /// This should be used by services to log off the console user.
         /// </summary>
-        public static bool TryForceLogoffInteractiveUser()
+        public bool TryForceLogoffInteractiveUser()
         {
             try
             {
                 // Ensure we have shutdown privilege
-                ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
+                _processHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
 
                 // Get active console session (the logged-in user at the physical console)
                 var sessionId = SessionInterop.WTSGetActiveConsoleSessionId();
@@ -76,25 +86,28 @@ namespace Vorsight.Interop
                 // 0xFFFFFFFF means no active console session
                 if (sessionId == 0xFFFFFFFF)
                 {
-                    Debug.WriteLine("No active console session found - no user logged in");
+                    _logger.LogInformation("No active console session found - no user logged in");
                     return false;
                 }
 
                 // Session 0 is typically the services session (shouldn't happen with console API)
                 if (sessionId == 0)
                 {
-                    Debug.WriteLine("Active console session is 0 (services) - unexpected");
+                    _logger.LogWarning("Active console session is 0 (services) - unexpected");
                     return false;
                 }
 
-                Debug.WriteLine($"Logging off active console session: {sessionId}");
+                _logger.LogInformation(
+                    "Logging off active console session: {SessionId}",
+                    sessionId
+                );
 
                 // Log off the active session
                 return TryLogoffSession(sessionId, wait: true);
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryForceLogoffInteractiveUser failed: {ex.Message}");
+                _logger.LogError(ex, "TryForceLogoffInteractiveUser failed");
                 return false;
             }
         }
@@ -102,7 +115,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely initiates system shutdown with a timeout and optional message.
         /// </summary>
-        public static bool TryInitiateShutdown(
+        public bool TryInitiateShutdown(
             uint timeoutSeconds,
             string? message = null,
             bool forceAppsClose = false,
@@ -112,7 +125,7 @@ namespace Vorsight.Interop
             try
             {
                 // Ensure we have shutdown privilege
-                ProcessHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
+                _processHelper.TryEnablePrivilege(TokenInterop.SE_SHUTDOWN_NAME);
 
                 var reason =
                     ShutdownInterop.SHTDN_REASON_FLAG_PLANNED
@@ -132,7 +145,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryInitiateShutdown failed: {ex.Message}");
+                _logger.LogError(ex, "TryInitiateShutdown failed");
                 return false;
             }
         }
@@ -140,7 +153,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely aborts a previously initiated system shutdown.
         /// </summary>
-        public static bool TryAbortShutdown()
+        public bool TryAbortShutdown()
         {
             try
             {
@@ -149,7 +162,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryAbortShutdown failed: {ex.Message}");
+                _logger.LogError(ex, "TryAbortShutdown failed");
                 return false;
             }
         }
@@ -157,7 +170,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely locks the current workstation.
         /// </summary>
-        public static bool TryLockWorkstation()
+        public bool TryLockWorkstation()
         {
             try
             {
@@ -165,7 +178,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryLockWorkstation failed: {ex.Message}");
+                _logger.LogError(ex, "TryLockWorkstation failed");
                 return false;
             }
         }
@@ -173,7 +186,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Gets the session ID for a given process ID.
         /// </summary>
-        public static bool TryGetSessionIdForProcess(uint processId, out uint sessionId)
+        public bool TryGetSessionIdForProcess(uint processId, out uint sessionId)
         {
             sessionId = 0;
             try
@@ -182,7 +195,7 @@ namespace Vorsight.Interop
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"TryGetSessionIdForProcess failed: {ex.Message}");
+                _logger.LogError(ex, "TryGetSessionIdForProcess failed");
                 return false;
             }
         }

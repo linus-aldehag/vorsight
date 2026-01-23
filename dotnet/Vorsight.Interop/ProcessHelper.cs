@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
 
 namespace Vorsight.Interop
 {
@@ -8,12 +9,19 @@ namespace Vorsight.Interop
     /// Safe wrapper utilities for P/Invoke process operations.
     /// Provides managed error handling and exception translation.
     /// </summary>
-    public static class ProcessHelper
+    public class ProcessHelper : IProcessHelper
     {
+        private readonly ILogger<ProcessHelper> _logger;
+
+        public ProcessHelper(ILogger<ProcessHelper> logger)
+        {
+            _logger = logger;
+        }
+
         /// <summary>
         /// Safely opens a process token with proper error handling.
         /// </summary>
-        public static bool TryOpenProcessToken(
+        public bool TryOpenProcessToken(
             IntPtr processHandle,
             uint desiredAccess,
             out IntPtr tokenHandle
@@ -22,7 +30,7 @@ namespace Vorsight.Interop
             if (!ProcessInterop.OpenProcessToken(processHandle, desiredAccess, out tokenHandle))
             {
                 var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"OpenProcessToken failed: {err}");
+                _logger.LogWarning("OpenProcessToken failed: {ErrorCode}", err);
                 return false;
             }
             return true;
@@ -31,7 +39,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely duplicates a token with proper error handling.
         /// </summary>
-        public static bool TryDuplicateTokenEx(
+        public bool TryDuplicateTokenEx(
             IntPtr existingToken,
             uint desiredAccess,
             int impersonationLevel,
@@ -51,7 +59,7 @@ namespace Vorsight.Interop
             )
             {
                 var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"DuplicateTokenEx failed: {err}");
+                _logger.LogWarning("DuplicateTokenEx failed: {ErrorCode}", err);
                 return false;
             }
             return true;
@@ -60,17 +68,13 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely opens a process by ID with proper error handling.
         /// </summary>
-        public static bool TryOpenProcess(
-            uint processId,
-            uint desiredAccess,
-            out IntPtr processHandle
-        )
+        public bool TryOpenProcess(uint processId, uint desiredAccess, out IntPtr processHandle)
         {
             processHandle = ProcessInterop.OpenProcess(desiredAccess, false, processId);
             if (processHandle == IntPtr.Zero)
             {
                 var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"OpenProcess failed: {err}");
+                _logger.LogWarning("OpenProcess failed: {ErrorCode}", err);
                 return false;
             }
             return true;
@@ -79,7 +83,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely creates a process as a user with comprehensive error handling.
         /// </summary>
-        public static bool TryCreateProcessAsUser(
+        public bool TryCreateProcessAsUser(
             IntPtr userToken,
             string applicationPath,
             string commandLine,
@@ -96,7 +100,7 @@ namespace Vorsight.Interop
                 if (!ProcessInterop.CreateEnvironmentBlock(out lpEnvironment, userToken, false))
                 {
                     var err = Marshal.GetLastWin32Error();
-                    System.Diagnostics.Debug.WriteLine($"CreateEnvironmentBlock failed: {err}");
+                    _logger.LogWarning("CreateEnvironmentBlock failed: {ErrorCode}", err);
                     // Fallback to parent environment if creation fails?
                     // Or keep it null/zero which implies parent (Service/System) environment.
                     // We'll proceed with zero but it is suboptimal.
@@ -132,7 +136,7 @@ namespace Vorsight.Interop
                 )
                 {
                     var err = Marshal.GetLastWin32Error();
-                    System.Diagnostics.Debug.WriteLine($"CreateProcessAsUser failed: {err}");
+                    _logger.LogError("CreateProcessAsUser failed: {ErrorCode}", err);
                     return false;
                 }
 
@@ -153,7 +157,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely gets the active console session ID.
         /// </summary>
-        public static uint GetActiveConsoleSessionId()
+        public uint GetActiveConsoleSessionId()
         {
             return SessionInterop.WTSGetActiveConsoleSessionId();
         }
@@ -161,7 +165,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely queries session information with proper error handling.
         /// </summary>
-        public static bool TryQuerySessionInformation(
+        public bool TryQuerySessionInformation(
             uint sessionId,
             SessionInterop.WTS_INFO_CLASS infoClass,
             out string? result
@@ -181,7 +185,7 @@ namespace Vorsight.Interop
             )
             {
                 var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"WTSQuerySessionInformation failed: {err}");
+                _logger.LogWarning("WTSQuerySessionInformation failed: {ErrorCode}", err);
                 return false;
             }
 
@@ -199,7 +203,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely enumerates all sessions.
         /// </summary>
-        public static bool TryEnumerateSessions(out SessionInterop.WTS_SESSION_INFO[]? sessions)
+        public bool TryEnumerateSessions(out SessionInterop.WTS_SESSION_INFO[]? sessions)
         {
             sessions = null;
             var serverHandle = SessionInterop.WTS_CURRENT_SERVER_HANDLE;
@@ -215,7 +219,7 @@ namespace Vorsight.Interop
             )
             {
                 var err = Marshal.GetLastWin32Error();
-                System.Diagnostics.Debug.WriteLine($"WTSEnumerateSessions failed: {err}");
+                _logger.LogWarning("WTSEnumerateSessions failed: {ErrorCode}", err);
                 return false;
             }
 
@@ -248,7 +252,7 @@ namespace Vorsight.Interop
         /// <summary>
         /// Safely enables a privilege in the current token.
         /// </summary>
-        public static bool TryEnablePrivilege(string privilegeName)
+        public bool TryEnablePrivilege(string privilegeName)
         {
             var processHandle = ProcessInterop.OpenProcess(
                 ProcessInterop.PROCESS_QUERY_INFORMATION,

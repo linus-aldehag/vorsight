@@ -15,11 +15,17 @@ public interface IAgentLauncher
 public class AgentLauncher : IAgentLauncher
 {
     private readonly ILogger<AgentLauncher> _logger;
+    private readonly IProcessHelper _processHelper;
     private readonly string _agentPath;
 
-    public AgentLauncher(ILogger<AgentLauncher> logger, IConfiguration configuration)
+    public AgentLauncher(
+        ILogger<AgentLauncher> logger,
+        IConfiguration configuration,
+        IProcessHelper processHelper
+    )
     {
         _logger = logger;
+        _processHelper = processHelper;
 
         var configuredPath = configuration["Agent:ExecutablePath"];
         if (string.IsNullOrEmpty(configuredPath))
@@ -47,6 +53,16 @@ public class AgentLauncher : IAgentLauncher
 
     public Task LaunchScreenshotAgentAsync()
     {
+        return LaunchAgentWithCommand("screenshot");
+    }
+
+    public Task LaunchActivityCaptureAsync(CancellationToken cancellationToken)
+    {
+        return LaunchAgentWithCommand("activity");
+    }
+
+    private Task LaunchAgentWithCommand(string commandMode)
+    {
         try
         {
             if (!File.Exists(_agentPath))
@@ -55,10 +71,14 @@ public class AgentLauncher : IAgentLauncher
                 return Task.CompletedTask;
             }
 
-            _logger.LogInformation("Attempting to launch agent from {Path}", _agentPath);
+            _logger.LogInformation(
+                "Attempting to launch agent from {Path} in mode {Mode}",
+                _agentPath,
+                commandMode
+            );
 
             // 1. Get Active Session
-            var sessionId = ProcessHelper.GetActiveConsoleSessionId();
+            var sessionId = _processHelper.GetActiveConsoleSessionId();
             if (sessionId == 0xFFFFFFFF)
             {
                 _logger.LogWarning("No active console session found");
@@ -83,7 +103,7 @@ public class AgentLauncher : IAgentLauncher
 
             // 3. Duplicate Token
             if (
-                !ProcessHelper.TryOpenProcess(
+                !_processHelper.TryOpenProcess(
                     (uint)userProcess.Id,
                     ProcessInterop.PROCESS_QUERY_INFORMATION,
                     out var processHandle
@@ -97,7 +117,7 @@ public class AgentLauncher : IAgentLauncher
             try
             {
                 if (
-                    !ProcessHelper.TryOpenProcessToken(
+                    !_processHelper.TryOpenProcessToken(
                         processHandle,
                         ProcessInterop.TOKEN_DUPLICATE
                             | ProcessInterop.TOKEN_QUERY
@@ -113,14 +133,14 @@ public class AgentLauncher : IAgentLauncher
                 try
                 {
                     if (
-                        !ProcessHelper.TryDuplicateTokenEx(
+                        !_processHelper.TryDuplicateTokenEx(
                             tokenHandle,
                             ProcessInterop.TOKEN_ALL_ACCESS,
-                            2,
-                            1,
+                            2, // SecurityImpersonation
+                            1, // TokenPrimary
                             out var newToken
                         )
-                    ) // SecurityImpersonation, TokenPrimary
+                    )
                     {
                         _logger.LogError("Failed to duplicate token");
                         return Task.CompletedTask;
@@ -129,14 +149,13 @@ public class AgentLauncher : IAgentLauncher
                     try
                     {
                         // 4. Launch Agent
-                        // Command: "screenshot"
-                        var cmdLine = $"\"{_agentPath}\" screenshot";
+                        var cmdLine = $"\"{_agentPath}\" {commandMode}";
 
                         // Working directory: Agent folder
                         var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
 
                         if (
-                            ProcessHelper.TryCreateProcessAsUser(
+                            _processHelper.TryCreateProcessAsUser(
                                 newToken,
                                 _agentPath,
                                 cmdLine,
@@ -173,97 +192,9 @@ public class AgentLauncher : IAgentLauncher
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to launch agent");
+            _logger.LogError(ex, "Failed to launch agent in mode {Mode}", commandMode);
         }
 
         return Task.CompletedTask;
-    }
-
-    public async Task LaunchActivityCaptureAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            var sessionId = ProcessHelper.GetActiveConsoleSessionId();
-            if (sessionId == 0xFFFFFFFF)
-                return;
-
-            // Re-use logic for launching as user
-            var explorerProcesses = Process.GetProcessesByName("explorer");
-            var userProcess = explorerProcesses.FirstOrDefault(p => (uint)p.SessionId == sessionId);
-            if (userProcess == null)
-                return;
-
-            if (
-                !ProcessHelper.TryOpenProcess(
-                    (uint)userProcess.Id,
-                    ProcessInterop.PROCESS_QUERY_INFORMATION,
-                    out var processHandle
-                )
-            )
-                return;
-
-            try
-            {
-                if (
-                    !ProcessHelper.TryOpenProcessToken(
-                        processHandle,
-                        ProcessInterop.TOKEN_DUPLICATE
-                            | ProcessInterop.TOKEN_QUERY
-                            | ProcessInterop.TOKEN_ASSIGN_PRIMARY,
-                        out var tokenHandle
-                    )
-                )
-                    return;
-                try
-                {
-                    if (
-                        !ProcessHelper.TryDuplicateTokenEx(
-                            tokenHandle,
-                            ProcessInterop.TOKEN_ALL_ACCESS,
-                            2,
-                            1,
-                            out var newToken
-                        )
-                    )
-                        return;
-                    try
-                    {
-                        var cmdLine = $"\"{_agentPath}\" activity";
-                        var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
-
-                        if (
-                            ProcessHelper.TryCreateProcessAsUser(
-                                newToken,
-                                _agentPath,
-                                cmdLine,
-                                workingDir,
-                                out var newPid
-                            )
-                        )
-                        {
-                            // Fire and forget
-                        }
-                    }
-                    finally
-                    {
-                        ProcessInterop.CloseHandle(newToken);
-                    }
-                }
-                finally
-                {
-                    ProcessInterop.CloseHandle(tokenHandle);
-                }
-            }
-            finally
-            {
-                ProcessInterop.CloseHandle(processHandle);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to launch activity agent");
-        }
-
-        await Task.CompletedTask;
     }
 }
