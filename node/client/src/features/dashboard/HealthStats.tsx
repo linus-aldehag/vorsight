@@ -6,10 +6,9 @@ import useSWR from 'swr';
 import { memo } from 'react';
 import { useMachineLogs } from '../machines/components/MachineLogs/useMachineLogs';
 import { cn } from '@/lib/utils';
-import { AlertCircle, AlertTriangle, LogOut, Power } from 'lucide-react';
+import { AlertCircle, AlertTriangle, LogOut, Power, CheckCircle2 } from 'lucide-react';
 import { VorsightApi } from '@/api/client';
 import { LiveStatusText } from './components/LiveStatusText';
-import { HeartbeatProgress } from './components/HeartbeatProgress';
 
 
 interface HealthStatsProps {
@@ -112,94 +111,106 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
                                 status={machineStatus}
                                 statusText={statusText}
                                 timestamp={lastSeenTime}
+                                intervalSeconds={10}
                             />
-                            {/* Heartbeat Progress (only if online/reachable) */}
-                            {machineStatus !== 'offline' && (
-                                <div className="flex-1 max-w-[100px] mt-0.5">
-                                    <HeartbeatProgress
-                                        lastSeen={lastSeenTime}
-                                        intervalSeconds={10}
-                                        className="h-0.5"
-                                    />
-                                </div>
-                            )}
                         </div>
 
-                        {/* Log Health Row (if issues exist) */}
-                        {logHealth && (
-                            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-background/40 border border-border/40">
-                                {logHealth.type === 'error' ? (
+                        {/* Log Health Row */}
+                        <div className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 rounded-md border transition-colors",
+                            logHealth
+                                ? "bg-background/40 border-border/40"
+                                : "bg-muted/20 border-border/20"
+                        )}>
+                            {logHealth ? (
+                                logHealth.type === 'error' ? (
                                     <AlertCircle className="h-4 w-4 text-destructive" />
                                 ) : (
                                     <AlertTriangle className="h-4 w-4 text-warning" />
+                                )
+                            ) : (
+                                <CheckCircle2 className="h-4 w-4 text-muted-foreground/30" />
+                            )}
+                            <span className={cn(
+                                "text-xs font-medium flex-1",
+                                logHealth ? "text-foreground" : "text-muted-foreground/50"
+                            )}>
+                                {logHealth ? logHealth.message : "No active alerts"}
+                            </span>
+                            <div
+                                onClick={onToggleLogs}
+                                className={cn(
+                                    "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 transition-colors",
+                                    logHealth
+                                        ? (logHealth.type === 'error' ? "text-destructive hover:text-destructive/80" : "text-warning hover:text-warning/80")
+                                        : "text-muted-foreground/50 hover:text-muted-foreground/80"
                                 )}
-                                <span className="text-xs font-medium flex-1">
-                                    {logHealth.message}
-                                </span>
-                                <div
-                                    onClick={onToggleLogs}
-                                    className={cn(
-                                        "text-xs font-semibold cursor-pointer underline decoration-dotted underline-offset-2 transition-colors",
-                                        logHealth.type === 'error' ? "text-destructive hover:text-destructive/80" : "text-warning hover:text-warning/80"
-                                    )}
-                                >
-                                    View
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Ping / Reachability (if distinct from service status) */}
-                    {(ipAddress || isPingable || pingLatency !== undefined) && (
-                        <div className="pt-3 mt-1 border-t border-border/40">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className={cn(
-                                        "flex items-center justify-center h-6 w-6 rounded-md bg-muted/50 border border-border/50",
-                                        isPingable && machineStatus === 'offline' && "bg-success/10 border-success/20"
-                                    )}>
-                                        <Network size={13} className={cn(
-                                            "text-muted-foreground",
-                                            isPingable && machineStatus === 'offline' && "text-success"
-                                        )} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                                            Ping Monitor
-                                        </span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className={cn(
-                                                "text-xs font-medium font-mono",
-                                                isPingable ? "text-foreground" : "text-muted-foreground"
-                                            )}>
-                                                {ipAddress || 'Unknown IP'}
-                                            </span>
-                                            {isPingable && machineStatus === 'offline' && (
-                                                <span className="px-1 py-px rounded text-[10px] bg-success/10 text-success font-medium">
-                                                    Active
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {pingLatency !== undefined && (
-                                    <div className="flex flex-col items-end">
-                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider">
-                                            Latency
-                                        </div>
-                                        <span className={cn(
-                                            "text-xs font-mono font-medium",
-                                            pingLatency < 50 ? "text-success" :
-                                                pingLatency < 150 ? "text-warning" : "text-destructive"
-                                        )}>
-                                            {pingLatency}ms
-                                        </span>
-                                    </div>
-                                )}
+                            >
+                                View
                             </div>
                         </div>
-                    )}
+                    </div>
+
+                    {/* Ping / Reachability (Always Visible) */}
+                    <div className="pt-3 mt-1 border-t border-border/40">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={cn(
+                                    "flex items-center justify-center h-6 w-6 rounded-md border transition-colors",
+                                    isPingable && machineStatus === 'offline'
+                                        ? "bg-success/10 border-success/20"
+                                        : (ipAddress ? "bg-muted/50 border-border/50" : "bg-muted/20 border-border/20")
+                                )}>
+                                    <Network size={13} className={cn(
+                                        "transition-colors",
+                                        isPingable && machineStatus === 'offline'
+                                            ? "text-success"
+                                            : (ipAddress ? "text-muted-foreground" : "text-muted-foreground/30")
+                                    )} />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className={cn(
+                                        "text-[10px] font-medium uppercase tracking-wider",
+                                        ipAddress ? "text-muted-foreground/70" : "text-muted-foreground/30"
+                                    )}>
+                                        Ping Monitor
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={cn(
+                                            "text-xs font-medium font-mono min-h-[1rem]",
+                                            ipAddress
+                                                ? (isPingable ? "text-foreground" : "text-muted-foreground")
+                                                : "text-muted-foreground/30"
+                                        )}>
+                                            {ipAddress || 'No connection'}
+                                        </span>
+                                        {isPingable && machineStatus === 'offline' && (
+                                            <span className="px-1 py-px rounded text-[10px] bg-success/10 text-success font-medium">
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-end">
+                                <div className={cn(
+                                    "flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider",
+                                    pingLatency !== undefined ? "text-muted-foreground/70" : "text-muted-foreground/30"
+                                )}>
+                                    Latency
+                                </div>
+                                <span className={cn(
+                                    "text-xs font-mono font-medium min-h-[1rem]",
+                                    pingLatency !== undefined
+                                        ? (pingLatency < 50 ? "text-success" : pingLatency < 150 ? "text-warning" : "text-destructive")
+                                        : "text-muted-foreground/30"
+                                )}>
+                                    {pingLatency !== undefined ? `${pingLatency}ms` : '—'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </CardContent>
 

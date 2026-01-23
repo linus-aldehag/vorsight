@@ -8,42 +8,47 @@ interface LiveStatusTextProps {
     statusText: string | undefined;
     icon?: LucideIcon;
     timestamp?: string | number | Date | null;
+    intervalSeconds?: number;
 }
 
-export function LiveStatusText({ status, statusText, icon, timestamp }: LiveStatusTextProps) {
+export function LiveStatusText({ status, statusText, icon, timestamp, intervalSeconds = 10 }: LiveStatusTextProps) {
     const [liveText, setLiveText] = useState(statusText);
+    const [freshness, setFreshness] = useState(1);
 
     useEffect(() => {
-        // If status is online, trust the passed text (usually "Online (0ms)")
-        if (status === 'online') {
-            setLiveText(statusText);
-            return;
-        }
-
-        // If no timestamp, fallback to static text
         if (!timestamp) {
             setLiveText(statusText);
+            setFreshness(0);
             return;
         }
 
         const statsDate = new Date(timestamp);
 
-        // Update immediately
-        updateTime();
+        const updateState = () => {
+            if (status === 'online') {
+                setLiveText(statusText);
+            } else {
+                setLiveText(`Offline for ${formatDistanceToNow(statsDate)}`);
+            }
 
-        const interval = setInterval(updateTime, 1000);
+            const now = new Date().getTime();
+            const elapsedSeconds = (now - statsDate.getTime()) / 1000;
+            // Linear fade: 1 -> 0 over intervalSeconds
+            setFreshness(Math.max(0, 1 - (elapsedSeconds / intervalSeconds)));
+        };
+
+        updateState();
+
+        const interval = setInterval(updateState, 100);
         return () => clearInterval(interval);
-
-        function updateTime() {
-            setLiveText(`Offline for ${formatDistanceToNow(statsDate)}`);
-        }
-    }, [status, statusText, timestamp]);
+    }, [status, statusText, timestamp, intervalSeconds]);
 
     return (
         <StatusBadge
             status={status}
             statusText={liveText}
             icon={icon}
+            pulseOpacity={status === 'online' ? freshness : undefined}
         />
     );
 }
