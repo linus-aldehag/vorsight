@@ -47,7 +47,7 @@
 - **Client**: Windows PCs (Windows 10/11) to be monitored.
 - **Google Cloud Project**: Required for Google Drive integration (storing screenshots).
 
-### 2. Server Setup (Linux)
+### 2a. Server Setup (Linux)
 Download the latest `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases).
 
 ```bash
@@ -58,6 +58,24 @@ sudo ./setup.sh
 ```
 
 Follow the prompts to configure your admin account and Google Cloud credentials. The installer will generate a **Service Key** - keep this safe!
+
+### 2b. Server Setup (Docker)
+Alternative to the Linux script, you can run the server in a container.
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -v vorsight-data:/app/prisma \
+  -e WEB_PASSPHRASE="YourSecurePassphrase" \
+  -e GOOGLE_CLIENT_ID="your-client-id" \
+  -e GOOGLE_CLIENT_SECRET="your-client-secret" \
+  --restart unless-stopped \
+  --name vorsight-server \
+  ghcr.io/linus-aldehag/vorsight:main
+```
+
+*   **`-v vorsight-data:/app/prisma`**: Persists the database.
+*   **`-e ...`**: Configures the server. `JWT_SECRET` is auto-generated if not provided.
 
 ### 3. Client Installation (Windows)
 Download `VorsightSetup.exe` from [GitHub Releases](../../releases) on the target PC.
