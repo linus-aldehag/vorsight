@@ -8,6 +8,7 @@ on:
       - 'node/client/**'
       - 'deploy/linux/**'
       - '.github/workflows/build-linux.yml'
+      - 'node/Dockerfile'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -15,10 +16,12 @@ on:
       - 'node/client/**'
       - 'deploy/linux/**'
       - '.github/workflows/build-linux.yml'
+      - 'node/Dockerfile'
   workflow_dispatch:
 
 permissions:
   contents: write  # Required to create releases
+  packages: write  # Required for GHCR
 
 jobs:
   build-linux-server:
@@ -119,7 +122,7 @@ jobs:
       with:
         name: linux-server-v${{ steps.version.outputs.version }}
         path: deploy/linux/vorsight-server-v${{ steps.version.outputs.version }}.tar.gz
-        retention-days: 2
+        retention-days: 1
 
     # Create individual Linux release on main branch
     - name: Create Linux Server Release
@@ -149,4 +152,68 @@ jobs:
 
     outputs:
       version: ${{ steps.version.outputs.version }}
-      date_only: ${{ steps.version.outputs.date_only }}
+
+  publish-docker:
+    needs: build-linux-server
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # We need the Dockerfile from the repo
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-server-v${{ needs.build-linux-server.outputs.version }}
+          path: ./artifact
+
+      - name: Extract Artifact
+        run: |
+          cd ./artifact
+          tar -xzf vorsight-server-v${{ needs.build-linux-server.outputs.version }}.tar.gz
+          # The tarball contains a 'vorsight-server' directory.
+          # We want that directory to be the build context.
+          mv vorsight-server ../build-context
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=long
+            type=raw,value=${{ needs.build-linux-server.outputs.version }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./build-context
+          # Use the Dockerfile from the repository checkout
+          file: ./node/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
