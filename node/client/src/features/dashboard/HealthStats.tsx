@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { AlertCircle, AlertTriangle, LogOut, Power, CheckCircle2 } from 'lucide-react';
 import { VorsightApi } from '@/api/client';
 import { LiveStatusText } from './components/LiveStatusText';
+import api from '@/lib/axios';
 
 
 interface HealthStatsProps {
@@ -21,10 +22,8 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     useHealthStats(selectedMachine?.id);
 
     const fetcher = async (url: string) => {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
+        const res = await api.get(url);
+        return res.data;
     };
 
     const { data: status } = useSWR(

@@ -1,16 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from 'react';
 import { socketService } from '../services/socket';
 import { useAuth } from './AuthContext';
-
-// Helper to get authorization headers
-function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('auth_token');
-    const headers: HeadersInit = {};
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
-}
+import api from '@/lib/axios';
 
 export interface Machine {
     id: string;
@@ -212,10 +203,9 @@ export function MachineProvider({ children }: { children: ReactNode }) {
 
         // Fallback: also do initial HTTP fetch in case socket isn't ready
         const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
-        fetch(`/api/web/v1/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
-            .then(res => res.json())
-            .then((data: Machine[]) => {
-                handleMachinesList(data);
+        api.get(`/machines${includeArchivedParam}`)
+            .then(res => {
+                handleMachinesList(res.data);
             })
             .catch(err => {
                 console.error('Failed to fetch machines via HTTP:', err);
@@ -265,9 +255,8 @@ export function MachineProvider({ children }: { children: ReactNode }) {
         } else {
             // Fallback to HTTP if socket not connected
             const includeArchivedParam = showArchived ? '?includeArchived=true' : '';
-            fetch(`/api/web/v1/machines${includeArchivedParam}`, { headers: getAuthHeaders() })
-                .then(res => res.json())
-                .then((data: Machine[]) => setMachines(data))
+            api.get(`/machines${includeArchivedParam}`)
+                .then(res => setMachines(res.data))
                 .catch(err => console.error('Failed to refresh machines:', err));
         }
     };

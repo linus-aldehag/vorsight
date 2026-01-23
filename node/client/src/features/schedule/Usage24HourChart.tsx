@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, ReferenceArea, ReferenceLine } from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
+import api from '../../lib/axios';
 
 interface Usage24HourChartProps {
     machineId: string;
@@ -31,15 +32,8 @@ export function Usage24HourChart({ machineId, allowedStart, allowedEnd }: Usage2
         try {
             // Get activity sessions for the last 24 hours
             const hoursAgo = 24;
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = {};
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const res = await fetch(`/api/web/v1/activity/sessions?machineId=${machineId}&hoursAgo=${hoursAgo}`, { headers });
-            if (!res.ok) throw new Error('Failed to load activity');
-            const sessions: ActivitySession[] = await res.json();
+            const res = await api.get(`/activity/sessions?machineId=${machineId}&hoursAgo=${hoursAgo}`);
+            const sessions: ActivitySession[] = res.data;
 
             // Initialize 24 hours with zero usage
             const hours = Array.from({ length: 24 }, (_, i) => ({

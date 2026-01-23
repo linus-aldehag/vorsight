@@ -5,6 +5,7 @@ import { SectionHeader } from '@/components/common/SectionHeader';
 import { useSettings } from '@/context/SettingsContext';
 import { useMachine } from '@/context/MachineContext';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
 import { memo, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { socketService } from '@/services/socket';
@@ -20,10 +21,8 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
 
     // Initial fetch (polled less frequently)
     const fetcher = async (url: string) => {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
+        const res = await api.get(url);
+        return res.data;
     };
 
     const { data: status } = useSWR(
