@@ -9,6 +9,7 @@ on:
       - 'deploy/linux/**'
       - '.github/workflows/build-linux.yml'
       - 'node/Dockerfile'
+      - 'node/entrypoint.sh'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -96,6 +97,7 @@ jobs:
         cp node/server/package.json deploy/linux/vorsight-server/
         cp node/server/package-lock.json deploy/linux/vorsight-server/
         cp node/server/.env.template deploy/linux/vorsight-server/
+        cp node/entrypoint.sh deploy/linux/vorsight-server/
         
         # Note: We do NOT need src folder in production
         # Note: node_modules NOT included - installed on target machine
