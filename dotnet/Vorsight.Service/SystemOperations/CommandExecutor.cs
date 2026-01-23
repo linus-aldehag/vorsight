@@ -8,7 +8,8 @@ public interface ICommandExecutor
     bool RunCommandAsUser(string command, string arguments);
 }
 
-public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
+public class CommandExecutor(ILogger<CommandExecutor> logger, IProcessHelper processHelper)
+    : ICommandExecutor
 {
     public bool RunCommandAsUser(string command, string arguments)
     {
@@ -21,7 +22,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             );
 
             // 1. Get Active Session
-            var sessionId = ProcessHelper.GetActiveConsoleSessionId();
+            var sessionId = processHelper.GetActiveConsoleSessionId();
             if (sessionId == 0xFFFFFFFF)
             {
                 logger.LogError(
@@ -95,10 +96,9 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             );
 
             // 3. Open Process Token
-            // 3. Open Process Token
             // Use specific access rights to avoid Access Denied from Process.Handle (which requests ALL_ACCESS)
             if (
-                !ProcessHelper.TryOpenProcess(
+                !processHelper.TryOpenProcess(
                     (uint)userProcess.Id,
                     ProcessInterop.PROCESS_QUERY_LIMITED_INFORMATION,
                     out var hProcess
@@ -115,7 +115,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
             try
             {
                 if (
-                    !ProcessHelper.TryOpenProcessToken(
+                    !processHelper.TryOpenProcessToken(
                         hProcess,
                         ProcessInterop.TOKEN_DUPLICATE,
                         out var hToken
@@ -133,7 +133,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                 {
                     // 4. Duplicate Token
                     if (
-                        !ProcessHelper.TryDuplicateTokenEx(
+                        !processHelper.TryDuplicateTokenEx(
                             hToken,
                             ProcessInterop.TOKEN_ASSIGN_PRIMARY
                                 | ProcessInterop.TOKEN_DUPLICATE
@@ -155,7 +155,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger) : ICommandExecutor
                     {
                         // 5. Create Process as User
                         if (
-                            ProcessHelper.TryCreateProcessAsUser(
+                            processHelper.TryCreateProcessAsUser(
                                 hUserToken,
                                 null!, // Application Name
                                 $"{command} {arguments}", // Command Line

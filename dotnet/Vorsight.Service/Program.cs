@@ -9,6 +9,7 @@ using Vorsight.Infrastructure.IPC;
 using Vorsight.Infrastructure.Scheduling;
 using Vorsight.Infrastructure.Settings;
 using Vorsight.Infrastructure.Uptime;
+using Vorsight.Interop;
 using Vorsight.Service;
 using Vorsight.Service.Agents;
 using Vorsight.Service.Auditing;
@@ -177,11 +178,15 @@ try
         "VorsightIPC"
     ));
 
+    builder.Services.AddSingleton<IProcessHelper, ProcessHelper>();
+    builder.Services.AddSingleton<IShutdownHelper, ShutdownHelper>();
+
     builder.Services.AddSingleton<IScheduleManager>(sp =>
 #pragma warning disable CA1416 // Validate platform compatibility - entire service is Windows-only
     new ScheduleManager(
         sp.GetRequiredService<ILogger<ScheduleManager>>(),
-        sp.GetRequiredService<ISettingsManager>()
+        sp.GetRequiredService<ISettingsManager>(),
+        sp.GetRequiredService<IShutdownHelper>()
     ));
 
     builder.Services.AddSingleton<IAuditManager, AuditManager>();

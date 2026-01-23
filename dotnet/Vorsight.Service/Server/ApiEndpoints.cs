@@ -53,10 +53,10 @@ public static class ApiEndpoints
 
         app.MapPost(
             "/api/system/shutdown",
-            () =>
+            (IShutdownHelper shutdownHelper) =>
             {
                 // Initiate system shutdown (5 second delay to allow response to return)
-                var success = ShutdownHelper.TryInitiateShutdown(
+                var success = shutdownHelper.TryInitiateShutdown(
                     5,
                     "Shutdown requested via Dashboard"
                 );
@@ -68,10 +68,10 @@ public static class ApiEndpoints
 
         app.MapPost(
             "/api/system/logout",
-            () =>
+            (IShutdownHelper shutdownHelper) =>
             {
                 // Log off interactive user
-                var success = ShutdownHelper.TryForceLogoffInteractiveUser();
+                var success = shutdownHelper.TryForceLogoffInteractiveUser();
                 return success
                     ? Results.Ok(new { status = "Logout initiated" })
                     : Results.StatusCode(500);
