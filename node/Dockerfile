@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy all files from context
 COPY . .
 
+# Install OpenSSL (Required for Prisma on Alpine)
+RUN apk add --no-cache openssl
+
 # Install production dependencies
 RUN npm ci --omit=dev
 
