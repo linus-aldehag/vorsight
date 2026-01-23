@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import type { LogEntry } from './types';
+import api from '@/lib/axios';
 
 export function useMachineLogs(machineId: string, pollingInterval = 10000) {
     const { token } = useAuth();
@@ -13,14 +14,8 @@ export function useMachineLogs(machineId: string, pollingInterval = 10000) {
 
             try {
                 // Fetch latest 100 logs
-                const res = await fetch(`/api/web/v1/logs/${machineId}?limit=100`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    setLogs(data);
-                }
+                const res = await api.get(`/logs/${machineId}?limit=100`);
+                setLogs(res.data);
             } catch (err) {
                 console.error("Failed to fetch logs", err);
             } finally {

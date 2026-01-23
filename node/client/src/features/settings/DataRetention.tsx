@@ -5,6 +5,7 @@ import { Switch } from '../../components/ui/switch';
 import { useEffect, useState } from 'react';
 import { cn } from '../../lib/utils';
 import { useSettings } from '../../context/SettingsContext';
+import api from '../../lib/axios';
 
 interface RetentionSettings {
     activity_retention_days: number;
@@ -36,13 +37,8 @@ export function DataRetention() {
 
     const fetchSettings = async () => {
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/web/v1/cleanup', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            const data = await response.json();
+            const response = await api.get('/cleanup');
+            const data = response.data;
             setSettings(data);
             setFormData({
                 activity_retention_days: data.activityRetentionDays,
@@ -61,23 +57,15 @@ export function DataRetention() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/web/v1/cleanup', {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    activityRetentionDays: formData.activity_retention_days,
-                    screenshotRetentionDays: formData.screenshot_retention_days,
-                    auditRetentionDays: formData.audit_retention_days,
-                    heartbeatRetentionHours: formData.heartbeat_retention_hours,
-                    deleteDriveFiles: formData.delete_drive_files
-                })
+            const response = await api.put('/cleanup', {
+                activityRetentionDays: formData.activity_retention_days,
+                screenshotRetentionDays: formData.screenshot_retention_days,
+                auditRetentionDays: formData.audit_retention_days,
+                heartbeatRetentionHours: formData.heartbeat_retention_hours,
+                deleteDriveFiles: formData.delete_drive_files
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 await fetchSettings();
                 setEditMode(false);
             }
@@ -95,16 +83,10 @@ export function DataRetention() {
 
         setIsRunningCleanup(true);
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/web/v1/cleanup/run', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await api.post('/cleanup/run');
 
-            if (response.ok) {
-                const result = await response.json();
+            if (response.status === 200) {
+                const result = response.data;
                 alert(`Cleanup completed!\n\nActivity records deleted: ${result.stats?.activityDeleted || 0}\nScreenshots deleted: ${result.stats?.screenshotsDeleted || 0}\nAudit events deleted: ${result.stats?.auditsDeleted || 0}`);
                 await fetchSettings();
             }

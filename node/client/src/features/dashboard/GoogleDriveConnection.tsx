@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Cloud, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
+import api from '../../lib/axios';
 
 interface OAuthStatus {
     connected: boolean;
@@ -23,9 +24,8 @@ export function GoogleDriveConnection() {
 
     const checkStatus = async () => {
         try {
-            const response = await fetch('/api/web/v1/oauth/status');
-            const data = await response.json();
-            setStatus(data);
+            const response = await api.get('/oauth/status');
+            setStatus(response.data);
         } catch (err) {
             console.error('Failed to check OAuth status:', err);
             setError('Failed to check connection status');
@@ -42,7 +42,7 @@ export function GoogleDriveConnection() {
     const handleDisconnect = async () => {
         try {
             setLoading(true);
-            await fetch('/api/web/v1/oauth/google/disconnect', { method: 'POST' });
+            await api.post('/oauth/google/disconnect');
             await checkStatus();
         } catch (err) {
             setError('Failed to disconnect');

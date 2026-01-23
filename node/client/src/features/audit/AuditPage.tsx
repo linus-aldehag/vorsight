@@ -7,6 +7,7 @@ import { AuditTable } from './AuditTable';
 import { VorsightApi, type AgentSettings } from '@/api/client';
 import { ConfigSection } from '@/components/common/ConfigSection';
 import { AuditConfig } from './AuditConfig';
+import api from '@/lib/axios';
 
 
 
@@ -44,28 +45,11 @@ export function AuditPage() {
 
 
 
-    // Helper to get authorization headers
-    function getAuthHeaders(): HeadersInit {
-        const token = localStorage.getItem('auth_token');
-        const headers: HeadersInit = {};
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        return headers;
-    }
-
     const handleAcknowledge = async (eventId: number, acknowledge: boolean) => {
         try {
-            const response = await fetch(`/api/web/v1/audit/${eventId}/acknowledge`, {
-                method: 'PATCH',
-                headers: {
-                    ...getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ acknowledged: acknowledge })
-            });
+            const response = await api.patch(`/audit/${eventId}/acknowledge`, { acknowledged: acknowledge });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 mutate(); // Refresh audit events
             } else {
                 console.error('Failed to update acknowledgment status');

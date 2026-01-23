@@ -7,6 +7,7 @@ import { useState, memo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import { cn } from '@/lib/utils';
+import api from '@/lib/axios';
 
 interface ScreenshotViewerProps {
     isDisabled?: boolean;
@@ -23,12 +24,8 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
 
 
     const fetcher = async (url: string) => {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch');
-        return res.json();
+        const res = await api.get(url);
+        return res.data;
     };
 
     const { data: screenshotData, mutate } = useSWR(
@@ -61,16 +58,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
             // Safety timeout: reset waiting state after 30 seconds if no new image arrives
             setTimeout(() => setIsWaitingForUpdate(false), 30000);
 
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/web/v1/screenshots/request?machineId=${selectedMachine.id}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!res.ok) throw new Error('Failed to request screenshot');
+            await api.post(`/screenshots/request?machineId=${selectedMachine.id}`);
 
             // Optimistic UI update or just wait for SWR refresh
             // We'll mutate after a short delay to likely catch the new image

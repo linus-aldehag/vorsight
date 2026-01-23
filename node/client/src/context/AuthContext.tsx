@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import api from '@/lib/axios';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -21,12 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (token) {
             // Verify token is still valid
-            fetch('/api/web/v1/auth/status', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-                .then(res => res.json())
-                .then(data => {
-                    setIsAuthenticated(data.authenticated);
+            api.get('/auth/status')
+                .then(res => {
+                    setIsAuthenticated(res.data.authenticated);
                     setIsLoading(false);
                 })
                 .catch(() => {
@@ -41,21 +39,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [token]);
 
     const login = async (passphrase: string) => {
-        const res = await fetch('/api/web/v1/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ passphrase })
-        });
-
-        if (!res.ok) {
-            const error = await res.json();
-            throw new Error(error.error || 'Invalid passphrase');
+        try {
+            const res = await api.post('/auth/login', { passphrase });
+            const { token } = res.data;
+            localStorage.setItem('auth_token', token);
+            setToken(token);
+            setIsAuthenticated(true);
+        } catch (error: any) {
+            const errorData = error.response?.data || { error: 'Invalid passphrase' };
+            throw new Error(errorData.error || 'Invalid passphrase');
         }
-
-        const { token } = await res.json();
-        localStorage.setItem('auth_token', token);
-        setToken(token);
-        setIsAuthenticated(true);
     };
 
     const logout = () => {

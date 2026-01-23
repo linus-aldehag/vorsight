@@ -6,16 +6,7 @@ import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { auditCardVariants } from '@/components/ui/variants/log';
-
-// Helper to get authorization headers
-function getAuthHeaders(): HeadersInit {
-    const token = localStorage.getItem('auth_token');
-    const headers: HeadersInit = {};
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
-    return headers;
-}
+import api from '@/lib/axios';
 
 export const AuditAlert = memo(function AuditAlert() {
     const { selectedMachine } = useMachine();
@@ -25,16 +16,9 @@ export const AuditAlert = memo(function AuditAlert() {
 
     const handleDismiss = async (id: number) => {
         try {
-            const response = await fetch(`/api/web/v1/audit/${id}/acknowledge`, {
-                method: 'PATCH',
-                headers: {
-                    ...getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ acknowledged: true })
-            });
+            const response = await api.patch(`/audit/${id}/acknowledge`, { acknowledged: true });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 // Refresh the audit events list to remove the dismissed item
                 mutate();
             }

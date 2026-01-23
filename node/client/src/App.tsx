@@ -7,6 +7,7 @@ import { useMachine, MachineProvider } from './context/MachineContext';
 import { LoginPage } from './features/auth/LoginPage';
 import { MainLayout } from './components/Layout/MainLayout';
 import { SettingsLayout } from './components/Layout/SettingsLayout';
+import api from './lib/axios';
 
 export function App() {
     return (
@@ -31,14 +32,8 @@ function AppContent() {
     useEffect(() => {
         const checkOAuth = async () => {
             try {
-                const token = localStorage.getItem('auth_token');
-                const response = await fetch('/api/web/v1/oauth/status', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                const data = await response.json();
-                setOauthConfigured(data.connected === true);
+                const response = await api.get('/oauth/status');
+                setOauthConfigured(response.data.connected === true);
             } catch (error) {
                 console.error('Failed to check OAuth status:', error);
                 setOauthConfigured(false);
