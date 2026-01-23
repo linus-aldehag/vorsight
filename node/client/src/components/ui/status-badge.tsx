@@ -87,6 +87,7 @@ export interface StatusBadgeProps
     status: StatusValue
     statusText?: string
     showPulse?: boolean
+    pulseOpacity?: number
     icon?: LucideIcon
 }
 
@@ -116,7 +117,10 @@ export function StatusBadge({
         >
             <span className="relative flex h-3 w-3 shrink-0">
                 {shouldPulse && (
-                    <span className={cn(pulseVariants({ status }))} />
+                    <span
+                        className={cn(pulseVariants({ status }))}
+                        style={{ opacity: props.pulseOpacity !== undefined ? props.pulseOpacity * 0.75 : 0.75 }}
+                    />
                 )}
                 <span className={cn(dotVariants({ status }))} />
             </span>
