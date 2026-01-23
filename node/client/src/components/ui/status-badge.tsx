@@ -100,13 +100,10 @@ export function StatusBadge({
     onClick,
     ...props
 }: StatusBadgeProps) {
-    // Determine defaults based on status if not explicitly overridden
     const shouldPulse = showPulse ?? (status !== "offline" && status !== "reachable")
 
-    // Auto-select icon for warning/error if not provided
     const DisplayIcon = Icon || (status === "error" ? AlertCircle : status === "warning" ? AlertTriangle : undefined)
 
-    // Map status to label text
     const label = status === "error" ? "ATTENTION" : status.toUpperCase()
 
     return (

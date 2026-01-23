@@ -8,7 +8,6 @@ class SocketService {
 
     connect(url: string = window.location.origin): void {
         if (this.socket?.connected) {
-            console.log('Socket already connected');
             return;
         }
 
@@ -19,8 +18,6 @@ class SocketService {
         });
 
         this.socket.on('connect', () => {
-            console.log('✓ Socket connected:', this.socket?.id);
-
             // Re-register all event handlers after reconnection
             this.eventHandlers.forEach((handlers, event) => {
                 handlers.forEach(handler => {
@@ -35,10 +32,8 @@ class SocketService {
             }
         });
 
-        this.socket.on('disconnect', (reason: string) => {
-            if (reason !== 'io client disconnect') {
-                console.log('Socket disconnected:', reason);
-            }
+        this.socket.on('disconnect', (_reason: string) => {
+            // connection logic handled by HTTP fallback
         });
 
         this.socket.on('connect_error', () => {
