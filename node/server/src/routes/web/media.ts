@@ -48,9 +48,9 @@ router.get('/view/:id', async (req: Request, res: Response) => {
         // @ts-ignore - Gaxios stream types are compatible with pipe
         response.data.pipe(res);
         return; // Ensure void return
-    } catch (error) {
+    } catch (error: any) {
         console.error('View error:', error);
-        return res.status(500).send('Error');
+        return res.status(500).send(error?.message || 'Internal Server Error');
     }
 });
 

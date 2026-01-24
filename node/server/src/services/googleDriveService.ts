@@ -68,8 +68,17 @@ class GoogleDriveService {
                 });
 
                 console.log('Token refreshed successfully');
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to refresh token:', err);
+
+                // If the refresh token is invalid (revoked or expired), remove it so the user can re-authenticate
+                if (err?.response?.data?.error === 'invalid_grant' || err?.message?.includes('invalid_grant')) {
+                    console.log('Refresh token is invalid. Removing from database to force re-authentication.');
+                    await prisma.oAuthToken.delete({
+                        where: { id: tokenData.id }
+                    });
+                }
+
                 throw new Error('Failed to refresh Google OAuth token. Please re-authenticate.');
             }
         }
