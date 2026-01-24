@@ -112,4 +112,17 @@ router.get('/status', async (_req: Request, res: Response) => {
     }
 });
 
+// Disconnect
+router.post('/google/disconnect', async (_req: Request, res: Response) => {
+    try {
+        await prisma.oAuthToken.deleteMany({
+            where: { provider: 'google' }
+        });
+        return res.json({ success: true, message: 'Disconnected successfully' });
+    } catch (error) {
+        console.error('Disconnect Error:', error);
+        return res.status(500).send('Failed to disconnect');
+    }
+});
+
 export default router;
