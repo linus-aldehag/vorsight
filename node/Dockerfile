@@ -19,7 +19,7 @@ RUN npx prisma generate
 # Configuration
 ENV PORT=3000
 ENV HOST=0.0.0.0
-VOLUME ["/app/prisma"]
+VOLUME ["/app/vorsight"]
 EXPOSE 3000
 
 # Entrypoint setup
