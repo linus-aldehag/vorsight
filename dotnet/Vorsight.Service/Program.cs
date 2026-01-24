@@ -17,6 +17,7 @@ using Vorsight.Service.IPC;
 using Vorsight.Service.Logging;
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.Server;
+using Vorsight.Service.Server.Clients;
 using Vorsight.Service.Storage;
 using Vorsight.Service.SystemOperations;
 using Vorsight.Service.Utilities;
@@ -205,6 +206,11 @@ try
     // Server Connection (Node.js server)
     builder.Services.AddHttpClient();
     builder.Services.AddSingleton<ICredentialStore, FileCredentialStore>();
+
+    // NEW: Register Clients
+    builder.Services.AddSingleton<IVorsightApiClient, VorsightApiClient>();
+    builder.Services.AddSingleton<IVorsightRealtimeClient, VorsightSocketClient>();
+
     builder.Services.AddSingleton<IServerConnection, ServerConnection>();
     builder.Services.AddSingleton<IAgentLauncher, AgentLauncher>();
 
