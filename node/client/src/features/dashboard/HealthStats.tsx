@@ -27,7 +27,7 @@ export const HealthStats = memo(function HealthStats({ version, onToggleLogs }: 
     };
 
     const { data: status } = useSWR(
-        selectedMachine ? `/api/web/v1/status/${selectedMachine.id}` : null,
+        selectedMachine ? `/status/${selectedMachine.id}` : null,
         fetcher,
         { refreshInterval: 10000, revalidateOnFocus: false }
     );

@@ -13,7 +13,7 @@ export interface ActivityLogEntry {
 
 export function useActivity(machineId: string | undefined, limit: number = 100) {
     const { data, error, isLoading, mutate } = useSWR<ActivityLogEntry[]>(
-        machineId ? `/api/web/v1/activity/${machineId}?limit=${limit}` : null,
+        machineId ? `/activity/${machineId}?limit=${limit}` : null,
         fetcher
     );
 

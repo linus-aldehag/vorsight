@@ -29,7 +29,7 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
     };
 
     const { data: screenshotData, mutate } = useSWR(
-        selectedMachine ? `/api/web/v1/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
+        selectedMachine ? `/screenshots?machineId=${selectedMachine.id}&limit=1` : null,
         fetcher,
         {
             refreshInterval: 30000, // Poll every 30 seconds for new screenshots

@@ -26,7 +26,7 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
     };
 
     const { data: status } = useSWR(
-        selectedMachine ? `/api/web/v1/status/${selectedMachine.id}` : null,
+        selectedMachine ? `/status/${selectedMachine.id}` : null,
         fetcher,
         {
             refreshInterval: 30000,
@@ -50,12 +50,7 @@ export const ActivityMonitor = memo(function ActivityMonitor({ isDisabled }: Act
             setActivity((prev: any) => ({ ...prev, ...data }));
         };
 
-        // We need to verify if we receive this.
-        // As a workaround for now, we can rely on Global `machine:state` if available, but `activity:update` is specific.
 
-        // Actually, looking at `socketHandler.ts`, `machine:activity` triggers `io.to('machine:machId').emit`.
-        // The machine itself enters that room.
-        // We probably need to emit a 'web:watch_machine' event from client.
 
         socketService.on('activity:update', handleUpdate);
 
