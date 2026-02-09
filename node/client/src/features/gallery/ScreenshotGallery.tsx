@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import useSWRInfinite from 'swr/infinite';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { RefreshCw, X, Maximize2, Eye, ImageOff, Loader2 } from 'lucide-react';
-import { VorsightApi, type DriveFile, type AgentSettings } from '../../api/client';
+import { VorsightApi, type DriveFile, type AgentSettings, type PaginatedScreenshots } from '../../api/client';
 import { useMachine } from '../../context/MachineContext';
 import { useSettings } from '../../context/SettingsContext';
 import { ScreenshotFilters } from './ScreenshotFilters';
@@ -63,37 +64,60 @@ function ScreenshotCard({ screenshot, onImageClick, onImageError, failedImages, 
 export function ScreenshotGallery() {
     const { selectedMachine } = useMachine();
     const { formatTimestamp } = useSettings();
-    const [screenshots, setScreenshots] = useState<DriveFile[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [cursor, setCursor] = useState<string | null>(null);
-    const [hasMore, setHasMore] = useState(true);
-    const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Socket state for real-time updates
+    const [socketScreenshots, setSocketScreenshots] = useState<DriveFile[]>([]);
+
+    // Config state
     const [settings, setSettings] = useState<AgentSettings | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // UI state
+    const [selectedImage, setSelectedImage] = useState<DriveFile | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [dateRangeFilter, setDateRangeFilter] = useState<'24h' | '7d' | '30d' | 'all'>('24h');
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
 
-    // Intersection Observer for infinite scroll
+    // SWR Infinite Scroll Fetcher
+    const getKey = (pageIndex: number, previousPageData: PaginatedScreenshots | null) => {
+        if (!selectedMachine) return null;
+        // Key: [unique_id, machineId, limit, cursor]
+        if (pageIndex === 0) return ['screenshots', selectedMachine.id, 20, null];
+
+        // Reached the end
+        if (!previousPageData || !previousPageData.hasMore || !previousPageData.cursor) return null;
+
+        return ['screenshots', selectedMachine.id, 20, previousPageData.cursor];
+    };
+
+    const fetcher = async ([_, machineId, limit, cursor]: [string, string, number, string | null]) => {
+        return VorsightApi.getScreenshots(machineId, limit, cursor || undefined);
+    };
+
+    const { data, size, setSize, isLoading, isValidating, mutate } = useSWRInfinite(getKey, fetcher, {
+        revalidateFirstPage: false,
+        revalidateOnFocus: false,
+        parallel: true, // Allow parallel fetching for smoother UX but handle with care
+    });
+
     const loadMoreRef = useRef<HTMLDivElement>(null);
 
+    // Derived state
+    const isLoadingInitial = isLoading && !data;
+    const isLoadingMore = isValidating && size > 0 && !!data;
+    const isEmpty = data?.[0]?.screenshots.length === 0;
+    const isReachingEnd = isEmpty || (data && !data[data.length - 1].hasMore);
+
+    // Reset state on machine change
     useEffect(() => {
         if (selectedMachine) {
-            setScreenshots([]);
-            setCursor(null);
-            setHasMore(true);
-            setLoading(true);
-            loadInitialScreenshots();
+            setSocketScreenshots([]);
+            setFailedImages(new Set());
             loadSettings();
 
             // Subscribe to new screenshots
             const handleNewScreenshot = (newScreenshot: any) => {
-                // Ensure it belongs to the selected machine (socket room ensures this mostly, but good to be safe)
-                // The payload format from server might differ slightly from DriveFile, but let's assume it maps or is compatible.
-                // Re-fetch is safer but adding to list is faster.
-                // Let's prepend.
-                setScreenshots(prev => [newScreenshot, ...prev]);
+                setSocketScreenshots(prev => [newScreenshot, ...prev]);
             };
 
             socketService.on('screenshot:new', handleNewScreenshot);
@@ -101,9 +125,6 @@ export function ScreenshotGallery() {
             return () => {
                 socketService.off('screenshot:new', handleNewScreenshot);
             };
-        } else {
-            setScreenshots([]);
-            setLoading(false);
         }
     }, [selectedMachine?.id]);
 
@@ -117,65 +138,52 @@ export function ScreenshotGallery() {
         }
     };
 
-    const loadInitialScreenshots = async () => {
-        if (!selectedMachine) return;
+    // Process and deduplicate screenshots
+    const allScreenshots = useMemo(() => {
+        const historical = data ? data.flatMap(page => page.screenshots) : [];
+        const combined = [...socketScreenshots, ...historical];
 
-        setLoading(true);
-        setFailedImages(new Set());
-        try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 20);
-            setScreenshots(data.screenshots);
-            setCursor(data.cursor);
-            setHasMore(data.hasMore);
-        } catch (err) {
-            console.error('Failed to load screenshots:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Deduplicate by ID using a Map (preserves insertion order of first occurrence, 
+        // but we want recent first, so let's rely on sort)
+        const unique = Array.from(new Map(combined.map(s => [s.id, s])).values());
 
-    const loadMore = useCallback(async () => {
-        if (!selectedMachine || !hasMore || loadingMore || !cursor) return;
+        // Sort: Newest first
+        return unique.sort((a, b) => new Date(b.createdTime).getTime() - new Date(a.createdTime).getTime());
+    }, [data, socketScreenshots]);
 
-        setLoadingMore(true);
-        try {
-            const data = await VorsightApi.getScreenshots(selectedMachine.id, 20, cursor);
-            setScreenshots(prev => [...prev, ...data.screenshots]);
-            setCursor(data.cursor);
-            setHasMore(data.hasMore);
-        } catch (err) {
-            console.error('Failed to load more screenshots:', err);
-        } finally {
-            setLoadingMore(false);
-        }
-    }, [selectedMachine, hasMore, loadingMore, cursor]);
+    // Apply date range filter
+    const filteredImages = useMemo(() => {
+        return allScreenshots.filter(img => {
+            if (dateRangeFilter === 'all') return true;
 
-    // Set up Intersection Observer for infinite scroll
+            const imageDate = new Date(img.createdTime);
+            const now = new Date();
+            const diffHours = (now.getTime() - imageDate.getTime()) / (1000 * 60 * 60);
+
+            if (dateRangeFilter === '24h' && diffHours > 24) return false;
+            if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
+            if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
+
+            return true;
+        });
+    }, [allScreenshots, dateRangeFilter]);
+
+    // Intersection Observer
     useEffect(() => {
-        if (!loadMoreRef.current || !hasMore) return;
+        if (!loadMoreRef.current || isReachingEnd || isLoadingMore) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
-                const [entry] = entries;
-                if (entry.isIntersecting && !loadingMore) {
-                    loadMore();
+                if (entries[0].isIntersecting) {
+                    setSize(s => s + 1);
                 }
             },
-            {
-                root: null,
-                rootMargin: '400px', // Start loading 400px before reaching the trigger
-                threshold: 0
-            }
+            { rootMargin: '400px', threshold: 0 }
         );
 
         observer.observe(loadMoreRef.current);
-
-        return () => {
-            if (loadMoreRef.current) {
-                observer.unobserve(loadMoreRef.current);
-            }
-        };
-    }, [loadMore, hasMore, loadingMore]);
+        return () => observer.disconnect();
+    }, [isReachingEnd, isLoadingMore, setSize]);
 
     const handleScreenshotSave = async (updates: Partial<AgentSettings>) => {
         if (!selectedMachine || !settings) return;
@@ -205,24 +213,12 @@ export function ScreenshotGallery() {
         return formatTimestamp(dateStr, { includeDate: true, includeSeconds: true });
     };
 
-    // Apply date range filter
-    const filteredImages = useMemo(() => {
-        return (screenshots || []).filter(img => {
-            if (dateRangeFilter === 'all') return true;
+    const handleRefresh = () => {
+        setSocketScreenshots([]); // Clear socket buffer on refresh to avoid staleness issues
+        mutate();
+    };
 
-            const imageDate = new Date(img.createdTime);
-            const now = new Date();
-            const diffHours = (now.getTime() - imageDate.getTime()) / (1000 * 60 * 60);
-
-            if (dateRangeFilter === '24h' && diffHours > 24) return false;
-            if (dateRangeFilter === '7d' && diffHours > 24 * 7) return false;
-            if (dateRangeFilter === '30d' && diffHours > 24 * 30) return false;
-
-            return true;
-        });
-    }, [screenshots, dateRangeFilter]);
-
-    if (loading && screenshots.length === 0) {
+    if (isLoadingInitial) {
         return <div className="text-center p-20 text-muted-foreground animate-pulse">Loading gallery...</div>;
     }
 
@@ -247,8 +243,6 @@ export function ScreenshotGallery() {
                 </ConfigSection>
             )}
 
-
-
             {/* Filters */}
             <ScreenshotFilters
                 dateRangeFilter={dateRangeFilter}
@@ -258,16 +252,16 @@ export function ScreenshotGallery() {
             {/* Gallery Controls */}
             <div className="flex justify-between items-center">
                 <h4 className="text-lg font-semibold">
-                    Screenshots {filteredImages.length !== screenshots.length && `(${filteredImages.length} of ${screenshots.length})`}
+                    Screenshots {filteredImages.length !== allScreenshots.length && `(${filteredImages.length} of ${allScreenshots.length})`}
                 </h4>
-                <Button onClick={loadInitialScreenshots} disabled={loading} variant="outline" className="gap-2">
-                    <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                <Button onClick={handleRefresh} disabled={isValidating} variant="outline" className="gap-2">
+                    <RefreshCw size={16} className={isValidating ? "animate-spin" : ""} />
                     Refresh
                 </Button>
             </div>
 
             {/* Gallery Grid */}
-            {screenshots.length === 0 ? (
+            {allScreenshots.length === 0 ? (
                 <div className="p-20 text-center border border-dashed border-border rounded-lg text-muted-foreground">
                     No screenshots found.
                 </div>
@@ -287,9 +281,9 @@ export function ScreenshotGallery() {
                     </div>
 
                     {/* Infinite Scroll Trigger */}
-                    {hasMore && (
+                    {!isReachingEnd && (
                         <div ref={loadMoreRef} className="flex items-center justify-center py-8">
-                            {loadingMore ? (
+                            {isLoadingMore ? (
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Loader2 className="animate-spin" size={20} />
                                     <span>Loading more screenshots...</span>
@@ -302,7 +296,7 @@ export function ScreenshotGallery() {
                         </div>
                     )}
 
-                    {!hasMore && screenshots.length > 0 && (
+                    {isReachingEnd && allScreenshots.length > 0 && (
                         <div className="text-center py-8 text-xs text-muted-foreground">
                             All screenshots loaded
                         </div>
