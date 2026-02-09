@@ -140,31 +140,9 @@ export function ScreenshotGallery() {
         setLoadingMore(true);
         try {
             const data = await VorsightApi.getScreenshots(selectedMachine.id, 20, cursor);
-
-            // Filter out any duplicates before adding to the list
-            let newScreenshotsCount = 0;
-            setScreenshots(prev => {
-                const existingIds = new Set(prev.map((s: DriveFile) => s.id));
-                const newScreenshots = data.screenshots.filter((s: DriveFile) => !existingIds.has(s.id));
-                newScreenshotsCount = newScreenshots.length;
-
-                // Only update if we have new screenshots
-                if (newScreenshots.length > 0) {
-                    return [...prev, ...newScreenshots];
-                }
-                return prev;
-            });
-
+            setScreenshots(prev => [...prev, ...data.screenshots]);
             setCursor(data.cursor);
             setHasMore(data.hasMore);
-
-            // If all screenshots were duplicates but there's more data, try loading again
-            if (newScreenshotsCount === 0 && data.hasMore && data.cursor) {
-                setLoadingMore(false);
-                // Recursively load more to skip duplicate pages
-                setTimeout(() => loadMore(), 0);
-                return;
-            }
         } catch (err) {
             console.error('Failed to load more screenshots:', err);
         } finally {
