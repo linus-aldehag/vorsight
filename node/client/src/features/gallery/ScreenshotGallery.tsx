@@ -140,7 +140,12 @@ export function ScreenshotGallery() {
         setLoadingMore(true);
         try {
             const data = await VorsightApi.getScreenshots(selectedMachine.id, 20, cursor);
-            setScreenshots(prev => [...prev, ...data.screenshots]);
+            // Filter out any duplicates before adding to the list
+            setScreenshots(prev => {
+                const existingIds = new Set(prev.map((s: DriveFile) => s.id));
+                const newScreenshots = data.screenshots.filter((s: DriveFile) => !existingIds.has(s.id));
+                return [...prev, ...newScreenshots];
+            });
             setCursor(data.cursor);
             setHasMore(data.hasMore);
         } catch (err) {

@@ -31,5 +31,6 @@ export function mergeSequentialActivities(activities: ActivityLogEntry[]): Activ
     }
     merged.push(current);
 
-    return merged;
+    // Reverse so most recent activities appear first
+    return merged.reverse();
 }
