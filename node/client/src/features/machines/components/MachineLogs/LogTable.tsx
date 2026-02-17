@@ -109,7 +109,7 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
                         {logs.map((log, index) => {
                             const level = log.level.toLowerCase() as any;
                             const logTime = new Date(log.timestamp).getTime();
-                            const isNew = lastViewedTimestamp && logTime > lastViewedTimestamp;
+                            const isNew = !!(lastViewedTimestamp && logTime > lastViewedTimestamp);
 
                             // Check if this is the FIRST new log (boundary)
                             const prevLog = logs[index + 1]; // Older log
@@ -124,7 +124,8 @@ export function LogTable({ logs, loading, lastViewedTimestamp }: LogTableProps) 
                             // Old Log C
 
                             // So if current log is New, and next log is Old (or doesn't exist/is older than timestamp)
-                            const showSeparator = isNew && (!prevLog || (lastViewedTimestamp && prevLogTime <= lastViewedTimestamp));
+                            // Fix for hydration error: ensure this is strictly boolean
+                            const showSeparator = isNew && !!(!prevLog || (lastViewedTimestamp && prevLogTime <= lastViewedTimestamp));
 
                             return (
                                 <React.Fragment key={log.id}>
