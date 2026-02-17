@@ -96,6 +96,7 @@ export function StatusBadge({
     status,
     statusText,
     showPulse,
+    pulseOpacity,
     icon: Icon,
     onClick,
     ...props
@@ -116,7 +117,7 @@ export function StatusBadge({
                 {shouldPulse && (
                     <span
                         className={cn(pulseVariants({ status }))}
-                        style={{ opacity: props.pulseOpacity !== undefined ? props.pulseOpacity * 0.75 : 0.75 }}
+                        style={{ opacity: pulseOpacity !== undefined ? pulseOpacity * 0.75 : 0.75 }}
                     />
                 )}
                 <span className={cn(dotVariants({ status }))} />
