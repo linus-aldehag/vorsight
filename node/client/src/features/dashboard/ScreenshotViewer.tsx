@@ -129,26 +129,33 @@ export const ScreenshotViewer = memo(function ScreenshotViewer({ isDisabled, isM
                                 No screenshots available
                             </p>
                         </div>
-                    ) : (
-                        <div className="relative w-full h-full flex items-center justify-center group">
-                            <img
-                                key={latestScreenshot.id}
-                                src={`/api/web/v1/media/view/${latestScreenshot.id}`}
-                                alt="Latest screenshot"
-                                className={cn(
-                                    "max-w-full max-h-full object-contain rounded border border-border/50 shadow-sm transition-all",
-                                    !isDisabled && "cursor-pointer hover:border-primary/50"
-                                )}
-                                onClick={() => setSelectedImage(`/api/web/v1/media/view/${latestScreenshot.id}`)}
-                                style={{
-                                    filter: isDisabled ? 'grayscale(100%) opacity(0.7)' : 'none'
-                                }}
-                            />
-                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                Click to expand
+                    ) : (() => {
+                        // Use same fallback chain as gallery: thumbnailLink -> webViewLink -> proxy
+                        const imgSrc = latestScreenshot.thumbnailLink || latestScreenshot.webViewLink || `/api/web/v1/media/view/${latestScreenshot.id}`;
+                        const fullSizeSrc = latestScreenshot.webViewLink || `/api/web/v1/media/view/${latestScreenshot.id}`;
+
+                        return (
+                            <div className="relative w-full h-full flex items-center justify-center group">
+                                <img
+                                    key={latestScreenshot.id}
+                                    src={imgSrc}
+                                    alt="Latest screenshot"
+                                    className={cn(
+                                        "max-w-full max-h-full object-contain rounded border border-border/50 shadow-sm transition-all",
+                                        !isDisabled && "cursor-pointer hover:border-primary/50"
+                                    )}
+                                    onClick={() => setSelectedImage(fullSizeSrc)}
+                                    style={{
+                                        filter: isDisabled ? 'grayscale(100%) opacity(0.7)' : 'none'
+                                    }}
+                                    referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    Click to expand
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        );
+                    })()}
                 </div>
             </CardContent>
 
