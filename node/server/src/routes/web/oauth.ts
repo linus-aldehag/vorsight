@@ -1,6 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { google } from 'googleapis';
 import { prisma } from '../../db/database';
+import { QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const SCOPES = [
     'https://www.googleapis.com/auth/drive.metadata.readonly'
 ];
 
-router.get('/google', async (_req: Request, res: Response) => {
+router.get('/google', async (_req: QueryRequest, res: Response) => {
     try {
         const oauth2Client = new google.auth.OAuth2(
             process.env.GOOGLE_CLIENT_ID,
@@ -31,7 +32,7 @@ router.get('/google', async (_req: Request, res: Response) => {
     }
 });
 
-router.get('/google/callback', async (req: Request, res: Response) => {
+router.get('/google/callback', async (req: QueryRequest, res: Response) => {
     try {
         const { code } = req.query;
 
@@ -89,7 +90,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 });
 
 // Check status
-router.get('/status', async (_req: Request, res: Response) => {
+router.get('/status', async (_req: QueryRequest, res: Response) => {
     try {
         const token = await prisma.oAuthToken.findFirst({
             where: { provider: 'google' }
@@ -113,7 +114,7 @@ router.get('/status', async (_req: Request, res: Response) => {
 });
 
 // Disconnect
-router.post('/google/disconnect', async (_req: Request, res: Response) => {
+router.post('/google/disconnect', async (_req: QueryRequest, res: Response) => {
     try {
         await prisma.oAuthToken.deleteMany({
             where: { provider: 'google' }

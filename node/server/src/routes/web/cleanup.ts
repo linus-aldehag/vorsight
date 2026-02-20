@@ -1,12 +1,13 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
 // Auth handled by server mount
 import { performCleanup } from '../../jobs/cleanup';
+import { TypedRequest, QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Get cleanup settings
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (_req: QueryRequest, res: Response) => {
     try {
         const settings = await prisma.cleanupSettings.findUnique({ where: { id: 1 } });
         return res.json(settings || {
@@ -31,9 +32,9 @@ interface CleanupSettingsBody {
 }
 
 // Update cleanup settings
-router.put('/', async (req: Request, res: Response) => {
+router.put('/', async (req: TypedRequest<any, any, CleanupSettingsBody>, res: Response) => {
     try {
-        const { activityRetentionDays, screenshotRetentionDays, auditRetentionDays, heartbeatRetentionHours, deleteDriveFiles } = req.body as CleanupSettingsBody;
+        const { activityRetentionDays, screenshotRetentionDays, auditRetentionDays, heartbeatRetentionHours, deleteDriveFiles } = req.body;
 
         await prisma.cleanupSettings.upsert({
             where: { id: 1 },
@@ -64,7 +65,7 @@ router.put('/', async (req: Request, res: Response) => {
 });
 
 // Trigger manual cleanup
-router.post('/run', async (_req: Request, res: Response) => {
+router.post('/run', async (_req: QueryRequest, res: Response) => {
     try {
         const stats = await performCleanup();
         return res.json({ success: true, stats });

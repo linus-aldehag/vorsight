@@ -1,15 +1,16 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
+import { QueryRequest, PaginationQuery } from '../../types/routes';
 
 
 const router = express.Router();
 
 // GET /api/web/v1/settings?machineId=xxx
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
     try {
         const { machineId } = req.query;
 
-        if (!machineId || typeof machineId !== 'string') {
+        if (!machineId) {
             return res.status(400).json({ error: 'machineId required' });
         }
 
@@ -56,7 +57,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST /api/web/v1/settings
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: QueryRequest, res: Response) => {
     try {
         const { machineId, ...newSettings } = req.body;
 

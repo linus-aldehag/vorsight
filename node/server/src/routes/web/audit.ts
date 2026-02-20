@@ -1,11 +1,12 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
-import crypto from 'crypto'; // Imported just in case
+import crypto from 'crypto';
+import { IdRequest, PaginationQuery, QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Get recent audit events (with optional filtering)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
     try {
         const { machineId, limit = '50', offset = '0', flaggedOnly, unacknowledgedOnly } = req.query;
 
@@ -42,13 +43,13 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Acknowledge/Dismiss an event (e.g. unflag it)
-router.patch('/:id/acknowledge', async (req: Request, res: Response) => {
+router.patch('/:id/acknowledge', async (req: IdRequest, res: Response) => {
     try {
         const { id } = req.params;
         const { acknowledged } = req.body;
 
         await prisma.auditEvent.update({
-            where: { id: parseInt(id as string) },
+            where: { id: parseInt(id) },
             data: {
                 isFlagged: false,
                 acknowledged: Boolean(acknowledged)
@@ -63,7 +64,7 @@ router.patch('/:id/acknowledge', async (req: Request, res: Response) => {
 });
 
 // Add manual audit event (system generated)
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: QueryRequest, res: Response) => {
     try {
         const { machineId, eventType, details, isFlagged } = req.body;
 

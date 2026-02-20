@@ -1,11 +1,12 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import ping from 'ping';
 import { prisma } from '../../db/database';
+import { MachineRequest, PaginationQuery, QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Ping a specific machine by ID
-router.post('/:machineId', async (req: Request, res: Response) => {
+router.post('/:machineId', async (req: MachineRequest, res: Response) => {
     try {
         const { machineId } = req.params;
 
@@ -51,7 +52,7 @@ router.post('/:machineId', async (req: Request, res: Response) => {
 });
 
 // Ping all machines
-router.post('/', async (_req: Request, res: Response) => {
+router.post('/', async (_req: QueryRequest, res: Response) => {
     try {
         const machines = await prisma.machine.findMany({
             select: { id: true, name: true, ipAddress: true, hostname: true }

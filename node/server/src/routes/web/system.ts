@@ -1,9 +1,10 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import os from 'os';
+import { QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
-router.get('/info', (_req: Request, res: Response) => {
+router.get('/info', (_req: QueryRequest, res: Response) => {
     try {
         const info = {
             platform: os.platform(),

@@ -1,10 +1,11 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
+import { ActionParams, ActionRequest, PaginationQuery } from '../../types/routes';
 
 const router = express.Router();
 
 // System actions (Shutdown, Logoff, Restart)
-router.post('/system/:action', async (req: Request, res: Response) => {
+router.post('/system/:action', async (req: ActionRequest<PaginationQuery>, res: Response) => {
     try {
         const { action } = req.params;
         const { machineId } = req.query;
@@ -13,13 +14,12 @@ router.post('/system/:action', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'machineId is required' });
         }
 
-        const machineIdStr = machineId as string;
         const allowedActions = ['shutdown', 'logoff', 'restart', 'lock'];
-        if (!allowedActions.includes(action as string)) {
+        if (!allowedActions.includes(action)) {
             return res.status(400).json({ error: 'Invalid action' });
         }
 
-        const machine = await prisma.machine.findUnique({ where: { id: machineIdStr } });
+        const machine = await prisma.machine.findUnique({ where: { id: machineId } });
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });
         }
@@ -34,10 +34,10 @@ router.post('/system/:action', async (req: Request, res: Response) => {
             // Log the action
             await prisma.auditEvent.create({
                 data: {
-                    machineId: machineIdStr,
+                    machineId: machineId,
                     eventId: crypto.randomUUID(),
                     eventType: 'SystemAction',
-                    username: (req as any).user?.username || 'WebUser',
+                    username: req.user?.username || 'WebUser',
                     timestamp: new Date(),
                     details: JSON.stringify({ action }),
                     sourceLogName: 'WebControl'
