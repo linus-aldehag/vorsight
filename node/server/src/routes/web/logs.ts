@@ -1,16 +1,17 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
+import { MachineRequest, PaginationQuery } from '../../types/routes';
 
 const router = express.Router();
 
 // GET /api/web/v1/logs/:machineId
-router.get('/:machineId', async (req: Request, res: Response) => {
+router.get('/:machineId', async (req: MachineRequest<PaginationQuery>, res: Response) => {
     try {
         const { machineId } = req.params;
         const limit = parseInt(req.query.limit as string) || 100;
 
         const logs = await prisma.machineLog.findMany({
-            where: { machineId },
+            where: { machineId: machineId },
             orderBy: { timestamp: 'desc' },
             take: limit
         });

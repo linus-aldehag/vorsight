@@ -1,10 +1,11 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Login route for browser client
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', async (req: QueryRequest, res: Response) => {
     try {
         const { passphrase } = req.body;
 
@@ -37,7 +38,7 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 // Verify token (Frontend calls /status)
-router.get('/status', (req: Request, res: Response) => {
+router.get('/status', (req: QueryRequest, res: Response) => {
     const authHeader = req.headers.authorization;
 
     if (authHeader) {

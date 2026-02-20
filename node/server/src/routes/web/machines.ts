@@ -1,11 +1,12 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 // Auth is handled by the router mount in server.ts (authenticateBrowser)
 import { machineService } from '../../services/machineService';
+import { IdRequest, QueryRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Get all machines
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: QueryRequest, res: Response) => {
     try {
         const { status, includeArchived } = req.query;
         const machines = await machineService.getAll(
@@ -20,9 +21,9 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get single machine
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: IdRequest, res: Response) => {
     try {
-        const machine = await machineService.getById(req.params.id as string);
+        const machine = await machineService.getById(req.params.id);
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });
         }
@@ -34,9 +35,9 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Get machine state
-router.get('/:id/state', async (req: Request, res: Response) => {
+router.get('/:id/state', async (req: IdRequest, res: Response) => {
     try {
-        const state = await machineService.getState(req.params.id as string);
+        const state = await machineService.getState(req.params.id);
         return res.json(state || {});
     } catch (error) {
         console.error('Get state error:', error);
@@ -45,10 +46,10 @@ router.get('/:id/state', async (req: Request, res: Response) => {
 });
 
 // Update machine display name
-router.patch('/:id/display-name', async (req: Request, res: Response) => {
+router.patch('/:id/display-name', async (req: IdRequest, res: Response) => {
     try {
         const { displayName } = req.body;
-        const machineId = req.params.id as string;
+        const machineId = req.params.id;
 
         // Validate displayName
         if (displayName !== undefined && displayName !== null) {
@@ -70,7 +71,7 @@ router.patch('/:id/display-name', async (req: Request, res: Response) => {
 });
 
 // Adopt a pending machine
-router.post('/:id/adopt', async (req: Request, res: Response) => {
+router.post('/:id/adopt', async (req: IdRequest, res: Response) => {
     try {
         const {
             displayName,
@@ -81,7 +82,7 @@ router.post('/:id/adopt', async (req: Request, res: Response) => {
             accessControlStartTime,
             accessControlEndTime
         } = req.body;
-        const machineId = req.params.id as string;
+        const machineId = req.params.id;
 
         const result = await machineService.adopt({
             machineId,
@@ -126,9 +127,9 @@ router.post('/:id/adopt', async (req: Request, res: Response) => {
 });
 
 // Archive a machine
-router.patch('/:id/archive', async (req: Request, res: Response) => {
+router.patch('/:id/archive', async (req: IdRequest, res: Response) => {
     try {
-        const machineId = req.params.id as string;
+        const machineId = req.params.id;
         const machine = await machineService.archive(machineId);
 
         // Emit WebSocket event to notify the Service if it's connected
@@ -161,9 +162,9 @@ router.patch('/:id/archive', async (req: Request, res: Response) => {
 });
 
 // Un-archive a machine
-router.patch('/:id/unarchive', async (req: Request, res: Response) => {
+router.patch('/:id/unarchive', async (req: IdRequest, res: Response) => {
     try {
-        const machineId = req.params.id as string;
+        const machineId = req.params.id;
         const machine = await machineService.unarchive(machineId);
 
         // Emit WebSocket event to notify the Service if it's connected

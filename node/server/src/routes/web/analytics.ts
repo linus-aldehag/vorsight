@@ -1,10 +1,11 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../db/database';
+import { MachineRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Get activity summary for a machine (24-hour timeline + top apps)
-router.get('/summary/:machineId', async (req: Request, res: Response) => {
+router.get('/summary/:machineId', async (req: MachineRequest, res: Response) => {
     try {
         const { machineId } = req.params;
         const now = new Date();

@@ -1,18 +1,19 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
 import { getConnectionStatus, getStatusText } from '../../utils/statusHelper';
+import { MachineRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Get simple status text for a machine
-router.get('/:machineId', async (req: Request, res: Response) => {
+router.get('/:machineId', async (req: MachineRequest, res: Response) => {
     try {
         const { machineId } = req.params;
 
         const machine = await prisma.machine.findUnique({
             where: { id: machineId },
             include: { state: true }
-        });
+        }) as any;
 
         if (!machine) {
             return res.status(404).json({ error: 'Machine not found' });

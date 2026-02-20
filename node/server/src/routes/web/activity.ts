@@ -1,16 +1,12 @@
 import express, { Request, Response } from 'express';
 import { prisma } from '../../db/database';
+import { MachineParams, MachineRequest, PaginationQuery, QueryRequest } from '../../types/routes';
 // Auth handled by server mount
 
 const router = express.Router();
 
-// Get activity summary (legacy endpoint - returns empty for now)
-router.get('/summary', (_req: Request, res: Response) => {
-    return res.json([]);
-});
-
 // Get activity sessions for chart (24h view)
-router.get('/sessions', async (req: Request, res: Response) => {
+router.get('/sessions', async (req: QueryRequest<PaginationQuery>, res: Response) => {
     try {
         const { machineId, hoursAgo } = req.query;
         if (!machineId) {
@@ -22,7 +18,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 
         const sessions = await prisma.activitySession.findMany({
             where: {
-                machineId: machineId as string,
+                machineId: machineId,
                 startTime: {
                     gte: cutoffTime
                 }
@@ -40,10 +36,10 @@ router.get('/sessions', async (req: Request, res: Response) => {
 });
 
 // Get activity sessions for a machine
-router.get('/:machineId', async (req: Request, res: Response) => {
+router.get('/:machineId', async (req: MachineRequest<PaginationQuery>, res: Response) => {
     try {
         const { limit = '100', offset = '0' } = req.query;
-        const machineId = req.params.machineId;
+        const { machineId } = req.params;
 
         const sessions = await prisma.activitySession.findMany({
             where: { machineId: machineId },

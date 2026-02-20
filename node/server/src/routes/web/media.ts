@@ -1,11 +1,12 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { prisma } from '../../db/database';
 import googleDriveService from '../../services/googleDriveService';
+import { IdRequest } from '../../types/routes';
 
 const router = express.Router();
 
 // Redirect to Google Drive thumbnail
-router.get('/thumbnail/:id', async (req: Request, res: Response) => {
+router.get('/thumbnail/:id', async (req: IdRequest, res: Response) => {
     try {
         const { id } = req.params;
 
@@ -28,7 +29,7 @@ router.get('/thumbnail/:id', async (req: Request, res: Response) => {
 });
 
 // View full image (Redirect to Google Drive)
-router.get('/view/:id', async (req: Request, res: Response) => {
+router.get('/view/:id', async (req: IdRequest, res: Response) => {
     try {
         const { id } = req.params;
 
