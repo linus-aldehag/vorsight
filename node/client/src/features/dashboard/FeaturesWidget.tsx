@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SectionHeader } from '@/components/common/SectionHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Activity, Shield, Sliders, Settings2 } from 'lucide-react';
+import { Eye, Activity as ActivityIcon, Shield, Sliders, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMachine } from '@/context/MachineContext';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,7 @@ export function FeaturesWidget({ settings }: FeaturesWidgetProps) {
         },
         {
             id: 'activity',
-            icon: <Activity size={16} />,
+            icon: <ActivityIcon size={16} />,
             label: 'Activity',
             enabled: activityEnabled,
             config: activityInterval ? `${activityInterval} sec` : null,

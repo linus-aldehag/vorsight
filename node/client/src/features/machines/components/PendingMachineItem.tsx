@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Monitor, Camera, Activity, Shield, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Monitor, Camera, Activity as ActivityIcon, Shield, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TimePicker } from '@/components/ui/time-picker/time-picker';
@@ -130,7 +130,7 @@ export function PendingMachineItem({ machine, onAdopt }: PendingMachineItemProps
 
                                 <div className="flex items-center justify-between p-2 rounded border border-border/50 bg-background/50">
                                     <div className="flex items-center gap-2">
-                                        <Activity size={14} className="text-muted-foreground" />
+                                        <ActivityIcon size={14} className="text-muted-foreground" />
                                         <span className="text-xs font-medium">Activity</span>
                                     </div>
                                     <Switch

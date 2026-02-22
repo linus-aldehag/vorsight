@@ -1,4 +1,4 @@
-import { LayoutDashboard, Activity, ImageIcon, Shield, Lock, Settings } from 'lucide-react';
+import { LayoutDashboard, Activity as ActivityIcon, ImageIcon, Shield, Lock, Settings } from 'lucide-react';
 
 export type NavigationIcon = 'dashboard' | 'activity' | 'gallery' | 'audit' | 'control' | 'settings';
 
@@ -11,7 +11,7 @@ export interface NavigationTab {
 
 export const iconMap: Record<NavigationIcon, any> = {
     dashboard: LayoutDashboard,
-    activity: Activity,
+    activity: ActivityIcon,
     gallery: ImageIcon,
     audit: Shield,
     control: Lock,
