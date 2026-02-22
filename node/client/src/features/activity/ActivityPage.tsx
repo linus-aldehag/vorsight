@@ -6,7 +6,7 @@ import { ActivityTimeline } from "./components/ActivityTimeline";
 import { ActivityFilters } from "./ActivityFilters";
 import { VorsightApi, type AgentSettings } from "@/api/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Activity } from "lucide-react";
+import { Loader2, Activity as ActivityIcon } from "lucide-react";
 import { ConfigSection } from "@/components/common/ConfigSection";
 import { ActivityConfig } from "./ActivityConfig";
 import { settingsEvents } from "@/lib/settingsEvents";
@@ -79,7 +79,7 @@ export function ActivityPage() {
             {/* Configuration Section with Header */}
             {settings && (
                 <ConfigSection
-                    icon={<Activity size={24} />}
+                    icon={<ActivityIcon size={24} />}
                     title="Activity Log"
                     badge={!settings.activity.enabled && (
                         <span className="px-2 py-1 text-xs font-medium rounded-md bg-yellow-500/10 text-yellow-600 dark:text-yellow-500 border border-yellow-500/20">
