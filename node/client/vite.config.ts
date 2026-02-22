@@ -45,8 +45,16 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            ui: ['@radix-ui/react-slot', '@radix-ui/react-progress', '@radix-ui/react-switch', 'class-variance-authority', 'clsx', 'tailwind-merge', 'lucide-react'],
-            charts: ['recharts']
+            'vendor-ui': [
+              '@radix-ui/react-slot',
+              '@radix-ui/react-progress',
+              '@radix-ui/react-switch',
+              'class-variance-authority',
+              'clsx',
+              'tailwind-merge',
+              'lucide-react',
+              'recharts'
+            ],
           }
         }
       }
