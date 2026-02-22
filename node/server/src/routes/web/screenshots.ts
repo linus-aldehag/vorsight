@@ -17,16 +17,13 @@ router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
 
         const queryOptions: Prisma.ScreenshotFindManyArgs = {
             where,
-            orderBy: [
-                { captureTime: 'desc' },
-                { id: 'asc' } // Secondary sort for stable cursor pagination
-            ],
-            take: take + 1 // Take one extra to determine next cursor
+            orderBy: { captureTime: 'desc' },
+            take: take + 1
         };
 
         if (cursor && typeof cursor === 'string' && cursor.length > 0) {
             queryOptions.cursor = { id: cursor };
-            queryOptions.skip = 1; // Skip the cursor itself
+            queryOptions.skip = 1;
         }
 
         console.log(`[Screenshots API] Machine: ${machineId}, Limit: ${limit}, Cursor: ${cursor}, Take: ${take + 1}`);
@@ -43,16 +40,26 @@ router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
             thumbnailLink: `/api/web/v1/media/thumbnail/${s.id}`
         }));
 
-        let nextCursor: string | undefined = undefined;
+        let nextCursor: string | null = null;
+        let hasMore = false;
+
         if (validScreenshots.length > take) {
-            const nextItem = validScreenshots.pop(); // Remove the extra item
-            nextCursor = nextItem?.id;
+            hasMore = true;
+            const nextItem = validScreenshots.pop();
+            nextCursor = nextItem?.id || null;
+
+            // Safety check: Avoid returning the same cursor we just received
+            if (nextCursor === cursor) {
+                console.warn(`[Screenshots API] Loop detected on server for cursor ${cursor}. Force stopping.`);
+                nextCursor = null;
+                hasMore = false;
+            }
         }
 
         return res.json({
             screenshots: validScreenshots,
             cursor: nextCursor,
-            hasMore: !!nextCursor
+            hasMore
         });
     } catch (error) {
         console.error('Get screenshots error:', error);

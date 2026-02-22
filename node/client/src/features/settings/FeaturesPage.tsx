@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { VorsightApi, type AgentSettings } from '@/api/client';
 import { useMachine } from '@/context/MachineContext';
-import { Eye, Activity, Shield, Sliders, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, Activity as ActivityIcon, Shield, Sliders, Loader2, AlertCircle } from 'lucide-react';
 import { ExpandableFeatureCard } from '@/components/common/ExpandableFeatureCard';
 import { ScreenshotConfig } from '@/features/gallery/ScreenshotConfig';
 import { ActivityConfig } from '@/features/activity/ActivityConfig';
@@ -158,7 +158,7 @@ export function FeaturesPage() {
 
                 {/* Activity Tracking */}
                 <ExpandableFeatureCard
-                    icon={<Activity size={24} />}
+                    icon={<ActivityIcon size={24} />}
                     title="Activity Tracking"
                     description="Monitor active applications and window titles"
                     enabled={!!settings.activity?.enabled}
