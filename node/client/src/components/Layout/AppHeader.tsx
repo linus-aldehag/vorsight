@@ -1,6 +1,8 @@
-import { Settings, X } from 'lucide-react';
+import { Settings, X, AlertTriangle, HardDrive, ExternalLink } from 'lucide-react';
 import { MachineSelector } from '../MachineSelector/MachineSelector';
 import { Button } from '../ui/button';
+import { useUIState } from '../../context/UIStateContext';
+import { useNavigate } from 'react-router-dom';
 
 interface AppHeaderProps {
     onSettingsClick: () => void;
@@ -14,6 +16,8 @@ export function AppHeader({
     onMachineSelectorClick,
     isSettingsPage = false
 }: AppHeaderProps) {
+    const { isDriveConnected } = useUIState();
+    const navigate = useNavigate();
     return (
         <header className="border-b border-border/10 min-h-16 flex items-center px-4 md:px-6 shrink-0 bg-surface/50 backdrop-blur-sm z-50">
             <div className="flex items-center justify-between w-full gap-2 md:gap-4">
@@ -21,8 +25,24 @@ export function AppHeader({
                     VÖRSIGHT
                 </h1>
 
-                <div className="flex-1 flex justify-center min-w-0 px-2">
+                <div className="flex-1 flex items-center justify-center min-w-0 px-2 gap-2">
                     <MachineSelector onClick={onMachineSelectorClick} />
+
+                    {isDriveConnected === false && (
+                        <button
+                            onClick={() => navigate('/settings')}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-all shrink-0 group"
+                            title="Google Drive Disconnected"
+                        >
+                            {/* Mobile View: Specific Drive Icon */}
+                            <HardDrive size={14} className="animate-pulse md:hidden" />
+
+                            {/* Desktop View: Warning + Text + Link Icon */}
+                            <AlertTriangle size={14} className="animate-pulse hidden md:block" />
+                            <span className="text-[10px] font-bold hidden md:inline">DRIVE ISSUE</span>
+                            <ExternalLink size={10} className="hidden md:block opacity-60 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                    )}
                 </div>
 
                 <Button

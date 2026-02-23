@@ -17,7 +17,10 @@ router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
 
         const queryOptions: Prisma.ScreenshotFindManyArgs = {
             where,
-            orderBy: { captureTime: 'desc' },
+            orderBy: [
+                { captureTime: 'desc' },
+                { id: 'asc' }
+            ],
             take: take + 1
         };
 
@@ -26,11 +29,11 @@ router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
             queryOptions.skip = 1;
         }
 
-        console.log(`[Screenshots API] Machine: ${machineId}, Limit: ${limit}, Cursor: ${cursor}, Take: ${take + 1}`);
+
 
         const screenshots = await prisma.screenshot.findMany(queryOptions);
 
-        console.log(`[Screenshots API] Found: ${screenshots.length} items`);
+
 
         const validScreenshots = screenshots.map(s => ({
             ...s,
@@ -47,13 +50,6 @@ router.get('/', async (req: QueryRequest<PaginationQuery>, res: Response) => {
             hasMore = true;
             const nextItem = validScreenshots.pop();
             nextCursor = nextItem?.id || null;
-
-            // Safety check: Avoid returning the same cursor we just received
-            if (nextCursor === cursor) {
-                console.warn(`[Screenshots API] Loop detected on server for cursor ${cursor}. Force stopping.`);
-                nextCursor = null;
-                hasMore = false;
-            }
         }
 
         return res.json({

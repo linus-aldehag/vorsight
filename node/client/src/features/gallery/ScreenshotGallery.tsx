@@ -256,7 +256,7 @@ export function ScreenshotGallery() {
             {/* Gallery Controls */}
             <div className="flex justify-between items-center">
                 <h4 className="text-lg font-semibold">
-                    Screenshots {screenshots.length !== allScreenshots.length && `(${screenshots.length} of ${allScreenshots.length})`}
+                    Screenshots
                 </h4>
                 <Button onClick={handleRefresh} disabled={isValidating} variant="outline" className="gap-2">
                     <RefreshCw size={16} className={isValidating ? "animate-spin" : ""} />
