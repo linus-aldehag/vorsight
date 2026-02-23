@@ -21,7 +21,6 @@ export function MainLayout() {
     const location = useLocation();
     const { machines, pendingMachines, selectedMachine, selectMachine, onMachineDiscovered } = useMachine();
     const { settings, refreshSettings } = useHealthStats(selectedMachine?.id);
-
     const [discoveredMachine, setDiscoveredMachine] = useState<Machine | null>(null);
     const [managerOpen, setManagerOpen] = useState(false);
     const [managerStartTab, setManagerStartTab] = useState<'active' | 'pending' | 'archived'>('active');
@@ -115,6 +114,7 @@ export function MainLayout() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col font-mono selection:bg-primary/20">
+
             <AppHeader
                 onSettingsClick={() => navigate('/settings', { state: { returnTo: location.pathname } })}
                 onMachineSelectorClick={() => {
@@ -129,6 +129,7 @@ export function MainLayout() {
                 settings={settings}
                 onNavigate={handleNavigation}
             />
+
 
             {/* Main Content */}
             <main className="flex-1 p-4 md:p-6 container mx-auto overflow-hidden">

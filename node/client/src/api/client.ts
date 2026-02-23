@@ -40,9 +40,9 @@ export const VorsightApi = {
 
     // Removed getSchedule and saveSchedule methods
 
-    async getScreenshots(machineId: string, limit: number = 30, after?: string): Promise<PaginatedScreenshots> {
+    async getScreenshots(machineId: string, limit: number = 30, cursor?: string): Promise<PaginatedScreenshots> {
         const params: any = { machineId, limit };
-        if (after) params.after = after;
+        if (cursor) params.cursor = cursor;
         const response = await api.get('/screenshots', { params });
         return response.data;
     },
