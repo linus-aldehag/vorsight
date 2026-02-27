@@ -8,12 +8,12 @@ import { useSettings } from '../../context/SettingsContext';
 import api from '../../lib/axios';
 
 interface RetentionSettings {
-    activity_retention_days: number;
-    screenshot_retention_days: number;
-    audit_retention_days: number;
-    heartbeat_retention_hours: number;
-    delete_drive_files: boolean;
-    last_cleanup_run?: string;
+    activityRetentionDays: number;
+    screenshotRetentionDays: number;
+    auditRetentionDays: number;
+    heartbeatRetentionHours: number;
+    deleteDriveFiles: boolean;
+    lastCleanupRun?: string;
 }
 
 export function DataRetention() {
@@ -24,11 +24,11 @@ export function DataRetention() {
     const [isRunningCleanup, setIsRunningCleanup] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState<RetentionSettings>({
-        activity_retention_days: 90,
-        screenshot_retention_days: 30,
-        audit_retention_days: 180,
-        heartbeat_retention_hours: 48,
-        delete_drive_files: false
+        activityRetentionDays: 90,
+        screenshotRetentionDays: 30,
+        auditRetentionDays: 180,
+        heartbeatRetentionHours: 48,
+        deleteDriveFiles: false
     });
 
     useEffect(() => {
@@ -41,11 +41,12 @@ export function DataRetention() {
             const data = response.data;
             setSettings(data);
             setFormData({
-                activity_retention_days: data.activityRetentionDays,
-                screenshot_retention_days: data.screenshotRetentionDays,
-                audit_retention_days: data.auditRetentionDays,
-                heartbeat_retention_hours: data.heartbeatRetentionHours || 48,
-                delete_drive_files: Boolean(data.deleteDriveFiles)
+                activityRetentionDays: data.activityRetentionDays,
+                screenshotRetentionDays: data.screenshotRetentionDays,
+                auditRetentionDays: data.auditRetentionDays,
+                heartbeatRetentionHours: data.heartbeatRetentionHours || 48,
+                deleteDriveFiles: Boolean(data.deleteDriveFiles),
+                lastCleanupRun: data.lastCleanupRun
             });
         } catch (error) {
             console.error('Failed to fetch retention settings:', error);
@@ -58,11 +59,11 @@ export function DataRetention() {
         setIsSaving(true);
         try {
             const response = await api.put('/cleanup', {
-                activityRetentionDays: formData.activity_retention_days,
-                screenshotRetentionDays: formData.screenshot_retention_days,
-                auditRetentionDays: formData.audit_retention_days,
-                heartbeatRetentionHours: formData.heartbeat_retention_hours,
-                deleteDriveFiles: formData.delete_drive_files
+                activityRetentionDays: formData.activityRetentionDays,
+                screenshotRetentionDays: formData.screenshotRetentionDays,
+                auditRetentionDays: formData.auditRetentionDays,
+                heartbeatRetentionHours: formData.heartbeatRetentionHours,
+                deleteDriveFiles: formData.deleteDriveFiles
             });
 
             if (response.status === 200) {
@@ -128,8 +129,8 @@ export function DataRetention() {
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="number"
-                                        value={formData.activity_retention_days}
-                                        onChange={(e) => setFormData({ ...formData, activity_retention_days: parseInt(e.target.value) || 0 })}
+                                        value={formData.activityRetentionDays}
+                                        onChange={(e) => setFormData({ ...formData, activityRetentionDays: parseInt(e.target.value) || 0 })}
                                         className="w-20 px-3 py-1.5 text-sm rounded-md border border-border bg-background text-foreground"
                                         min="1"
                                         max="3650"
@@ -138,7 +139,7 @@ export function DataRetention() {
                                 </div>
                             ) : (
                                 <div className="text-sm font-mono text-primary font-medium">
-                                    {settings?.activity_retention_days || 90} days
+                                    {settings?.activityRetentionDays || 90} days
                                 </div>
                             )}
                         </div>
@@ -153,8 +154,8 @@ export function DataRetention() {
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="number"
-                                        value={formData.screenshot_retention_days}
-                                        onChange={(e) => setFormData({ ...formData, screenshot_retention_days: parseInt(e.target.value) || 0 })}
+                                        value={formData.screenshotRetentionDays}
+                                        onChange={(e) => setFormData({ ...formData, screenshotRetentionDays: parseInt(e.target.value) || 0 })}
                                         className="w-20 px-3 py-1.5 text-sm rounded-md border border-border bg-background text-foreground"
                                         min="1"
                                         max="3650"
@@ -163,7 +164,7 @@ export function DataRetention() {
                                 </div>
                             ) : (
                                 <div className="text-sm font-mono text-primary font-medium">
-                                    {settings?.screenshot_retention_days || 30} days
+                                    {settings?.screenshotRetentionDays || 30} days
                                 </div>
                             )}
                         </div>
@@ -178,8 +179,8 @@ export function DataRetention() {
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="number"
-                                        value={formData.audit_retention_days}
-                                        onChange={(e) => setFormData({ ...formData, audit_retention_days: parseInt(e.target.value) || 0 })}
+                                        value={formData.auditRetentionDays}
+                                        onChange={(e) => setFormData({ ...formData, auditRetentionDays: parseInt(e.target.value) || 0 })}
                                         className="w-20 px-3 py-1.5 text-sm rounded-md border border-border bg-background text-foreground"
                                         min="1"
                                         max="3650"
@@ -188,7 +189,7 @@ export function DataRetention() {
                                 </div>
                             ) : (
                                 <div className="text-sm font-mono text-primary font-medium">
-                                    {settings?.audit_retention_days || 180} days
+                                    {settings?.auditRetentionDays || 180} days
                                 </div>
                             )}
                         </div>
@@ -203,8 +204,8 @@ export function DataRetention() {
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="number"
-                                        value={formData.heartbeat_retention_hours}
-                                        onChange={(e) => setFormData({ ...formData, heartbeat_retention_hours: parseInt(e.target.value) || 0 })}
+                                        value={formData.heartbeatRetentionHours}
+                                        onChange={(e) => setFormData({ ...formData, heartbeatRetentionHours: parseInt(e.target.value) || 0 })}
                                         className="w-20 px-3 py-1.5 text-sm rounded-md border border-border bg-background text-foreground"
                                         min="1"
                                         max="720"
@@ -213,7 +214,7 @@ export function DataRetention() {
                                 </div>
                             ) : (
                                 <div className="text-sm font-mono text-primary font-medium">
-                                    {settings?.heartbeat_retention_hours || 48} hours
+                                    {settings?.heartbeatRetentionHours || 48} hours
                                 </div>
                             )}
                         </div>
@@ -233,8 +234,8 @@ export function DataRetention() {
                                     </div>
                                 </div>
                                 <Switch
-                                    checked={formData.delete_drive_files}
-                                    onCheckedChange={(checked) => setFormData({ ...formData, delete_drive_files: checked })}
+                                    checked={formData.deleteDriveFiles}
+                                    onCheckedChange={(checked) => setFormData({ ...formData, deleteDriveFiles: checked })}
                                     className="mt-1"
                                 />
                             </div>
@@ -258,11 +259,11 @@ export function DataRetention() {
                                     setEditMode(false);
                                     if (settings) {
                                         setFormData({
-                                            activity_retention_days: settings.activity_retention_days,
-                                            screenshot_retention_days: settings.screenshot_retention_days,
-                                            audit_retention_days: settings.audit_retention_days,
-                                            heartbeat_retention_hours: settings.heartbeat_retention_hours || 48,
-                                            delete_drive_files: Boolean(settings.delete_drive_files)
+                                            activityRetentionDays: settings.activityRetentionDays,
+                                            screenshotRetentionDays: settings.screenshotRetentionDays,
+                                            auditRetentionDays: settings.auditRetentionDays,
+                                            heartbeatRetentionHours: settings.heartbeatRetentionHours || 48,
+                                            deleteDriveFiles: Boolean(settings.deleteDriveFiles)
                                         });
                                     }
                                 }}
@@ -296,9 +297,9 @@ export function DataRetention() {
                     )}
                 </div>
 
-                {settings?.last_cleanup_run && (
+                {settings?.lastCleanupRun && (
                     <div className="text-xs text-muted-foreground text-center pt-2">
-                        Last cleanup: {formatTimestamp(new Date(settings.last_cleanup_run + 'Z'), { includeDate: true })}
+                        Last cleanup: {formatTimestamp(new Date(settings.lastCleanupRun + 'Z'), { includeDate: true })}
                     </div>
                 )}
             </div>
