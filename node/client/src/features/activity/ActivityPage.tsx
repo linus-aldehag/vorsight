@@ -15,7 +15,35 @@ import { useUIState } from "@/context/UIStateContext";
 
 export function ActivityPage() {
     const { selectedMachine } = useMachine();
-    const { activities, isLoading, isError } = useActivity(selectedMachine?.id);
+    const {
+        activities,
+        isLoading,
+        isError,
+        setSize,
+        isLoadingMore,
+        isReachingEnd
+    } = useActivity(selectedMachine?.id);
+
+    // Intersection observer for infinite scroll
+    useEffect(() => {
+        if (isReachingEnd || isLoadingMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !isLoadingMore && !isReachingEnd) {
+                    setSize(prev => prev + 1);
+                }
+            },
+            { rootMargin: '100px' }
+        );
+
+        const sentinel = document.getElementById('activity-scroll-sentinel');
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+
+        return () => observer.disconnect();
+    }, [isLoadingMore, isReachingEnd, setSize]);
     const {
         activityDateRange: dateRangeFilter,
         setActivityDateRange: setDateRangeFilter
@@ -128,6 +156,18 @@ export function ActivityPage() {
                             <div className="md:hidden">
                                 <ActivityTimeline activities={filteredActivities} />
                             </div>
+
+                            {/* Infinite Scroll Sentinel */}
+                            {!isReachingEnd && (
+                                <div id="activity-scroll-sentinel" className="flex items-center justify-center py-8">
+                                    {isLoadingMore && (
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Loader2 className="animate-spin" size={20} />
+                                            <span>Loading more...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </>
                     )}
                 </CardContent>
