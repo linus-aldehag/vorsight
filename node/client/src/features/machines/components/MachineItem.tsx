@@ -129,8 +129,13 @@ export function MachineItem({
                         )}
 
                         {/* Ping Latency Badge */}
-                        {machine.isOnline && machine.pingLatency !== undefined && machine.pingLatency !== null && (
-                            <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-muted-foreground bg-muted/50">
+                        {machine.pingLatency !== undefined && machine.pingLatency !== null && (
+                            <div className={cn(
+                                "hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]",
+                                !machine.isOnline
+                                    ? "text-emerald-500 bg-emerald-500/10 font-bold border border-emerald-500/20"
+                                    : "text-muted-foreground bg-muted/50"
+                            )}>
                                 <span>{machine.pingLatency}ms</span>
                             </div>
                         )}
