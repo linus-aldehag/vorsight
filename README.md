@@ -20,10 +20,7 @@
 *   **Smart Screenshots**: Captures screen activity at configurable intervals (default every minute) while the user is active.
 *   **Smart Filters**: Automatically skips redundant or identical screenshots before uploading them to reduce bandwidth and storage usage.
 *   **Direct-to-Drive Uploads**: Screenshots are uploaded directly from the client PC to your personal Google Drive, ensuring privacy and speed.
-*   **Interactive Timeline**: Browse history with a fluid, zoomable timeline that aggregates activity by hour and day.
 *   **Gallery View**: Filter and view high-resolution screenshots with a dedicated gallery interface.
-
-![Timeline Preview](./.github/assets/screenshot-timeline.png)
 
 ### 🛡️ Security & Auditing
 *   **Session Auditing**: Automatically logs Windows session events including Login, Logout, Lock, and Unlock.
@@ -34,6 +31,8 @@
 *   **Usage Scheduling**: Define specific time windows when computer usage is permitted.
 *   **Strict Enforcement**: Automatically force logoff or shutdown when a user is outside their allowed schedule.
 *   **Dynamic Warnings**: Users receive notifications before their time expires.
+
+![Mobile Schedule View](./.github/assets/screenshot-schedule-mobile.png)
 
 ### 🔧 Architecture & Privacy
 *   **Self-Hosted Server**: You run the server. No third-party cloud (other than your own Google Drive) touches your data.
