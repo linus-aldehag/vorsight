@@ -200,6 +200,7 @@ public class ScreenshotHandler
 
                 // Upload to Google Drive
                 string? driveFileId = null;
+                bool uploadSucceeded = false;
                 try
                 {
                     driveFileId = await _driveService.UploadFileAsync(
@@ -231,6 +232,7 @@ public class ScreenshotHandler
                             driveFileId
                         );
                         _healthMonitor.RecordScreenshotSuccess();
+                        uploadSucceeded = true;
                     }
                     else
                     {
@@ -244,24 +246,27 @@ public class ScreenshotHandler
                 {
                     _logger.LogError(
                         driveEx,
-                        "Failed to upload screenshot to Google Drive - not saving to database"
+                        "Failed to upload screenshot to Google Drive - keeping file for retry"
                     );
                     _healthMonitor.RecordScreenshotFailure();
                 }
 
-                // Delete local temp file after processing (always clean up)
-                try
+                // Only clean up the file if upload succeeded
+                if (uploadSucceeded)
                 {
-                    File.Delete(filePath);
-                    _logger.LogDebug("Deleted local screenshot temp file: {FilePath}", filePath);
-                }
-                catch (Exception deleteEx)
-                {
-                    _logger.LogWarning(
-                        deleteEx,
-                        "Failed to delete temp screenshot file: {FilePath}",
-                        filePath
-                    );
+                    try
+                    {
+                        File.Delete(filePath);
+                        _logger.LogDebug("Deleted local screenshot temp file: {FilePath}", filePath);
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        _logger.LogWarning(
+                            deleteEx,
+                            "Failed to delete temp screenshot file: {FilePath}",
+                            filePath
+                        );
+                    }
                 }
             }
             else
