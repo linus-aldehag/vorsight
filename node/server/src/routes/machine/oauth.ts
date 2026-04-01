@@ -37,10 +37,28 @@ router.get('/google/credentials', authenticateMachine, async (_req: Request, res
                 refresh_token: token.refreshToken
             });
 
-            const { credentials } = await oauth2Client.refreshAccessToken();
+            let credentials: any;
+            try {
+                const result = await oauth2Client.refreshAccessToken();
+                credentials = result.credentials;
+                
+                if (!credentials.access_token || !credentials.expiry_date) {
+                    throw new Error('Failed to obtain new access token');
+                }
+            } catch (err: any) {
+                console.error('Failed to refresh machine token:', err);
 
-            if (!credentials.access_token || !credentials.expiry_date) {
-                throw new Error('Failed to obtain new access token');
+                // If the refresh token is invalid (revoked or expired), remove it so the machine gracefully fails
+                // and the user can re-authenticate via the Web UI
+                if (err?.response?.data?.error === 'invalid_grant' || err?.message?.includes('invalid_grant')) {
+                    console.log('Refresh token is invalid. Removing from database to force re-authentication.');
+                    await prisma.oAuthToken.delete({
+                        where: { id: token.id }
+                    });
+                    return res.status(404).json({ error: 'Google credentials expired. Please re-authenticate via the Web UI.' });
+                }
+
+                throw new Error('Failed to refresh Google OAuth token.');
             }
 
             // Update database
