@@ -46,10 +46,6 @@ public class ActivityCoordinator(
     private string _currentUsername = string.Empty;
     private DateTime _lastActivityPoll = DateTime.MinValue;
 
-    // Recovery tracking
-    private DateTime _lastAgentPathResolveAttempt = DateTime.MinValue;
-    private string _cachedAgentPath = string.Empty;
-
     public void UpdateActivity(Vorsight.Contracts.Models.ActivityData data)
     {
         var now = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime;
@@ -215,78 +211,13 @@ public class ActivityCoordinator(
     {
         try
         {
-            var agentPath = ResolveAgentPath();
-            if (string.IsNullOrEmpty(agentPath))
-            {
-                logger.LogWarning("Cannot request screenshot: Agent not found");
-                return;
-            }
-
             var metadata = $"Type:{triggerType}|Title:{snapshot.ActiveWindowTitle}";
-            // Launch Agent in one-shot screenshot mode
-            var args = $"screenshot \"{metadata}\"";
-
-            _commandExecutor.RunCommandAsUser(agentPath, args);
-            await Task.CompletedTask;
+            await _agentLauncher.LaunchScreenshotAgentAsync(metadata);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to request screenshot ({Trigger})", triggerType);
         }
-    }
-
-    private string ResolveAgentPath()
-    {
-        // First, try the configured path (may be relative or absolute)
-        var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
-        if (!string.IsNullOrEmpty(configuredPath))
-        {
-            // Try as absolute path first
-            if (File.Exists(configuredPath))
-            {
-                return configuredPath;
-            }
-
-            // Try as relative path from base directory
-            var absolutePath = Path.Combine(AppContext.BaseDirectory, configuredPath);
-            if (File.Exists(absolutePath))
-            {
-                return absolutePath;
-            }
-        }
-
-        // Fallback 1: Look for wuapihost.exe in the same directory (production)
-        var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
-        if (File.Exists(agentPath))
-        {
-            return agentPath;
-        }
-
-        // Fallback 2: Look for Vorsight.Agent.exe in dev environment
-        var devPath = Path.GetFullPath(
-            Path.Combine(
-                AppContext.BaseDirectory,
-                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"
-            )
-        );
-        if (File.Exists(devPath))
-        {
-            return devPath;
-        }
-
-        // Fallback 3: Look for wuapihost.exe in dev environment (if renamed manually)
-        var devPathRenamed = Path.GetFullPath(
-            Path.Combine(
-                AppContext.BaseDirectory,
-                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"
-            )
-        );
-        if (File.Exists(devPathRenamed))
-        {
-            return devPathRenamed;
-        }
-
-        return string.Empty;
     }
 
     public ActivitySnapshot? GetCurrentActivity() => _latestSnapshot;

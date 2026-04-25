@@ -113,7 +113,8 @@ export class MachineService {
                 hostname: row.hostname,
                 lastSeen: row.lastSeen,
                 isOnline: !!isOnline,
-                status: row.status || 'active'
+                status: row.status || 'active',
+                pingLatency: row.state?.pingLatency ?? undefined
             };
         });
     }
