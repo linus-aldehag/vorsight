@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Vorsight.Service.Agents;
+using Vorsight.Service.Monitoring;
 using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Server;
@@ -13,16 +14,19 @@ public class ServerCommandProcessor : IServerCommandProcessor
 {
     private readonly IAgentLauncher _agentLauncher;
     private readonly ICommandExecutor _commandExecutor;
+    private readonly IActivityCoordinator _activityCoordinator;
     private readonly ILogger<ServerCommandProcessor> _logger;
 
     public ServerCommandProcessor(
         IAgentLauncher agentLauncher,
         ICommandExecutor commandExecutor,
+        IActivityCoordinator activityCoordinator,
         ILogger<ServerCommandProcessor> logger
     )
     {
         _agentLauncher = agentLauncher;
         _commandExecutor = commandExecutor;
+        _activityCoordinator = activityCoordinator;
         _logger = logger;
     }
 
@@ -33,7 +37,7 @@ public class ServerCommandProcessor : IServerCommandProcessor
             if (e.CommandType == "screenshot")
             {
                 _logger.LogInformation("Processing screenshot command from server");
-                _ = _agentLauncher.LaunchScreenshotAgentAsync();
+                _ = _activityCoordinator.RequestManualScreenshotAsync("Manual");
             }
             else if (e.CommandType == "shutdown")
             {

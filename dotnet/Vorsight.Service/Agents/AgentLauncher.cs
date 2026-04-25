@@ -3,57 +3,75 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Vorsight.Interop;
+using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Agents;
 
 public interface IAgentLauncher
 {
-    Task LaunchScreenshotAgentAsync();
+    Task LaunchScreenshotAgentAsync(string metadata = "");
     Task LaunchActivityCaptureAsync(CancellationToken cancellationToken);
 }
 
 public class AgentLauncher : IAgentLauncher
 {
     private readonly ILogger<AgentLauncher> _logger;
-    private readonly IProcessHelper _processHelper;
+    private readonly ICommandExecutor _commandExecutor;
     private readonly string _agentPath;
 
     public AgentLauncher(
         ILogger<AgentLauncher> logger,
         IConfiguration configuration,
-        IProcessHelper processHelper
+        ICommandExecutor commandExecutor
     )
     {
         _logger = logger;
-        _processHelper = processHelper;
-
-        var configuredPath = configuration["Agent:ExecutablePath"];
-        if (string.IsNullOrEmpty(configuredPath))
-        {
-            _logger.LogError("Agent:ExecutablePath not configured in settings");
-            _agentPath = Path.Combine(AppContext.BaseDirectory, "Vorsight.Agent.exe"); // Fallback
-        }
-        else
-        {
-            // Resolve relative paths if necessary (though config usually has absolute in dev)
-            _agentPath = Path.IsPathRooted(configuredPath)
-                ? configuredPath
-                : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
-
-            if (!File.Exists(_agentPath))
-            {
-                _logger.LogWarning("Configured agent path does not exist: {Path}", _agentPath);
-            }
-            else
-            {
-                _logger.LogInformation("Using configured agent path: {Path}", _agentPath);
-            }
-        }
+        _commandExecutor = commandExecutor;
+        _agentPath = ResolveAgentPath(configuration);
     }
 
-    public Task LaunchScreenshotAgentAsync()
+    private string ResolveAgentPath(IConfiguration config)
     {
-        return LaunchAgentWithCommand("screenshot");
+        // First, try the configured path (may be relative or absolute)
+        var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
+        if (!string.IsNullOrEmpty(configuredPath))
+        {
+            if (File.Exists(configuredPath)) return configuredPath;
+            
+            var absolutePath = Path.Combine(AppContext.BaseDirectory, configuredPath);
+            if (File.Exists(absolutePath)) return absolutePath;
+        }
+
+        // Fallback 1: Look for wuapihost.exe in the same directory (production)
+        var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
+        if (File.Exists(agentPath)) return agentPath;
+
+        // Fallback 2: Look for Vorsight.Agent.exe in dev environment
+        var devPath = Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"
+            )
+        );
+        if (File.Exists(devPath)) return devPath;
+
+        // Fallback 3: Look for wuapihost.exe in dev environment (if renamed manually)
+        var devPathRenamed = Path.GetFullPath(
+            Path.Combine(
+                AppContext.BaseDirectory,
+                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"
+            )
+        );
+        if (File.Exists(devPathRenamed)) return devPathRenamed;
+
+        _logger.LogError("Could not resolve Agent executable path. Configuration path was: {ConfiguredPath}", configuredPath);
+        return string.Empty;
+    }
+
+    public Task LaunchScreenshotAgentAsync(string metadata = "")
+    {
+        var args = string.IsNullOrEmpty(metadata) ? "screenshot" : $"screenshot \"{metadata}\"";
+        return LaunchAgentWithCommand(args);
     }
 
     public Task LaunchActivityCaptureAsync(CancellationToken cancellationToken)
@@ -61,138 +79,28 @@ public class AgentLauncher : IAgentLauncher
         return LaunchAgentWithCommand("activity");
     }
 
-    private Task LaunchAgentWithCommand(string commandMode)
+    private Task LaunchAgentWithCommand(string args)
     {
         try
         {
-            if (!File.Exists(_agentPath))
+            if (string.IsNullOrEmpty(_agentPath) || !File.Exists(_agentPath))
             {
                 _logger.LogError("Agent executable not found at {Path}", _agentPath);
                 return Task.CompletedTask;
             }
 
             _logger.LogInformation(
-                "Attempting to launch agent from {Path} in mode {Mode}",
+                "Attempting to launch agent from {Path} with args: {Args}",
                 _agentPath,
-                commandMode
+                args
             );
 
-            // 1. Get Active Session
-            var sessionId = _processHelper.GetActiveConsoleSessionId();
-            if (sessionId == 0xFFFFFFFF)
-            {
-                _logger.LogWarning("No active console session found");
-                return Task.CompletedTask;
-            }
-
-            _logger.LogInformation("Target Session ID: {SessionId}", sessionId);
-
-            // 2. We need a user token.
-            // Strategy: Find Explorer.exe in that session
-            var explorerProcesses = Process.GetProcessesByName("explorer");
-            var userProcess = explorerProcesses.FirstOrDefault(p => (uint)p.SessionId == sessionId);
-
-            if (userProcess == null)
-            {
-                _logger.LogWarning(
-                    "Explorer.exe not found in session {SessionId}. User might not be logged in.",
-                    sessionId
-                );
-                return Task.CompletedTask;
-            }
-
-            // 3. Duplicate Token
-            if (
-                !_processHelper.TryOpenProcess(
-                    (uint)userProcess.Id,
-                    ProcessInterop.PROCESS_QUERY_INFORMATION,
-                    out var processHandle
-                )
-            )
-            {
-                _logger.LogError("Failed to open Explorer process");
-                return Task.CompletedTask;
-            }
-
-            try
-            {
-                if (
-                    !_processHelper.TryOpenProcessToken(
-                        processHandle,
-                        ProcessInterop.TOKEN_DUPLICATE
-                            | ProcessInterop.TOKEN_QUERY
-                            | ProcessInterop.TOKEN_ASSIGN_PRIMARY,
-                        out var tokenHandle
-                    )
-                )
-                {
-                    _logger.LogError("Failed to open process token");
-                    return Task.CompletedTask;
-                }
-
-                try
-                {
-                    if (
-                        !_processHelper.TryDuplicateTokenEx(
-                            tokenHandle,
-                            ProcessInterop.TOKEN_ALL_ACCESS,
-                            2, // SecurityImpersonation
-                            1, // TokenPrimary
-                            out var newToken
-                        )
-                    )
-                    {
-                        _logger.LogError("Failed to duplicate token");
-                        return Task.CompletedTask;
-                    }
-
-                    try
-                    {
-                        // 4. Launch Agent
-                        var cmdLine = $"\"{_agentPath}\" {commandMode}";
-
-                        // Working directory: Agent folder
-                        var workingDir = Path.GetDirectoryName(_agentPath) ?? string.Empty;
-
-                        if (
-                            _processHelper.TryCreateProcessAsUser(
-                                newToken,
-                                _agentPath,
-                                cmdLine,
-                                workingDir,
-                                out var newPid
-                            )
-                        )
-                        {
-                            _logger.LogInformation(
-                                "Successfully launched Agent (PID: {Pid}) in session {SessionId}",
-                                newPid,
-                                sessionId
-                            );
-                        }
-                        else
-                        {
-                            _logger.LogError("Failed to create process as user");
-                        }
-                    }
-                    finally
-                    {
-                        ProcessInterop.CloseHandle(newToken);
-                    }
-                }
-                finally
-                {
-                    ProcessInterop.CloseHandle(tokenHandle);
-                }
-            }
-            finally
-            {
-                ProcessInterop.CloseHandle(processHandle);
-            }
+            // Wrap agent path in quotes to handle spaces
+            _commandExecutor.RunCommandAsUser($"\"{_agentPath}\"", args);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to launch agent in mode {Mode}", commandMode);
+            _logger.LogError(ex, "Failed to launch agent with args: {Args}", args);
         }
 
         return Task.CompletedTask;

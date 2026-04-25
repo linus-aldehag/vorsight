@@ -43,7 +43,7 @@ public class CommandExecutor(ILogger<CommandExecutor> logger, IProcessHelper pro
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/c {command} {arguments}",
+                    Arguments = $"/c \"{command} {arguments}\"",
                     UseShellExecute = false, // Must be false for CreateNoWindow to work
                     CreateNoWindow = true,
                 };
