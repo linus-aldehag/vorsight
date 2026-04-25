@@ -36,35 +36,23 @@ public class AgentLauncher : IAgentLauncher
         var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
         if (!string.IsNullOrEmpty(configuredPath))
         {
-            if (File.Exists(configuredPath)) return configuredPath;
-            
+            if (File.Exists(configuredPath))
+                return configuredPath;
+
             var absolutePath = Path.Combine(AppContext.BaseDirectory, configuredPath);
-            if (File.Exists(absolutePath)) return absolutePath;
+            if (File.Exists(absolutePath))
+                return absolutePath;
         }
 
-        // Fallback 1: Look for wuapihost.exe in the same directory (production)
+        // Fallback: Look for wuapihost.exe in the same directory (production default)
         var agentPath = Path.Combine(AppContext.BaseDirectory, "wuapihost.exe");
-        if (File.Exists(agentPath)) return agentPath;
+        if (File.Exists(agentPath))
+            return agentPath;
 
-        // Fallback 2: Look for Vorsight.Agent.exe in dev environment
-        var devPath = Path.GetFullPath(
-            Path.Combine(
-                AppContext.BaseDirectory,
-                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/Vorsight.Agent.exe"
-            )
+        _logger.LogError(
+            "Could not resolve Agent executable path. Configuration path was: {ConfiguredPath}",
+            configuredPath
         );
-        if (File.Exists(devPath)) return devPath;
-
-        // Fallback 3: Look for wuapihost.exe in dev environment (if renamed manually)
-        var devPathRenamed = Path.GetFullPath(
-            Path.Combine(
-                AppContext.BaseDirectory,
-                "../../../../../Vorsight.Agent/bin/Debug/net10.0-windows/win-x64/wuapihost.exe"
-            )
-        );
-        if (File.Exists(devPathRenamed)) return devPathRenamed;
-
-        _logger.LogError("Could not resolve Agent executable path. Configuration path was: {ConfiguredPath}", configuredPath);
         return string.Empty;
     }
 
