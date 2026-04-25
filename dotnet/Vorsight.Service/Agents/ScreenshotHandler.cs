@@ -257,7 +257,10 @@ public class ScreenshotHandler
                     try
                     {
                         File.Delete(filePath);
-                        _logger.LogDebug("Deleted local screenshot temp file: {FilePath}", filePath);
+                        _logger.LogDebug(
+                            "Deleted local screenshot temp file: {FilePath}",
+                            filePath
+                        );
                     }
                     catch (Exception deleteEx)
                     {

@@ -202,22 +202,32 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
                 try
                 {
                     _logger.LogDebug("Processing upload for file: {FilePath}", filePath);
-                    var driveFileId = await _googleDriveService.UploadFileAsync(filePath, cancellationToken);
-                    
+                    var driveFileId = await _googleDriveService.UploadFileAsync(
+                        filePath,
+                        cancellationToken
+                    );
+
                     if (!string.IsNullOrEmpty(driveFileId))
                     {
-                        var captureTime = new DateTimeOffset(new FileInfo(filePath).CreationTimeUtc);
-                        await _serverConnection.SendScreenshotNotificationAsync(new ScreenshotPayload
-                        {
-                            Id = driveFileId,
-                            CaptureTime = captureTime,
-                            TriggerType = "Auto", // Requeued uploads default to Auto
-                            GoogleDriveFileId = driveFileId,
-                            IsUploaded = true
-                        });
-                        _logger.LogInformation("Sent notification for queued upload: {DriveFileId}", driveFileId);
+                        var captureTime = new DateTimeOffset(
+                            new FileInfo(filePath).CreationTimeUtc
+                        );
+                        await _serverConnection.SendScreenshotNotificationAsync(
+                            new ScreenshotPayload
+                            {
+                                Id = driveFileId,
+                                CaptureTime = captureTime,
+                                TriggerType = "Auto", // Requeued uploads default to Auto
+                                GoogleDriveFileId = driveFileId,
+                                IsUploaded = true,
+                            }
+                        );
+                        _logger.LogInformation(
+                            "Sent notification for queued upload: {DriveFileId}",
+                            driveFileId
+                        );
                     }
-                    
+
                     _healthMonitor.RecordUploadSuccess();
 
                     // Only delete the file if upload was successful and not cancelling
