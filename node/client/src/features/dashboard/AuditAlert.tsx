@@ -1,17 +1,16 @@
 import { useRecentAuditEvents } from '@/hooks/useAudit';
 import { useMachine } from '@/context/MachineContext';
 import { AlertTriangle, ShieldAlert, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useSettings } from '@/context/SettingsContext';
 import { useState, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { auditCardVariants } from '@/components/ui/variants/log';
 import api from '@/lib/axios';
+import { formatDistanceToNow } from 'date-fns';
 
 export const AuditAlert = memo(function AuditAlert() {
     const { selectedMachine } = useMachine();
     const { auditEvents, isLoading, isError, mutate } = useRecentAuditEvents(selectedMachine?.id || '');
-    const { formatTimestamp } = useSettings();
     const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
     const handleDismiss = async (id: number) => {
@@ -89,7 +88,7 @@ export const AuditAlert = memo(function AuditAlert() {
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                                    {formatTimestamp(event.timestamp, { includeSeconds: true })}
+                                                    {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
                                                 </div>
                                                 <Button
                                                     variant="ghost"
