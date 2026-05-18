@@ -201,11 +201,12 @@ export default (io: Server) => {
                     // Check if machine is archived
                     if (machine.status === 'archived') {
                         console.log(`⚠ Archived machine connected: ${machine.displayName || machine.name} (${machineId})`);
-                        socket.emit('machine:connected', { success: true });
+                        socket.emit('machine:error', { error: 'Machine archived' });
                         socket.emit('machine:archived', {
                             machineId,
                             timestamp: new Date().toISOString()
                         });
+                        socket.disconnect(true);
                         return;
                     }
 
@@ -243,16 +244,8 @@ export default (io: Server) => {
                     select: { status: true }
                 });
 
-                if (machine?.status !== 'active') {
-                    // Allow pending machines to update LastSeen so they appear "Online (Pending)"
-                    // But ignore the actual state payload (settings, activity, etc) until adopted.
-                    if (machine?.status === 'pending') {
-                        await prisma.machine.update({
-                            where: { id: machineId },
-                            data: { lastSeen: new Date() }
-                        });
-                    }
-                    console.log(`🔒 Heartbeat payload ignored from non-active machine: ${machineId} (${machine?.status})`);
+                if (machine?.status === 'archived') {
+                    console.log(`🔒 Heartbeat payload ignored from archived machine: ${machineId}`);
                     return;
                 }
 
