@@ -7,6 +7,7 @@ export interface RegisterDTO {
     machineId: string;
     name: string;
     hostname?: string;
+    ipAddress?: string;
 }
 
 export interface AdoptDTO {
@@ -29,7 +30,7 @@ export interface UpdateMachineDTO {
 export class MachineService {
 
     async register(data: RegisterDTO) {
-        const { machineId, name, hostname } = data;
+        const { machineId, name, hostname, ipAddress } = data;
 
         // 1. Check if machine already exists by ID
         const existingById = await prisma.machine.findUnique({
@@ -45,11 +46,28 @@ export class MachineService {
             };
         }
 
-        // 2. Check if machine exists by Name (Recovery Logic)
-        // Only valid if name is provided and not empty
+        // 2. Check if machine exists by Name AND IP (Strict Recovery)
+        if (name && ipAddress && ipAddress !== 'unknown') {
+            const existingByNameAndIp = await prisma.machine.findFirst({
+                where: { name: name, ipAddress: ipAddress, status: { not: 'archived' } }
+            });
+
+            if (existingByNameAndIp) {
+                console.log(`♻ Machine recovery: '${name}' at IP ${ipAddress} matched existing ID ${existingByNameAndIp.id}. Returning existing credentials.`);
+                return {
+                    isNew: false,
+                    apiKey: existingByNameAndIp.apiKey,
+                    machineId: existingByNameAndIp.id,
+                    machine: existingByNameAndIp
+                };
+            }
+        }
+
+        // 3. Check if machine exists by Name (Fallback Recovery)
         if (name) {
             const existingByName = await prisma.machine.findFirst({
-                where: { name: name }
+                where: { name: name, status: { not: 'archived' } },
+                orderBy: { lastSeen: 'desc' }
             });
 
             if (existingByName) {
@@ -63,7 +81,7 @@ export class MachineService {
             }
         }
 
-        // 3. New Machine Registration
+        // 4. New Machine Registration
         const apiKey = crypto.randomBytes(32).toString('hex');
 
         const machine = await prisma.machine.create({

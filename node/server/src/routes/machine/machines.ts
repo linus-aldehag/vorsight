@@ -10,12 +10,13 @@ const router = express.Router();
 router.post('/register', async (req: Request, res: Response) => {
     try {
         const { machineId, name, hostname } = req.body as RegisterDTO;
+        const ipAddress = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown') as string;
 
         if (!machineId || !name) {
             return res.status(400).json({ error: 'machineId and name are required' });
         }
 
-        const result = await machineService.register({ machineId, name, hostname });
+        const result = await machineService.register({ machineId, name, hostname, ipAddress });
 
         if (!result.isNew) {
             return res.json({
