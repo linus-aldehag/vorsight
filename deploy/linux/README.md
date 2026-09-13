@@ -230,17 +230,7 @@ No manual backup needed - the script handles it automatically!
 To completely remove Vorsight:
 
 ```bash
-# Stop and disable service
-sudo systemctl stop vorsight
-sudo systemctl disable vorsight
-sudo rm /etc/systemd/system/vorsight.service
-sudo systemctl daemon-reload
-
-# Remove files
-sudo rm -rf /opt/vorsight
-
-# Remove user
-sudo userdel vorsight
+sudo ./uninstall.sh
 ```
 
 ## Advanced Configuration
