@@ -1,5 +1,4 @@
 using System.Drawing.Imaging;
-using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Vorsight.Agent.Contracts;
@@ -8,10 +7,6 @@ using Vorsight.Interop;
 
 namespace Vorsight.Agent.Services;
 
-/// <summary>
-/// Windows-specific implementation of screenshot service.
-/// Uses System.Windows.Forms for multi-monitor support.
-/// </summary>
 public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshotService
 {
     private static readonly SemaphoreSlim ScreenshotLock = new(1, 1);
@@ -107,15 +102,14 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
             var hDesktop = User32.OpenInputDesktop(
                 0,
                 false,
-                Vorsight.Interop.User32.DESKTOP_READOBJECTS
-                    | Vorsight.Interop.User32.DESKTOP_WRITEOBJECTS
+                User32.DESKTOP_READOBJECTS | User32.DESKTOP_WRITEOBJECTS
             );
 
             if (hDesktop != IntPtr.Zero)
             {
                 try
                 {
-                    var desktopName = Vorsight.Interop.User32.GetDesktopName(hDesktop);
+                    var desktopName = User32.GetDesktopName(hDesktop);
                     if (!string.Equals(desktopName, "Default", StringComparison.OrdinalIgnoreCase))
                     {
                         // If we are on Winlogon or another desktop, the session is likely locked or in UAC prompt
@@ -129,7 +123,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
                 }
                 finally
                 {
-                    Vorsight.Interop.User32.CloseDesktop(hDesktop);
+                    User32.CloseDesktop(hDesktop);
                 }
             }
             else
@@ -147,7 +141,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
         }
         catch
         {
-            bitmap?.Dispose();
+            bitmap.Dispose();
             throw;
         }
     }
@@ -194,7 +188,7 @@ public class ScreenshotService(ILogger<IScreenshotService> logger) : IScreenshot
         }
         finally
         {
-            placeholderBitmap?.Dispose();
+            placeholderBitmap.Dispose();
         }
     }
 

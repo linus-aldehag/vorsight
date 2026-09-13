@@ -72,7 +72,7 @@ public class IpcService : IIpcService
         catch (TimeoutException)
         {
             Log.Warning("IPC connection timed out - Service might be down");
-            throw; // Propagate or handle?
+            throw;
         }
         catch (Exception ex)
         {

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace Vorsight.Service.Storage;
 
@@ -101,8 +100,8 @@ public class FileCredentialStore : ICredentialStore
 
     private class CredentialsModel
     {
-        public string? MachineId { get; set; }
-        public string? ApiKey { get; set; }
-        public DateTime LastUpdated { get; set; }
+        public string? MachineId { get; init; }
+        public string? ApiKey { get; init; }
+        public DateTime LastUpdated { get; init; }
     }
 }

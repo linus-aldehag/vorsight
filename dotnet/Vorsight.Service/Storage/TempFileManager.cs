@@ -1,3 +1,5 @@
+using Vorsight.Infrastructure.IO;
+
 namespace Vorsight.Service.Storage;
 
 /// <summary>
@@ -25,7 +27,7 @@ public class TempFileManager(
     IUploadQueueProcessor uploadQueueProcessor
 ) : ITempFileManager
 {
-    private readonly string _tempPath = Vorsight.Infrastructure.IO.PathConfiguration.GetTempPath();
+    private readonly string _tempPath = PathConfiguration.GetTempPath();
     private readonly TimeSpan _maxFileAge = TimeSpan.FromHours(
         configuration.GetValue("TempFileManager:MaxFileAgeHours", 24)
     );

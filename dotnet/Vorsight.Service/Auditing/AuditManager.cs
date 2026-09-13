@@ -1,4 +1,3 @@
-using System.Text;
 using Vorsight.Service.Storage;
 
 namespace Vorsight.Service.Auditing;
@@ -6,7 +5,7 @@ namespace Vorsight.Service.Auditing;
 public class AuditReport
 {
     public bool Passed { get; set; } = true;
-    public List<string> Warnings { get; set; } = new();
+    public List<string> Warnings { get; set; } = [];
     public DateTime Timestamp { get; set; }
 }
 
@@ -16,25 +15,16 @@ public interface IHealthAuditManager
     AuditReport? GetLastReport();
 }
 
-public class HealthAuditManager : IHealthAuditManager
+public class HealthAuditManager(
+    ILogger<HealthAuditManager> logger,
+    IGoogleDriveService driveService,
+    IConfiguration config
+) : IHealthAuditManager
 {
-    private readonly ILogger<HealthAuditManager> _logger;
-    private readonly IGoogleDriveService _driveService;
-    private readonly IConfiguration _config;
+    private readonly IGoogleDriveService _driveService = driveService;
 
     private AuditReport? _lastReport;
     private DateTime _lastAuditTime = DateTime.MinValue;
-
-    public HealthAuditManager(
-        ILogger<HealthAuditManager> logger,
-        IGoogleDriveService driveService,
-        IConfiguration config
-    )
-    {
-        _logger = logger;
-        _driveService = driveService;
-        _config = config;
-    }
 
     public AuditReport? GetLastReport() => _lastReport;
 
@@ -52,7 +42,7 @@ public class HealthAuditManager : IHealthAuditManager
         try
         {
             // Check if Agent executable exists
-            var agentPath = _config.GetValue<string>("Agent:ExecutablePath");
+            var agentPath = config.GetValue<string>("Agent:ExecutablePath");
             if (string.IsNullOrEmpty(agentPath) || !File.Exists(agentPath))
             {
                 // Try fallback paths
@@ -83,18 +73,18 @@ public class HealthAuditManager : IHealthAuditManager
             {
                 report.Passed = false;
                 report.Warnings = warnings;
-                _logger.LogWarning("System Audit Failed: {Warnings}", string.Join(", ", warnings));
+                logger.LogWarning("System Audit Failed: {Warnings}", string.Join(", ", warnings));
             }
             else
             {
-                _logger.LogDebug("System Audit Passed");
+                logger.LogDebug("System Audit Passed");
             }
         }
         catch (Exception ex)
         {
             report.Passed = false;
             report.Warnings.Add($"Audit crashed: {ex.Message}");
-            _logger.LogError(ex, "Audit failed with exception");
+            logger.LogError(ex, "Audit failed with exception");
         }
 
         _lastReport = report;

@@ -8,7 +8,7 @@ public class UptimeMonitor
     private DateTime? _currentStart;
     private DateTime? _lastSeen;
     private readonly TimeSpan _threshold = TimeSpan.FromMinutes(5);
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     public UptimeMonitor(string? storageDirectory = null)
     {
@@ -158,6 +158,6 @@ public record UptimeStatus
 
 public class UptimeInterval
 {
-    public DateTime Start { get; set; }
+    public DateTime Start { get; init; }
     public DateTime End { get; set; }
 }

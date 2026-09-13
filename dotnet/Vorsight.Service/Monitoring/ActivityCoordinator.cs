@@ -1,12 +1,9 @@
 using Vorsight.Contracts.DTOs;
-using Vorsight.Contracts.IPC;
-using Vorsight.Contracts.Settings;
+using Vorsight.Contracts.Models;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.Monitoring;
-using Vorsight.Interop;
 using Vorsight.Service.Agents;
 using Vorsight.Service.Server;
-using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Monitoring;
 
@@ -14,29 +11,19 @@ public interface IActivityCoordinator
 {
     Task StartMonitoringAsync(CancellationToken cancellationToken);
     ActivitySnapshot? GetCurrentActivity();
-    void UpdateActivity(Vorsight.Contracts.Models.ActivityData data);
+    void UpdateActivity(ActivityData data);
     Task RequestManualScreenshotAsync(string source);
 }
 
 public class ActivityCoordinator(
     ILogger<ActivityCoordinator> logger,
     ILoggerFactory loggerFactory,
-    IConfiguration config,
-    INamedPipeServer ipcServer,
-    ICommandExecutor commandExecutor,
     ISettingsManager settingsManager,
     IServerConnection serverConnection,
     IHealthMonitor healthMonitor,
     IAgentLauncher agentLauncher
 ) : IActivityCoordinator
 {
-    private readonly ILoggerFactory _loggerFactory = loggerFactory;
-    private readonly INamedPipeServer _ipcServer = ipcServer;
-    private readonly ICommandExecutor _commandExecutor = commandExecutor;
-    private readonly ISettingsManager _settingsManager = settingsManager;
-    private readonly IServerConnection _serverConnection = serverConnection;
-    private readonly IHealthMonitor _healthMonitor = healthMonitor;
-    private readonly IAgentLauncher _agentLauncher = agentLauncher;
     private string _currentWindow = string.Empty;
     private string _currentProcess = string.Empty;
     private DateTime _currentActivityStart = DateTime.MinValue;
@@ -46,13 +33,13 @@ public class ActivityCoordinator(
     private string _currentUsername = string.Empty;
     private DateTime _lastActivityPoll = DateTime.MinValue;
 
-    public void UpdateActivity(Vorsight.Contracts.Models.ActivityData data)
+    public void UpdateActivity(ActivityData data)
     {
         var now = DateTimeOffset.FromUnixTimeSeconds(data.Timestamp).UtcDateTime;
 
         // Report successful activity reception to health monitor
-        _healthMonitor.RecordActivitySuccess();
-        _healthMonitor.UpdateLastActivityReceived(now);
+        healthMonitor.RecordActivitySuccess();
+        healthMonitor.UpdateLastActivityReceived(now);
 
         // Initialize tracking if needed
         if (_currentActivityStart == DateTime.MinValue)
@@ -69,9 +56,9 @@ public class ActivityCoordinator(
             var duration = (int)(now - _currentActivityStart).TotalSeconds;
 
             // Send PREVIOUS activity if it had a meaningful duration
-            if (_serverConnection.IsConnected && duration > 0)
+            if (serverConnection.IsConnected && duration > 0)
             {
-                _ = _serverConnection.SendActivityAsync(
+                _ = serverConnection.SendActivityAsync(
                     new ActivityPayload
                     {
                         Timestamp = new DateTimeOffset(_currentActivityStart),
@@ -101,7 +88,7 @@ public class ActivityCoordinator(
 
     public async Task StartMonitoringAsync(CancellationToken cancellationToken)
     {
-        var monitorLogger = _loggerFactory.CreateLogger("ActivityMonitor");
+        var monitorLogger = loggerFactory.CreateLogger("ActivityMonitor");
         monitorLogger.LogInformation("Activity monitoring started");
 
         while (!cancellationToken.IsCancellationRequested)
@@ -109,7 +96,7 @@ public class ActivityCoordinator(
             try
             {
                 var now = DateTime.UtcNow;
-                var settings = await _settingsManager.GetSettingsAsync();
+                var settings = await settingsManager.GetSettingsAsync();
 
                 // Monitor loop - check connection and send heartbeat
                 // Activity updates are event-driven via UpdateActivity, but we need to keep connection alive
@@ -121,7 +108,7 @@ public class ActivityCoordinator(
                     _lastPollTime = now;
 
                     // Send heartbeat to server with current activity
-                    if (_serverConnection.IsConnected && _latestSnapshot != null)
+                    if (serverConnection.IsConnected && _latestSnapshot != null)
                     {
                         // Get version from assembly
                         var version =
@@ -143,7 +130,7 @@ public class ActivityCoordinator(
                             ).TotalSeconds,
                         };
 
-                        await _serverConnection.SendHeartbeatAsync(
+                        await serverConnection.SendHeartbeatAsync(
                             new StatePayload
                             {
                                 LastActivityTime = new DateTimeOffset(
@@ -166,7 +153,7 @@ public class ActivityCoordinator(
                 if (now - _lastActivityPoll > TimeSpan.FromSeconds(activityInterval))
                 {
                     _lastActivityPoll = now;
-                    await _agentLauncher.LaunchActivityCaptureAsync(cancellationToken);
+                    await agentLauncher.LaunchActivityCaptureAsync(cancellationToken);
                 }
 
                 // Check for Timed Screenshot (only if enabled)
@@ -212,7 +199,7 @@ public class ActivityCoordinator(
         try
         {
             var metadata = $"Type:{triggerType}|Title:{snapshot.ActiveWindowTitle}";
-            await _agentLauncher.LaunchScreenshotAgentAsync(metadata);
+            await agentLauncher.LaunchScreenshotAgentAsync(metadata);
         }
         catch (Exception ex)
         {

@@ -1,7 +1,6 @@
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
-using Vorsight.Contracts.IPC;
 using Vorsight.Infrastructure.Audit;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.IO;
@@ -91,7 +90,6 @@ try
             if (process != null)
             {
                 process.WaitForExit();
-                var output = process.StandardOutput.ReadToEnd();
                 var error = process.StandardError.ReadToEnd();
 
                 if (process.ExitCode == 0)
@@ -175,8 +173,7 @@ try
     // Configure core services
     builder.Services.AddCors();
     builder.Services.AddSingleton<INamedPipeServer>(sp => new NamedPipeServer(
-        sp.GetRequiredService<ILogger<NamedPipeServer>>(),
-        "VorsightIPC"
+        sp.GetRequiredService<ILogger<NamedPipeServer>>()
     ));
 
     builder.Services.AddSingleton<IProcessHelper, ProcessHelper>();
@@ -246,7 +243,7 @@ try
     var sessionManager = app.Services.GetRequiredService<ISessionSummaryManager>();
     // Session initialization moved to Worker.cs to ensure ServerConnection is ready
 
-    AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+    AppDomain.CurrentDomain.UnhandledException += (_, e) =>
     {
         sessionManager.RegisterException((Exception)e.ExceptionObject);
         if (e.IsTerminating)

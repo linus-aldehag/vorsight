@@ -1,6 +1,4 @@
-using System;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Vorsight.Service.Server.Clients;
 
@@ -13,8 +11,6 @@ public interface IVorsightRealtimeClient
     event EventHandler<JsonElement> SettingsUpdateReceived;
     event EventHandler<JsonElement> ScheduleUpdateReceived;
     event EventHandler<CommandReceivedEventArgs> CommandReceived;
-    event EventHandler MachineArchived;
-    event EventHandler MachineUnarchived;
     event EventHandler<string> ConnectionError;
 
     // Events for authentication flow

@@ -1,8 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Vorsight.Interop;
 using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Agents;
@@ -32,7 +27,7 @@ public class AgentLauncher : IAgentLauncher
 
     private string ResolveAgentPath(IConfiguration config)
     {
-        // First, try the configured path (may be relative or absolute)
+        // First, try the configured path (either relative or absolute)
         var configuredPath = config.GetValue<string>("Agent:ExecutablePath");
         if (!string.IsNullOrEmpty(configuredPath))
         {
