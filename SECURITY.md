@@ -8,7 +8,7 @@ If you discover a security vulnerability in Vörsight, please report it responsi
 
 Instead, please contact the maintainers privately:
 
-- **Email**: Create a security advisory through GitHub's [private vulnerability reporting](../../security/advisories/new)
+- **Email**: Create a security advisory through GitHub's [private vulnerability reporting](https://github.com/linus-aldehag/vorsight/security/advisories/new)
 - **Alternatively**: Open a draft security advisory in this repository
 
 We take security seriously and will respond to valid reports as quickly as possible.
