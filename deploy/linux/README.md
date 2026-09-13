@@ -30,7 +30,6 @@ The package contains:
 - Node.js server code with production dependencies
 - Setup script (`setup.sh`) for fresh installs and upgrades
 - Prisma database migrations
-- systemd service template
 - Environment configuration template (`.env.template`)
 
 ### 2. Transfer to Server
@@ -87,7 +86,7 @@ NODE_ENV=production
 CLIENT_ORIGIN=http://your-server-ip:3000    # CORS origin
 WEB_PASSPHRASE=your-secure-passphrase       # Web UI login passphrase
 JWT_SECRET=your-secure-random-secret       # Auto-generated during setup
-DATABASE_URL=file:./data/vorsight.db        # SQLite database path
+DATABASE_URL=file:/opt/vorsight/data/vorsight.db # SQLite database path
 
 # Google Drive OAuth (configure via web UI Settings page)
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
@@ -162,7 +161,7 @@ http://localhost:3000
 | `/opt/vorsight/data/vorsight.db` | SQLite database |
 | `/opt/vorsight/data/vorsight.db.backup.*` | Automatic database backups (from upgrades) |
 | `/opt/vorsight/prisma/migrations/` | Database migration history |
-| `/opt/vorsight/src/server.js` | Server entry point |
+| `/opt/vorsight/dist/server.js` | Server entry point |
 | `/opt/vorsight/public/` | React web app |
 | `/etc/systemd/system/vorsight.service` | Systemd service file |
 

@@ -53,7 +53,11 @@ vorsight/
 │   └── Vorsight.sln              # Visual Studio Solution
 ├── node/                   # JavaScript stack
 │   ├── server/             # Node.js API server
-│   └── client/             # React web dashboard
+│   ├── client/             # React web dashboard
+│   ├── Dockerfile          # Multi-stage production container image
+│   └── entrypoint.sh       # Docker container entrypoint & env setup
+├── shared/                 # Cross-platform JSON Schemas
+│   └── schemas/            # Source definitions for machine settings & API payloads
 ├── deploy/
 │   ├── windows/                # Windows installer (Inno Setup)
 │   └── linux/                  # Linux deployment scripts
@@ -78,7 +82,7 @@ GitHub Actions will:
 
 ## Code Style
 
-- **C#**: Follow standard .NET conventions, use async/await for I/O operations
+- **C#**: Follow standard .NET conventions, use async/await for I/O operations. Code is automatically formatted using **CSharpier** (enforced on build via `Directory.Build.targets`).
 - **TypeScript**: Use prettier formatting, prefer functional components (React)
 - **Naming**: Clear, descriptive names; avoid abbreviations unless well-known
 
