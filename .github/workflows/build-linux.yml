@@ -108,7 +108,6 @@ jobs:
         # Copy deployment scripts
         cp deploy/linux/setup.sh deploy/linux/vorsight-server/
         cp deploy/linux/uninstall.sh deploy/linux/vorsight-server/
-        cp deploy/linux/vorsight.service.template deploy/linux/vorsight-server/
         cp deploy/linux/README.md deploy/linux/vorsight-server/
         
         # Make scripts executable
