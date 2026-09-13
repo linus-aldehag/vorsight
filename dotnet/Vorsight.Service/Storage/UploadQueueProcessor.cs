@@ -4,9 +4,6 @@ using Vorsight.Service.Monitoring;
 using Vorsight.Service.Server;
 using Vorsight.Service.SystemOperations;
 
-/// <summary>
-/// Handles processing of screenshot uploads from a queue
-/// </summary>
 namespace Vorsight.Service.Storage;
 
 public interface IUploadQueueProcessor
@@ -109,7 +106,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
 
     public int QueueCount => _uploadQueue.Count;
 
-    public bool IsCompleted => _uploadQueue.Completion.IsCompleted;
+    private bool IsCompleted => _uploadQueue.Completion.IsCompleted;
 
     public async Task CompleteAsync(TimeSpan? timeout = null)
     {
@@ -310,7 +307,7 @@ public class UploadQueueProcessor : IUploadQueueProcessor, IDisposable
         if (_isDisposed)
             return;
         _isDisposed = true;
-        _logger?.LogInformation("Disposing UploadQueueProcessor");
+        _logger.LogInformation("Disposing UploadQueueProcessor");
 
         _shutdownCoordinator.DeregisterUploadQueue(_uploadQueue);
         _internalCts.Dispose();

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Vorsight.Contracts.DTOs;
 using Vorsight.Infrastructure.Identity;
 using Vorsight.Service.Logging;
@@ -70,20 +65,20 @@ public class ServerConnection : IServerConnection, IDisposable
     private void BindRealtimeEvents()
     {
         // When the socket itself connects, we try to authenticate
-        _realtimeClient.Connected += async (sender, e) =>
+        _realtimeClient.Connected += async (_, _) =>
         {
             await AuthenticateSocketAsync();
         };
 
         // When the SERVER confirms we are authenticated/connected logically
-        _realtimeClient.MachineConnected += (sender, e) =>
+        _realtimeClient.MachineConnected += (_, _) =>
         {
             _isConnected = true;
             // Trigger connection restored event so listeners can fetch settings/schedules
             Task.Run(() => ConnectionRestored?.Invoke(this, EventArgs.Empty));
         };
 
-        _realtimeClient.Disconnected += (sender, e) =>
+        _realtimeClient.Disconnected += (_, _) =>
         {
             if (_isConnected)
             {
@@ -92,8 +87,10 @@ public class ServerConnection : IServerConnection, IDisposable
             }
         };
 
-        _realtimeClient.ConnectionError += async (sender, error) =>
+        _realtimeClient.ConnectionError += async (_, error) =>
         {
+            if (error == null)
+                throw new ArgumentNullException(nameof(error));
             if (
                 error.Equals("Invalid credentials", StringComparison.OrdinalIgnoreCase)
                 || error.Equals("Missing credentials", StringComparison.OrdinalIgnoreCase)
@@ -111,19 +108,19 @@ public class ServerConnection : IServerConnection, IDisposable
             }
         };
 
-        _realtimeClient.SettingsUpdateReceived += (sender, settings) =>
+        _realtimeClient.SettingsUpdateReceived += (_, _) =>
         {
             _logger.LogInformation("Received settings update from server - triggering reload");
             SettingsUpdateReceived?.Invoke(this, EventArgs.Empty);
         };
 
-        _realtimeClient.ScheduleUpdateReceived += (sender, schedule) =>
+        _realtimeClient.ScheduleUpdateReceived += (_, _) =>
         {
             _logger.LogInformation("Received schedule update from server - triggering reload");
             ScheduleUpdateReceived?.Invoke(this, EventArgs.Empty);
         };
 
-        _realtimeClient.CommandReceived += (sender, args) =>
+        _realtimeClient.CommandReceived += (_, args) =>
         {
             CommandReceived?.Invoke(this, args);
         };
@@ -133,7 +130,7 @@ public class ServerConnection : IServerConnection, IDisposable
     public async Task InitializeAsync()
     {
         // Bind this connection to the static logger sink
-        Logging.ServerSink.CurrentConnection = this;
+        ServerSink.CurrentConnection = this;
 
         try
         {

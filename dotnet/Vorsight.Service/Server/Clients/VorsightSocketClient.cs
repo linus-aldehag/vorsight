@@ -1,9 +1,4 @@
-using System;
 using System.Text.Json;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using SocketIOClient;
 
 namespace Vorsight.Service.Server.Clients;
 
@@ -19,8 +14,6 @@ public class VorsightSocketClient : IVorsightRealtimeClient, IDisposable
     public event EventHandler<JsonElement>? SettingsUpdateReceived;
     public event EventHandler<JsonElement>? ScheduleUpdateReceived;
     public event EventHandler<CommandReceivedEventArgs>? CommandReceived;
-    public event EventHandler? MachineArchived;
-    public event EventHandler? MachineUnarchived;
     public event EventHandler<string>? ConnectionError;
     public event EventHandler? MachineConnected;
 
@@ -35,13 +28,13 @@ public class VorsightSocketClient : IVorsightRealtimeClient, IDisposable
 
     private void SetupEvents()
     {
-        _socket.OnConnected += (sender, e) =>
+        _socket.OnConnected += (_, _) =>
         {
             _logger.LogInformation("WebSocket connected");
             Connected?.Invoke(this, EventArgs.Empty);
         };
 
-        _socket.OnDisconnected += (sender, e) =>
+        _socket.OnDisconnected += (_, _) =>
         {
             if (IsConnected) // Only log if we were previously connected logically
             {
@@ -52,7 +45,7 @@ public class VorsightSocketClient : IVorsightRealtimeClient, IDisposable
 
         _socket.On(
             "machine:connected",
-            response =>
+            _ =>
             {
                 _logger.LogInformation("Machine authenticated with server");
                 MachineConnected?.Invoke(this, EventArgs.Empty);
@@ -133,19 +126,17 @@ public class VorsightSocketClient : IVorsightRealtimeClient, IDisposable
 
         _socket.On(
             "machine:archived",
-            response =>
+            _ =>
             {
                 _logger.LogWarning("⚠ Machine has been archived - data collection stopped");
-                MachineArchived?.Invoke(this, EventArgs.Empty);
             }
         );
 
         _socket.On(
             "machine:unarchived",
-            response =>
+            _ =>
             {
                 _logger.LogInformation("✓ Machine has been un-archived - data collection resumed");
-                MachineUnarchived?.Invoke(this, EventArgs.Empty);
             }
         );
     }

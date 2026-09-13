@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Vorsight.Contracts.Settings;
 // Alias to avoid conflict if the generated enum is named DayOfWeek
 using ContractDay = Vorsight.Contracts.Settings.DayOfWeek;
@@ -19,9 +16,6 @@ namespace Vorsight.Infrastructure.Extensions
                 var now = DateTime.Now; // Local time
                 var today = now.DayOfWeek;
                 var timeNow = now.TimeOfDay;
-
-                if (settings.Schedule == null)
-                    return false;
 
                 // Check matches.
                 return settings.Schedule.Any(w =>
@@ -56,9 +50,6 @@ namespace Vorsight.Infrastructure.Extensions
                 var timeNow = now.TimeOfDay;
                 var today = now.DayOfWeek;
 
-                if (settings.Schedule == null)
-                    return null;
-
                 var currentWindow = settings
                     .Schedule.Where(w => ToSystemDay(w.DayOfWeek) == today)
                     .Select(w => new { Start = ParseTime(w.StartTime), End = ParseTime(w.EndTime) })
@@ -87,7 +78,7 @@ namespace Vorsight.Infrastructure.Extensions
             {
                 var now = DateTime.Now;
 
-                if (settings.Schedule == null || !settings.Schedule.Any())
+                if (!settings.Schedule.Any())
                     return null;
 
                 // Check next 7 days (including today)

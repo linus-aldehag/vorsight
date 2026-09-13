@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Vorsight.Contracts.DTOs;
 using Vorsight.Service.Logging;
 
 namespace Vorsight.Service.Server.Clients;

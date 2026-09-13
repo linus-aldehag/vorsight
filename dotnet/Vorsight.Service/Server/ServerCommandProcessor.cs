@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Vorsight.Service.Agents;
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.SystemOperations;
 
@@ -7,52 +5,38 @@ namespace Vorsight.Service.Server;
 
 public interface IServerCommandProcessor
 {
-    void ProcessCommand(object? sender, CommandReceivedEventArgs e);
+    void ProcessCommand(object? _, CommandReceivedEventArgs e);
 }
 
-public class ServerCommandProcessor : IServerCommandProcessor
+public class ServerCommandProcessor(
+    ICommandExecutor commandExecutor,
+    IActivityCoordinator activityCoordinator,
+    ILogger<ServerCommandProcessor> logger
+) : IServerCommandProcessor
 {
-    private readonly IAgentLauncher _agentLauncher;
-    private readonly ICommandExecutor _commandExecutor;
-    private readonly IActivityCoordinator _activityCoordinator;
-    private readonly ILogger<ServerCommandProcessor> _logger;
-
-    public ServerCommandProcessor(
-        IAgentLauncher agentLauncher,
-        ICommandExecutor commandExecutor,
-        IActivityCoordinator activityCoordinator,
-        ILogger<ServerCommandProcessor> logger
-    )
-    {
-        _agentLauncher = agentLauncher;
-        _commandExecutor = commandExecutor;
-        _activityCoordinator = activityCoordinator;
-        _logger = logger;
-    }
-
     public void ProcessCommand(object? sender, CommandReceivedEventArgs e)
     {
         try
         {
-            if (e.CommandType == "screenshot")
+            switch (e.CommandType)
             {
-                _logger.LogInformation("Processing screenshot command from server");
-                _ = _activityCoordinator.RequestManualScreenshotAsync("Manual");
-            }
-            else if (e.CommandType == "shutdown")
-            {
-                _logger.LogInformation("Processing shutdown command from server");
-                _commandExecutor.RunCommandAsUser("shutdown", "/s /t 0");
-            }
-            else if (e.CommandType == "logout")
-            {
-                _logger.LogInformation("Processing logout command from server");
-                _commandExecutor.RunCommandAsUser("shutdown", "/l");
+                case "screenshot":
+                    logger.LogInformation("Processing screenshot command from server");
+                    _ = activityCoordinator.RequestManualScreenshotAsync("Manual");
+                    break;
+                case "shutdown":
+                    logger.LogInformation("Processing shutdown command from server");
+                    commandExecutor.RunCommandAsUser("shutdown", "/s /t 0");
+                    break;
+                case "logout":
+                    logger.LogInformation("Processing logout command from server");
+                    commandExecutor.RunCommandAsUser("shutdown", "/l");
+                    break;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing server command");
+            logger.LogError(ex, "Error processing server command");
         }
     }
 }

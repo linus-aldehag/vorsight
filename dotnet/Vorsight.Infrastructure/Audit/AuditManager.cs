@@ -1,4 +1,5 @@
 using System.Diagnostics.Eventing.Reader;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using Vorsight.Contracts.DTOs;
 using Vorsight.Contracts.Settings;
@@ -6,11 +7,7 @@ using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Infrastructure.Audit;
 
-/// <summary>
-/// Implementation of audit manager for Windows Event Log monitoring.
-/// Detects and logs security events indicating admin tampering.
-/// </summary>
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows")]
 public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 {
     private bool _disposed;
@@ -18,9 +15,8 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
     // Deduplication
     private readonly Dictionary<string, DateTime> _recentEventHashes = new();
     private readonly TimeSpan _dedupeWindow = TimeSpan.FromSeconds(5);
-    private readonly object _dedupeLock = new();
+    private readonly Lock _dedupeLock = new();
 
-    // Events for audit notifications
     public event EventHandler<AuditEventDetectedEventArgs>? CriticalEventDetected;
     public event EventHandler<TamperingDetectedEventArgs>? TamperingDetected;
 
@@ -45,7 +41,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
     private readonly List<EventLogWatcher> _activeWatchers = new();
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     public async Task StartMonitoringAsync(MachineSettings settings)
     {
         ThrowIfDisposed();
@@ -87,7 +83,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         }
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     private void StartWatcher(string logName, string query)
     {
         try
@@ -95,8 +91,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             var eventQuery = new EventLogQuery(logName, PathType.LogName, query);
             var watcher = new EventLogWatcher(eventQuery);
 
-            watcher.EventRecordWritten += (sender, e) =>
-                LogWatcher_EventRecordWritten(sender, e, logName);
+            watcher.EventRecordWritten += (_, e) => LogWatcher_EventRecordWritten(e, logName);
 
             watcher.Enabled = true;
             _activeWatchers.Add(watcher);
@@ -143,12 +138,8 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
         )]]";
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    private void LogWatcher_EventRecordWritten(
-        object? sender,
-        EventRecordWrittenEventArgs e,
-        string logName
-    )
+    [SupportedOSPlatform("windows")]
+    private void LogWatcher_EventRecordWritten(EventRecordWrittenEventArgs e, string logName)
     {
         try
         {
@@ -172,7 +163,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             // Check for duplicates before processing
             if (IsDuplicate(evt))
             {
-                // logger.LogDebug("Skipping duplicate event {Id}", evt.EventId);
+                logger.LogDebug("Skipping duplicate event {Id}", evt.EventId);
                 return;
             }
 
@@ -212,7 +203,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
 
             case 4699: // Scheduled task deleted - Potentially suspicious if unexpected
                 evt.EventType = "Scheduled Task Deleted";
-                // evt.IsFlagged = true; // Uncomment to flag deletions
+                evt.IsFlagged = true; // Tampering risk
                 NotifyCriticalEvent(evt, "Scheduled task deleted");
                 break;
 
@@ -308,17 +299,11 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
                 _recentEventHashes.Remove(expiredHash);
             }
 
-            if (_recentEventHashes.ContainsKey(hash))
-            {
-                return true;
-            }
-
-            _recentEventHashes[hash] = now;
-            return false;
+            return !_recentEventHashes.TryAdd(hash, now);
         }
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     public async Task StopMonitoringAsync()
     {
         ThrowIfDisposed();
@@ -351,7 +336,7 @@ public class AuditManager(ILogger<AuditManager> logger) : IAuditManager
             throw new ObjectDisposedException(nameof(AuditManager));
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     public void Dispose()
     {
         if (_disposed)

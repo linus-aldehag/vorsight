@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.IO.Pipes;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Microsoft.Extensions.Logging;
@@ -10,10 +11,6 @@ using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Infrastructure.IPC;
 
-/// <summary>
-/// Implementation of Named Pipe server for IPC communication.
-/// Handles bidirectional communication between Service and Agent.
-/// </summary>
 public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = "VorsightIPC")
     : INamedPipeServer
 {
@@ -22,7 +19,6 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
     private readonly ConcurrentDictionary<uint, NamedPipeServerStream> _sessions = new();
     private bool _disposed;
 
-    // Event for handling client connections
     public event EventHandler<SessionConnectedEventArgs>? SessionConnected;
     public event EventHandler<SessionDisconnectedEventArgs>? SessionDisconnected;
     public event EventHandler<PipeMessageReceivedEventArgs>? MessageReceived;
@@ -30,7 +26,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
     public bool IsRunning => _listenerTask?.IsCompleted == false;
     public string PipeName { get; } = pipeName;
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     public async Task StartAsync()
     {
         ThrowIfDisposed();
@@ -127,11 +123,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         logger.LogDebug("Message broadcast to {SessionCount} sessions", _sessions.Count);
     }
 
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("windows")]
     private async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
     {
-        bool fallbackToDefaultSecurity = false;
-        bool worldAccessEstablished = false;
+        var fallbackToDefaultSecurity = false;
+        var worldAccessEstablished = false;
 
         try
         {
@@ -200,14 +196,12 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                                 await Task.Delay(1000, cancellationToken);
                                 continue;
                             }
-                            else
-                            {
-                                // First attempt failed? Okay to fallback.
-                                logger.LogWarning(
-                                    "Insufficient permissions to create Named Pipe with World access. Switching to Default Permissions strategy for future connections."
-                                );
-                                fallbackToDefaultSecurity = true;
-                            }
+
+                            // First attempt failed? Okay to fallback.
+                            logger.LogWarning(
+                                "Insufficient permissions to create Named Pipe with World access. Switching to Default Permissions strategy for future connections."
+                            );
+                            fallbackToDefaultSecurity = true;
                         }
                     }
 
@@ -264,6 +258,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                 {
                     logger.LogError(ex, "Error accepting client connection");
                     pipeServer?.Dispose();
+
                     // Wait before retrying loop to avoid log spam
                     await Task.Delay(1000, cancellationToken);
                 }
@@ -283,11 +278,14 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
         uint sessionId = 0;
         try
         {
-            using (pipe)
+            await using (pipe)
             {
                 // Read session ID from client
                 var sessionIdBytes = new byte[4];
-                var bytesRead = await pipe.ReadAsync(sessionIdBytes, 0, 4, cancellationToken);
+                var bytesRead = await pipe.ReadAsync(
+                    sessionIdBytes.AsMemory(0, 4),
+                    cancellationToken
+                );
 
                 if (bytesRead != 4)
                 {
@@ -317,7 +315,10 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                     {
                         // 1. Read Message Length (4 bytes)
                         var lengthBuffer = new byte[4];
-                        bytesRead = await pipe.ReadAsync(lengthBuffer, 0, 4, cancellationToken);
+                        bytesRead = await pipe.ReadAsync(
+                            lengthBuffer.AsMemory(0, 4),
+                            cancellationToken
+                        );
 
                         if (bytesRead == 0)
                         {
@@ -328,13 +329,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                         if (bytesRead < 4)
                         {
                             // Partial header read - checking if we can read the rest
-                            int headerRemaining = 4 - bytesRead;
+                            var headerRemaining = 4 - bytesRead;
                             while (headerRemaining > 0)
                             {
-                                int read = await pipe.ReadAsync(
-                                    lengthBuffer,
-                                    4 - headerRemaining,
-                                    headerRemaining,
+                                var read = await pipe.ReadAsync(
+                                    lengthBuffer.AsMemory(4 - headerRemaining, headerRemaining),
                                     cancellationToken
                                 );
                                 if (read == 0)
@@ -345,7 +344,7 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
                             }
                         }
 
-                        int messageLength = BitConverter.ToInt32(lengthBuffer, 0);
+                        var messageLength = BitConverter.ToInt32(lengthBuffer, 0);
 
                         // Validity check (max 10MB to prevent OOM)
                         if (messageLength <= 0 || messageLength > 10 * 1024 * 1024)
@@ -359,13 +358,11 @@ public class NamedPipeServer(ILogger<NamedPipeServer> logger, string pipeName = 
 
                         // 2. Read Message Body
                         var messageBuffer = new byte[messageLength];
-                        int totalRead = 0;
+                        var totalRead = 0;
                         while (totalRead < messageLength)
                         {
-                            int read = await pipe.ReadAsync(
-                                messageBuffer,
-                                totalRead,
-                                messageLength - totalRead,
+                            var read = await pipe.ReadAsync(
+                                messageBuffer.AsMemory(totalRead, messageLength - totalRead),
                                 cancellationToken
                             );
                             if (read == 0)
