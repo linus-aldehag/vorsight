@@ -111,7 +111,6 @@ if [ "$INSTALL_MODE" = "upgrade" ]; then
     
     # Step 6: Update service configuration and restart
     # Remove legacy JS files that might confuse the system
-    # Remove legacy JS files that might confuse the system
     if [ -d "$INSTALL_DIR/node/server" ]; then
         find "$INSTALL_DIR/node/server" -name "*.js" -type f -delete
     fi
