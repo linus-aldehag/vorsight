@@ -69,10 +69,9 @@ public interface IHealthMonitor
 /// <summary>
 /// Implementation of health monitoring
 /// </summary>
-public class HealthMonitor : IHealthMonitor
+public class HealthMonitor(ILogger<HealthMonitor> logger) : IHealthMonitor
 {
-    private readonly ILogger<HealthMonitor> _logger;
-    private readonly object _statsLock = new();
+    private readonly Lock _statsLock = new();
 
     // Current period stats
     private int _screenshotsSuccessful;
@@ -94,13 +93,8 @@ public class HealthMonitor : IHealthMonitor
     private int _totalActivitiesFailed;
     private int _totalAgentCommandsSuccessful;
     private int _totalAgentCommandsFailed;
-    private DateTime _applicationStart = DateTime.Now;
+    private readonly DateTime _applicationStart = DateTime.Now;
     private DateTime _lastActivityReceived = DateTime.MinValue;
-
-    public HealthMonitor(ILogger<HealthMonitor> logger)
-    {
-        _logger = logger;
-    }
 
     public void RecordScreenshotSuccess()
     {
@@ -228,7 +222,7 @@ public class HealthMonitor : IHealthMonitor
 
     public async Task StartMonitoringAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Health monitoring started");
+        logger.LogInformation("Health monitoring started");
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -243,13 +237,13 @@ public class HealthMonitor : IHealthMonitor
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in health monitoring");
+                logger.LogError(ex, "Error in health monitoring");
             }
         }
 
         // Final report on shutdown
         ReportHealth();
-        _logger.LogInformation("Health monitoring stopped");
+        logger.LogInformation("Health monitoring stopped");
     }
 
     private void ReportHealth()
@@ -267,14 +261,6 @@ public class HealthMonitor : IHealthMonitor
             var periodUploadRate =
                 periodUploadTotal > 0 ? (_uploadsSuccessful * 100.0 / periodUploadTotal) : 0;
 
-            // Overall stats
-            var overallTotal = _totalScreenshotsSuccessful + _totalScreenshotsFailed;
-            var overallUploadTotal = _totalUploadsSuccessful + _totalUploadsFailed;
-            var overallSuccessRate =
-                overallTotal > 0 ? (_totalScreenshotsSuccessful * 100.0 / overallTotal) : 0;
-            var overallUploadRate =
-                overallUploadTotal > 0 ? (_totalUploadsSuccessful * 100.0 / overallUploadTotal) : 0;
-
             // Activity stats
             var periodActivityTotal = _activitiesSuccessful + _activitiesFailed;
             var periodActivityRate =
@@ -285,15 +271,12 @@ public class HealthMonitor : IHealthMonitor
                     ? (_agentCommandsSuccessful * 100.0 / periodCommandTotal)
                     : 0;
 
-            var overallActivityTotal = _totalActivitiesSuccessful + _totalActivitiesFailed;
-            var overallCommandTotal = _totalAgentCommandsSuccessful + _totalAgentCommandsFailed;
-
             var timeSinceLastActivity =
                 _lastActivityReceived != DateTime.MinValue
                     ? DateTime.Now - _lastActivityReceived
                     : TimeSpan.Zero;
 
-            _logger.LogDebug(
+            logger.LogDebug(
                 "Health Report - Period: {PeriodDuration:hh\\:mm\\:ss} | "
                     + "Screenshots: {ScreenshotSuccess}/{ScreenshotTotal} ({ScreenshotRate:F1}%) | "
                     + "Uploads: {UploadSuccess}/{UploadTotal} ({UploadRate:F1}%) | "
@@ -321,7 +304,7 @@ public class HealthMonitor : IHealthMonitor
             // Check for concerning patterns
             if (periodTotal == 0 && periodDuration > TimeSpan.FromMinutes(20))
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "No screenshot activity in the last {Duration:hh\\:mm\\:ss} - possible application freeze",
                     periodDuration
                 );
@@ -329,7 +312,7 @@ public class HealthMonitor : IHealthMonitor
 
             if (periodTotal > 0 && periodSuccessRate < 50)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Screenshot success rate is very low: {Rate:F1}% - check screenshot service",
                     periodSuccessRate
                 );
@@ -337,7 +320,7 @@ public class HealthMonitor : IHealthMonitor
 
             if (periodUploadTotal > 0 && periodUploadRate < 50)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Upload success rate is very low: {Rate:F1}% - check Google Drive connectivity",
                     periodUploadRate
                 );
@@ -349,7 +332,7 @@ public class HealthMonitor : IHealthMonitor
                 && timeSinceLastActivity > TimeSpan.FromMinutes(10)
             )
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "No activity data received in {Duration:hh\\:mm\\:ss} - activity tracking may have stopped",
                     timeSinceLastActivity
                 );
@@ -357,7 +340,7 @@ public class HealthMonitor : IHealthMonitor
 
             if (periodActivityTotal > 0 && periodActivityRate < 50)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Activity success rate is very low: {Rate:F1}% - check activity processing",
                     periodActivityRate
                 );
@@ -365,7 +348,7 @@ public class HealthMonitor : IHealthMonitor
 
             if (periodCommandTotal > 5 && periodCommandRate < 50)
             {
-                _logger.LogWarning(
+                logger.LogWarning(
                     "Agent command success rate is very low: {Rate:F1}% - check agent executable and session access",
                     periodCommandRate
                 );

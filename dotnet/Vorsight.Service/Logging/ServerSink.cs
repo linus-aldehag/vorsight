@@ -1,30 +1,22 @@
-using System.Collections.Concurrent;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
 using Vorsight.Service.Server;
 
 namespace Vorsight.Service.Logging;
 
-public class ServerSink : IBatchedLogEventSink, IDisposable
+public class ServerSink(LogEventLevel minimumLevel) : IBatchedLogEventSink, IDisposable
 {
     // Static reference to allow global logging configuration to access the singleton connection
     public static IServerConnection? CurrentConnection { get; set; }
 
-    private readonly LogEventLevel _minimumLevel;
-
-    public ServerSink(LogEventLevel minimumLevel)
-    {
-        _minimumLevel = minimumLevel;
-    }
-
     public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
     {
         var connection = CurrentConnection;
-        if (connection == null || !connection.IsConnected)
+        if (connection is not { IsConnected: true })
             return;
 
         var logsToSend = batch
-            .Where(le => le.Level >= _minimumLevel)
+            .Where(le => le.Level >= minimumLevel)
             .Select(le => new LogEventDto
             {
                 Timestamp = le.Timestamp.ToString("o"),

@@ -1,15 +1,16 @@
 using System.Text.Json;
+using Vorsight.Infrastructure.IO;
 using Vorsight.Service.Monitoring;
 
 namespace Vorsight.Service.Storage;
 
 public class SessionSummary
 {
-    public string SessionId { get; set; } = Guid.NewGuid().ToString();
-    public DateTimeOffset StartTime { get; set; } = DateTimeOffset.Now;
+    public string SessionId { get; init; } = Guid.NewGuid().ToString();
+    public DateTimeOffset StartTime { get; init; } = DateTimeOffset.Now;
     public DateTimeOffset? EndTime { get; set; }
     public string ExitReason { get; set; } = "Running";
-    public List<string> Exceptions { get; set; } = new();
+    public List<string> Exceptions { get; init; } = [];
     public HealthReport? LastHealthReport { get; set; }
 }
 
@@ -20,29 +21,20 @@ public interface ISessionSummaryManager
     Task CompleteSessionAsync(string reason, HealthReport? finalReport);
 }
 
-public class SessionSummaryManager : ISessionSummaryManager
+public class SessionSummaryManager(
+    ILogger<SessionSummaryManager> logger,
+    IGoogleDriveService driveService
+) : ISessionSummaryManager
 {
-    private readonly ILogger<SessionSummaryManager> _logger;
-    private readonly IGoogleDriveService _driveService;
-    private readonly string _lockFilePath;
+    private readonly string _lockFilePath = Path.Combine(AppContext.BaseDirectory, "session.lock");
     private readonly SessionSummary _currentSession = new();
-
-    public SessionSummaryManager(
-        ILogger<SessionSummaryManager> logger,
-        IGoogleDriveService driveService
-    )
-    {
-        _logger = logger;
-        _driveService = driveService;
-        _lockFilePath = Path.Combine(AppContext.BaseDirectory, "session.lock");
-    }
 
     public async Task InitializeAsync()
     {
         // Check for previous crash
         if (File.Exists(_lockFilePath))
         {
-            _logger.LogWarning("Previous session likely crashed (lock file exists)");
+            logger.LogWarning("Previous session likely crashed (lock file exists)");
             try
             {
                 var crashSummary = await File.ReadAllTextAsync(_lockFilePath);
@@ -56,7 +48,7 @@ public class SessionSummaryManager : ISessionSummaryManager
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to recover previous session summary");
+                logger.LogError(ex, "Failed to recover previous session summary");
             }
         }
 
@@ -77,7 +69,7 @@ public class SessionSummaryManager : ISessionSummaryManager
 
     public async Task CompleteSessionAsync(string reason, HealthReport? finalReport)
     {
-        _logger.LogInformation("Completing session with reason: {Reason}", reason);
+        logger.LogInformation("Completing session with reason: {Reason}", reason);
         _currentSession.ExitReason = reason;
         _currentSession.EndTime = DateTimeOffset.Now;
         _currentSession.LastHealthReport = finalReport;
@@ -99,7 +91,7 @@ public class SessionSummaryManager : ISessionSummaryManager
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update session lock file");
+            logger.LogError(ex, "Failed to update session lock file");
         }
     }
 
@@ -114,7 +106,7 @@ public class SessionSummaryManager : ISessionSummaryManager
             var fileName = $"session-{summary.SessionId}-{summary.StartTime:yyyyMMddHHmmss}.json";
 
             // Construct path: Temp/Vorsight/{Machine}/Logs
-            var logDir = Vorsight.Infrastructure.IO.PathConfiguration.GetSessionLogPath();
+            var logDir = PathConfiguration.GetSessionLogPath();
             Directory.CreateDirectory(logDir);
 
             var tempPath = Path.Combine(logDir, fileName);
@@ -124,18 +116,18 @@ public class SessionSummaryManager : ISessionSummaryManager
             // Upload to Google Drive with custom folder path
             var machineName = Environment.MachineName;
             var targetFolder = $"Vorsight/{machineName}/Sessions";
-            await _driveService.UploadFileAsync(tempPath, CancellationToken.None, targetFolder);
+            await driveService.UploadFileAsync(tempPath, CancellationToken.None, targetFolder);
 
             // Delete the local file after successful upload
             if (File.Exists(tempPath))
             {
                 File.Delete(tempPath);
-                _logger.LogDebug("Deleted session summary file after upload: {FilePath}", tempPath);
+                logger.LogDebug("Deleted session summary file after upload: {FilePath}", tempPath);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to upload session summary");
+            logger.LogError(ex, "Failed to upload session summary");
         }
     }
 }

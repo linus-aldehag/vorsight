@@ -1,29 +1,19 @@
-using Microsoft.Extensions.Logging;
 using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Models;
 using Vorsight.Service.Monitoring;
+using static System.Text.Encoding;
 
 namespace Vorsight.Service.Agents;
 
-public class ActivityLogHandler
+public class ActivityLogHandler(
+    IActivityCoordinator activityCoordinator,
+    ILogger<ActivityLogHandler> logger,
+    IHealthMonitor healthMonitor
+)
 {
-    private readonly IActivityCoordinator _activityCoordinator;
-    private readonly ILogger<ActivityLogHandler> _logger;
-    private readonly IHealthMonitor _healthMonitor;
-
-    public ActivityLogHandler(
-        IActivityCoordinator activityCoordinator,
-        ILogger<ActivityLogHandler> logger,
-        IHealthMonitor healthMonitor
-    )
-    {
-        _activityCoordinator = activityCoordinator;
-        _logger = logger;
-        _healthMonitor = healthMonitor;
-    }
-
     public void HandleActivity(uint sessionId, PipeMessage message)
     {
-        _logger.LogDebug(
+        logger.LogDebug(
             "Activity data from session {SessionId}: {SizeBytes} bytes, ID={MessageId}",
             sessionId,
             message.Payload?.Length ?? 0,
@@ -32,23 +22,20 @@ public class ActivityLogHandler
 
         try
         {
-            if (message.Payload != null && message.Payload.Length > 0)
+            if (message.Payload is { Length: > 0 })
             {
-                var json = System.Text.Encoding.UTF8.GetString(message.Payload);
-                var data =
-                    System.Text.Json.JsonSerializer.Deserialize<Vorsight.Contracts.Models.ActivityData>(
-                        json
-                    );
+                var json = UTF8.GetString(message.Payload);
+                var data = System.Text.Json.JsonSerializer.Deserialize<ActivityData>(json);
 
                 if (data != null)
                 {
-                    _activityCoordinator.UpdateActivity(data);
+                    activityCoordinator.UpdateActivity(data);
                     // Note: RecordActivitySuccess is called in ActivityCoordinator.UpdateActivity
                 }
                 else
                 {
-                    _healthMonitor.RecordActivityFailure();
-                    _logger.LogWarning(
+                    healthMonitor.RecordActivityFailure();
+                    logger.LogWarning(
                         "Activity data deserialized to null from session {SessionId}",
                         sessionId
                     );
@@ -56,14 +43,14 @@ public class ActivityLogHandler
             }
             else
             {
-                _healthMonitor.RecordActivityFailure();
-                _logger.LogWarning("Empty activity payload from session {SessionId}", sessionId);
+                healthMonitor.RecordActivityFailure();
+                logger.LogWarning("Empty activity payload from session {SessionId}", sessionId);
             }
         }
         catch (Exception ex)
         {
-            _healthMonitor.RecordActivityFailure();
-            _logger.LogError(
+            healthMonitor.RecordActivityFailure();
+            logger.LogError(
                 ex,
                 "Failed to parse activity data from session {SessionId}",
                 sessionId

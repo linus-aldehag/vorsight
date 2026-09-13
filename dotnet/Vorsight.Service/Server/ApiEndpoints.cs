@@ -1,14 +1,11 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Settings;
 using Vorsight.Infrastructure.Contracts;
 using Vorsight.Infrastructure.Uptime;
 using Vorsight.Interop;
 using Vorsight.Service.Auditing;
 using Vorsight.Service.Monitoring;
 using Vorsight.Service.Storage;
-using Vorsight.Service.SystemOperations;
 
 namespace Vorsight.Service.Server;
 
@@ -137,7 +134,7 @@ public static class ApiEndpoints
                 {
                     var latestFile = Directory
                         .GetFiles(screenshotsPath, "*.png", SearchOption.AllDirectories)
-                        .OrderByDescending(f => File.GetLastWriteTimeUtc(f))
+                        .OrderByDescending(File.GetLastWriteTimeUtc)
                         .FirstOrDefault();
 
                     if (latestFile != null)
@@ -149,7 +146,7 @@ public static class ApiEndpoints
 
                 // Fallback: Get from Google Drive
                 var screenshots = await driveService.ListScreenshotsAsync(1);
-                if (screenshots == null || screenshots.Count == 0)
+                if (screenshots.Count == 0)
                     return Results.NotFound();
 
                 var latest = screenshots[0];
@@ -163,20 +160,15 @@ public static class ApiEndpoints
         app.MapGet(
             "/api/analytics/summary",
             () =>
-            {
-                // Activity persistance has been moved to the server.
-                // This local endpoint returns empty data for compatibility.
-
-                return Results.Json(
+                Results.Json(
                     new
                     {
                         totalActiveHours = 0,
-                        timeline = new object[0],
-                        topApps = new object[0],
+                        timeline = Array.Empty<object>(),
+                        topApps = Array.Empty<object>(),
                         lastActive = DateTimeOffset.UtcNow,
                     }
-                );
-            }
+                )
         );
         app.MapGet(
             "/api/schedule",
@@ -189,10 +181,7 @@ public static class ApiEndpoints
 
         app.MapPost(
             "/api/schedule",
-            async (
-                [FromBody] Vorsight.Contracts.Settings.AccessControlSettings schedule,
-                IScheduleManager scheduleManager
-            ) =>
+            async ([FromBody] AccessControlSettings schedule, IScheduleManager scheduleManager) =>
             {
                 try
                 {
@@ -228,10 +217,7 @@ public static class ApiEndpoints
 
         app.MapPost(
             "/api/settings",
-            async (
-                [FromBody] Vorsight.Contracts.Settings.MachineSettings settings,
-                ISettingsManager settingsManager
-            ) =>
+            async ([FromBody] MachineSettings settings, ISettingsManager settingsManager) =>
             {
                 try
                 {

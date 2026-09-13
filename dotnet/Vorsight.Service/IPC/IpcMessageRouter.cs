@@ -1,38 +1,26 @@
-using Microsoft.Extensions.Logging;
 using Vorsight.Contracts.IPC;
 using Vorsight.Infrastructure.Contracts;
 
 namespace Vorsight.Service.IPC;
 
-using Vorsight.Service.Agents;
+using Agents;
 
 public interface IIpcMessageRouter
 {
-    Task RouteMessageAsync(object sender, PipeMessageReceivedEventArgs e);
+    Task RouteMessageAsync(object _, PipeMessageReceivedEventArgs e);
 }
 
-public class IpcMessageRouter : IIpcMessageRouter
+public class IpcMessageRouter(
+    ScreenshotHandler screenshotHandler,
+    ActivityLogHandler activityLogHandler,
+    ILogger<IpcMessageRouter> logger
+) : IIpcMessageRouter
 {
-    private readonly ScreenshotHandler _screenshotHandler;
-    private readonly ActivityLogHandler _activityLogHandler;
-    private readonly ILogger<IpcMessageRouter> _logger;
-
-    public IpcMessageRouter(
-        ScreenshotHandler screenshotHandler,
-        ActivityLogHandler activityLogHandler,
-        ILogger<IpcMessageRouter> logger
-    )
-    {
-        _screenshotHandler = screenshotHandler;
-        _activityLogHandler = activityLogHandler;
-        _logger = logger;
-    }
-
     public async Task RouteMessageAsync(object sender, PipeMessageReceivedEventArgs e)
     {
         try
         {
-            _logger.LogDebug(
+            logger.LogDebug(
                 "Agent message received from session {SessionId}: Type={MessageType}, Size={PayloadSize} bytes",
                 e.SessionId,
                 e.Message.Type,
@@ -43,15 +31,15 @@ public class IpcMessageRouter : IIpcMessageRouter
             switch (e.Message.Type)
             {
                 case PipeMessage.MessageType.Screenshot:
-                    await _screenshotHandler.HandleScreenshotMessageAsync(e.SessionId, e.Message);
+                    await screenshotHandler.HandleScreenshotMessageAsync(e.SessionId, e.Message);
                     break;
 
                 case PipeMessage.MessageType.Activity:
-                    _activityLogHandler.HandleActivity(e.SessionId, e.Message);
+                    activityLogHandler.HandleActivity(e.SessionId, e.Message);
                     break;
 
                 default:
-                    _logger.LogWarning(
+                    logger.LogWarning(
                         "Unknown message type received: {MessageType}",
                         e.Message.Type
                     );
@@ -60,7 +48,7 @@ public class IpcMessageRouter : IIpcMessageRouter
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing message from session {SessionId}", e.SessionId);
+            logger.LogError(ex, "Error processing message from session {SessionId}", e.SessionId);
         }
     }
 }

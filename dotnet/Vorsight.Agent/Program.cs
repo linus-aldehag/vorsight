@@ -5,14 +5,13 @@ using Vorsight.Agent.Contracts;
 using Vorsight.Agent.Services;
 using Vorsight.Infrastructure.IO;
 using Vorsight.Infrastructure.Monitoring;
-using Vorsight.Interop;
 
 namespace Vorsight.Agent;
 
-static class Program
+internal static class Program
 {
     [STAThread]
-    static async Task<int> Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         SetupLogging();
@@ -51,7 +50,7 @@ static class Program
         }
         finally
         {
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync();
         }
     }
 
