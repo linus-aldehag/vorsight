@@ -56,7 +56,7 @@ cd vorsight-server
 sudo ./setup.sh
 ```
 
-Follow the prompts to configure your admin account and Google Cloud credentials. The installer will generate a **Service Key** - keep this safe!
+Follow the prompts to configure your admin account and Google Cloud credentials. The installer will prompt you to set your **Web Passphrase** - keep this safe!
 
 ### 2b. Server Setup (Docker)
 Alternative to the Linux script, you can run the server in a container.
@@ -64,7 +64,7 @@ Alternative to the Linux script, you can run the server in a container.
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -v vorsight-data:/app/prisma \
+  -v vorsight-data:/app/vorsight \
   -e WEB_PASSPHRASE="YourSecurePassphrase" \
   -e GOOGLE_CLIENT_ID="your-client-id" \
   -e GOOGLE_CLIENT_SECRET="your-client-secret" \
@@ -73,7 +73,7 @@ docker run -d \
   ghcr.io/linus-aldehag/vorsight:main
 ```
 
-*   **`-v vorsight-data:/app/prisma`**: Persists the database.
+*   **`-v vorsight-data:/app/vorsight`**: Persists server state, SQLite database, and configuration.
 *   **`-e ...`**: Configures the server. `JWT_SECRET` is auto-generated if not provided.
 
 ### 3. Client Installation (Windows)
@@ -81,7 +81,7 @@ Download `VorsightSetup.exe` from [GitHub Releases](../../releases) on the targe
 
 1. Run the installer.
 2. Enter your **Server Address** (e.g., `http://192.168.1.50:3000`).
-3. Enter the **Service Key** provided during server setup.
+3. Enter the **Web Passphrase** configured during server setup.
 4. The service will start automatically in the background.
 
 ## Configuration
