@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Serilog;
 using Vorsight.Agent.Contracts;
 using Vorsight.Contracts.IPC;
+using Vorsight.Contracts.Models;
 using Vorsight.Infrastructure.Monitoring;
 using Vorsight.Interop;
 
@@ -21,7 +22,7 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
             var activeWindow = snapshot.ActiveWindowTitle;
             var username = GetSessionUsername(sessionId);
 
-            var activityData = new Vorsight.Contracts.Models.ActivityData
+            var activityData = new ActivityData
             {
                 Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 SessionId = sessionId,
@@ -30,7 +31,6 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
                 Username = username,
             };
 
-            // Log locally for debugging
             Log.Debug("Activity: User='{Username}', Window='{Window}'", username, activeWindow);
 
             await ipcService.SendMessageAsync(
@@ -50,7 +50,7 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
 
     private static string GetSessionUsername(uint sessionId)
     {
-        IntPtr buffer = IntPtr.Zero;
+        var buffer = IntPtr.Zero;
         try
         {
             if (
@@ -59,7 +59,7 @@ public class ActivityService(IIpcService ipcService, IUserActivityMonitor activi
                     sessionId,
                     SessionInterop.WTS_INFO_CLASS.WTSUserName,
                     out buffer,
-                    out uint bytesReturned
+                    out _
                 )
             )
             {

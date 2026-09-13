@@ -1,6 +1,5 @@
 using Serilog;
 using Vorsight.Agent.Contracts;
-using Vorsight.Agent.Services;
 using Vorsight.Contracts.IPC;
 using Vorsight.Interop;
 
@@ -34,7 +33,7 @@ public class CommandDispatcher(
                     return await HandleScreenshotAsync(sessionId, options);
 
                 case "activity":
-                    return await HandleActivityAsync(sessionId, options);
+                    return await HandleActivityAsync(sessionId);
 
                 default:
                     Log.Error("Unknown command: {Command}", command);
@@ -49,7 +48,7 @@ public class CommandDispatcher(
         }
     }
 
-    private async Task<int> HandleActivityAsync(uint sessionId, string[] options)
+    private async Task<int> HandleActivityAsync(uint sessionId)
     {
         Log.Debug("Executing activity check for session {SessionId}", sessionId);
         // Interval is ignored as it is one-shot now, but we accept args for compatibility if needed.
@@ -63,9 +62,9 @@ public class CommandDispatcher(
         var bytes = await screenshotService.CaptureScreenAsync();
 
         // Option 1 is metadata string if present
-        string? metadata = options.Length > 0 ? options[0] : null;
+        var metadata = options.Length > 0 ? options[0] : null;
 
-        if (bytes != null && bytes.Length > 0)
+        if (bytes is { Length: > 0 })
         {
             Log.Debug("Sending screenshot ({Size} bytes)", bytes.Length);
             await ipcService.SendMessageAsync(
@@ -76,11 +75,9 @@ public class CommandDispatcher(
             );
             return 0;
         }
-        else
-        {
-            Log.Error("Screenshot capture returned empty/null");
-            return 1;
-        }
+
+        Log.Error("Screenshot capture returned empty/null");
+        return 1;
     }
 
     private static void ShowUsage()
