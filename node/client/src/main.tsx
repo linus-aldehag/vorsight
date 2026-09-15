@@ -5,12 +5,22 @@ import './index.css'
 import { App } from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </BrowserRouter>
-  </StrictMode>,
-)
+async function prepareApp() {
+  if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    const { setupDemoServer } = await import('./demo/setupDemo');
+    setupDemoServer();
+  }
+}
+
+prepareApp().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </BrowserRouter>
+    </StrictMode>,
+  )
+});
+

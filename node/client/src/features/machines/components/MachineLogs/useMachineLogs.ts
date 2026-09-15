@@ -15,7 +15,7 @@ export function useMachineLogs(machineId: string, pollingInterval = 10000) {
             try {
                 // Fetch latest 100 logs
                 const res = await api.get(`/logs/${machineId}?limit=100`);
-                setLogs(res.data);
+                setLogs(Array.isArray(res.data) ? res.data : (res.data?.logs || []));
             } catch (err) {
                 console.error("Failed to fetch logs", err);
             } finally {
