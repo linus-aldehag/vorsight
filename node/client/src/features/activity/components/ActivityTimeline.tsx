@@ -12,7 +12,8 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
 
     // Group activities by date
     const groupedActivities = mergedActivities.reduce((acc, activity) => {
-        const date = new Date(activity.timestamp);
+        const rawDate = activity.timestamp ? new Date(activity.timestamp) : new Date();
+        const date = isNaN(rawDate.getTime()) ? new Date() : rawDate;
         const key = format(date, "yyyy-MM-dd");
         if (!acc[key]) {
             acc[key] = [];
@@ -63,7 +64,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                                                             {activity.active_window || activity.process_name || 'Unknown Activity'}
                                                         </div>
                                                         <div className="text-[10px] text-muted-foreground font-mono whitespace-nowrap shrink-0">
-                                                            {format(new Date(activity.timestamp), "HH:mm:ss")}
+                                                            {format(activity.timestamp && !isNaN(new Date(activity.timestamp).getTime()) ? new Date(activity.timestamp) : new Date(), "HH:mm:ss")}
                                                         </div>
                                                     </div>
 

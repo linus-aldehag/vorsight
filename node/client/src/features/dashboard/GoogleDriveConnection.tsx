@@ -34,9 +34,18 @@ export function GoogleDriveConnection() {
         }
     };
 
-    const handleConnect = () => {
-        // Redirect to OAuth flow
-        window.location.href = '/api/web/v1/oauth/google';
+    const handleConnect = async () => {
+        if (import.meta.env.VITE_DEMO_MODE === 'true') {
+            try {
+                setLoading(true);
+                await api.post('/oauth/google/connect');
+                await checkStatus();
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            window.location.href = '/api/web/v1/oauth/google';
+        }
     };
 
     const handleDisconnect = async () => {

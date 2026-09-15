@@ -38,9 +38,9 @@ export function ActivityTable({ activities }: ActivityTableProps) {
                             </TableCell>
                         </TableRow>
                     ) : (
-                        mergedActivities.map((activity) => (
+                        mergedActivities.map((activity, idx) => (
                             <TableRow
-                                key={activity.id}
+                                key={activity.id ?? `act-${idx}`}
                                 className="border-b-[var(--glass-border)] hover:bg-muted/10 transition-colors"
                             >
                                 <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground py-2 h-auto">

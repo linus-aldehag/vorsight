@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
+    base: './',
     define: {
       __APP_VERSION__: JSON.stringify(packageJson.version),
     },
