@@ -34,6 +34,24 @@ export function LoginPage() {
                     </p>
                 </div>
 
+                {import.meta.env.VITE_DEMO_MODE === 'true' && (
+                    <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/30 space-y-2">
+                        <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+                            <span>🎮 Interactive Demo Mode Active</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            Runs 100% inside your browser. Enter <strong>any passphrase</strong> or click below to enter.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => login('demo-mode')}
+                            className="w-full py-2 px-3 mt-1 bg-primary/20 hover:bg-primary/30 text-primary font-medium text-xs rounded border border-primary/30 transition-colors flex items-center justify-center gap-1.5"
+                        >
+                            ⚡ Quick Demo Login
+                        </button>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                     <div className="flex flex-col gap-2">
                         <label
@@ -45,7 +63,7 @@ export function LoginPage() {
                         <input
                             id="passphrase"
                             type="password"
-                            placeholder="Enter your passphrase"
+                            placeholder={import.meta.env.VITE_DEMO_MODE === 'true' ? "Any passphrase (e.g. demo)" : "Enter your passphrase"}
                             value={passphrase}
                             onChange={(e) => setPassphrase(e.target.value)}
                             disabled={isLoading}
@@ -71,7 +89,9 @@ export function LoginPage() {
 
                 <div className="mt-6 text-center">
                     <p className="text-xs text-muted-foreground">
-                        The passphrase was displayed during installation.
+                        {import.meta.env.VITE_DEMO_MODE === 'true'
+                            ? "Demo server running in-browser (no backend server required)."
+                            : "The passphrase was displayed during installation."}
                     </p>
                 </div>
             </div>
