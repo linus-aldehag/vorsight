@@ -1,8 +1,10 @@
-import { Settings, X, AlertTriangle, HardDrive, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, X, AlertTriangle, HardDrive, ExternalLink, Gamepad2 } from 'lucide-react';
 import { MachineSelector } from '../MachineSelector/MachineSelector';
 import { Button } from '../ui/button';
 import { useUIState } from '../../context/UIStateContext';
 import { useNavigate } from 'react-router-dom';
+import { DemoSplashModal } from '../../demo/DemoSplashModal';
 
 interface AppHeaderProps {
     onSettingsClick: () => void;
@@ -18,12 +20,27 @@ export function AppHeader({
 }: AppHeaderProps) {
     const { isDriveConnected } = useUIState();
     const navigate = useNavigate();
+    const [showDemoModal, setShowDemoModal] = useState(false);
+
     return (
         <header className="border-b border-border/10 min-h-16 flex items-center px-4 md:px-6 shrink-0 bg-surface/50 backdrop-blur-sm z-50">
+            {showDemoModal && <DemoSplashModal isOpen={true} onClose={() => setShowDemoModal(false)} />}
             <div className="flex items-center justify-between w-full gap-2 md:gap-4">
-                <h1 className="text-lg md:text-xl tracking-wider font-bold text-foreground shrink-0">
-                    VÖRSIGHT
-                </h1>
+                <div className="flex items-center gap-2 shrink-0">
+                    <h1 className="text-lg md:text-xl tracking-wider font-bold text-foreground">
+                        VÖRSIGHT
+                    </h1>
+                    {import.meta.env.VITE_DEMO_MODE === 'true' && (
+                        <button
+                            onClick={() => setShowDemoModal(true)}
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-[10px] font-bold tracking-wider uppercase cursor-pointer"
+                            title="Click for Demo Info"
+                        >
+                            <Gamepad2 size={12} />
+                            <span className="hidden sm:inline">DEMO MODE</span>
+                        </button>
+                    )}
+                </div>
 
                 <div className="flex-1 flex items-center justify-center min-w-0 px-2 gap-2">
                     <MachineSelector onClick={onMachineSelectorClick} />
