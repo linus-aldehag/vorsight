@@ -4,63 +4,64 @@
 
 **Vörsight** is a modern, self-hosted parental monitoring solution designed for privacy-conscious families. It combines a lightweight Windows agent with a centralized web dashboard to help you keep your children safe online while maintaining full ownership of your data.
 
-> [!NOTE]
-> Vörsight is currently under active development. The User Interface and features shown in screenshots may evolve as we continuously refine the UX and functionality.
+[🌐 Live Demo](https://linus-aldehag.github.io/vorsight) • [📦 Releases](https://github.com/linus-aldehag/vorsight/releases) • [📜 Legal](LEGAL.md) • [🤝 Contributing](CONTRIBUTING.md)
+
+> [!TIP]
+> **Try the Interactive Demo**: Explore the web dashboard live at [linus-aldehag.github.io/vorsight](https://linus-aldehag.github.io/vorsight).
+
+---
 
 ## Features
 
 ### 🌐 Centralized Dashboard
-*   **Real-time Monitoring**: View the online/offline status and active user for all connected machines instantly.
-*   **Live Updates**: Dashboard updates in real-time via WebSockets, no refresh needed.
-*   **Device Management**: Rename, archive, and manage your fleet of devices easily.
+* **Real-time Monitoring**: Instant WebSocket updates for device status (online/offline) and active users without page refreshes.
+* **Device Management**: Easily rename, archive, and manage your fleet of monitored devices.
 
 ![Dashboard Preview](./.github/assets/screenshot-dashboard.png)
 
 ### 📸 Visual Activity Tracking
-*   **Smart Screenshots**: Captures screen activity at configurable intervals (default every minute) while the user is active.
-*   **Smart Filters**: Automatically skips redundant or identical screenshots before uploading them to reduce bandwidth and storage usage.
-*   **Direct-to-Drive Uploads**: Screenshots are uploaded directly from the client PC to your personal Google Drive, ensuring privacy and speed.
-*   **Gallery View**: Filter and view high-resolution screenshots with a dedicated gallery interface.
+* **Smart Screenshots**: Captures active screen state at configurable intervals (default: 1 min).
+* **Deduplication**: Automatically skips identical/idle frames to save bandwidth and storage.
+* **Direct-to-Drive**: Uploads screenshots directly from client PCs to your Google Drive, keeping your server lightweight.
+* **Gallery View**: Dedicated interface for filtering and reviewing high-res captures.
 
 ### 🛡️ Security & Auditing
-*   **Session Auditing**: Automatically logs Windows session events including Login, Logout, Lock, and Unlock.
-*   **Security Alerts**: Detects critical changes like User Creation, Local Group Membership changes, and Privilege Escalation.
-*   **Audit Log**: A searchable, persistent log of all security events across your network, with dismissal and filtering capabilities.
+* **Session Auditing**: Logs Windows Login, Logout, Lock, and Unlock events automatically.
+* **Security Alerts**: Flags critical changes (user creation, group membership edits, privilege escalation).
+* **Searchable Audit Log**: Centralized, filterable event history with alert dismissal options.
 
 ### ⏰ Access Control
-*   **Usage Scheduling**: Define specific time windows when computer usage is permitted.
-*   **Strict Enforcement**: Automatically force logoff or shutdown when a user is outside their allowed schedule.
-*   **Dynamic Warnings**: Users receive notifications before their time expires.
+* **Usage Scheduling**: Define allowed usage windows per machine/user.
+* **Strict Enforcement**: Automated logoff or shutdown when scheduled time expires.
+* **Dynamic Warnings**: Advance desktop notifications before session termination.
 
 ![Mobile Schedule View](./.github/assets/screenshot-schedule-mobile.png)
 
 ### 🔧 Architecture & Privacy
-*   **Self-Hosted Server**: You run the server. No third-party cloud (other than your own Google Drive) touches your data.
-*   **Secure Communication**: All client-server communication is authenticated via unique API keys.
-*   **Client-Side Privacy**: Heavy media data (screenshots) goes straight to Google Drive, keeping your server lightweight and your data private.
+* **100% Self-Hosted**: Run your server locally or on a VPS. No third-party servers track your activity.
+* **Authenticated API**: Secure client-server communication using per-device API keys and JWTs.
+
+---
 
 ## Getting Started
 
 ### 1. Requirements
-- **Server**: A Linux machine (VPS, Raspberry Pi, etc.) to run the dashboard and API.
-- **Client**: Windows PCs (Windows 10/11) to be monitored.
-- **Google Cloud Project**: Required for Google Drive integration (storing screenshots).
+- **Server**: Linux OS (VPS, Raspberry Pi, Home Server) or Docker environment.
+- **Client**: Windows 10/11 target PC.
+- **Google Cloud Project**: OAuth credentials for direct Google Drive screenshot storage.
 
 ### 2a. Server Setup (Linux)
-Download the latest `vorsight-server-*.tar.gz` from [GitHub Releases](../../releases).
+Download the latest `vorsight-server-*.tar.gz` from [Releases](https://github.com/linus-aldehag/vorsight/releases).
 
 ```bash
-# Extract and install
 tar -xzf vorsight-server-*.tar.gz
 cd vorsight-server
 sudo ./setup.sh
 ```
 
-Follow the prompts to configure your admin account and Google Cloud credentials. The installer will prompt you to set your **Web Passphrase** - keep this safe!
+Follow the prompts to configure your admin account and **Web Passphrase**.
 
 ### 2b. Server Setup (Docker)
-Alternative to the Linux script, you can run the server in a container.
-
 ```bash
 docker run -d \
   -p 3000:3000 \
@@ -73,34 +74,30 @@ docker run -d \
   ghcr.io/linus-aldehag/vorsight:main
 ```
 
-*   **`-v vorsight-data:/app/vorsight`**: Persists server state, SQLite database, and configuration.
-*   **`-e ...`**: Configures the server. `JWT_SECRET` is auto-generated if not provided.
-
 ### 3. Client Installation (Windows)
-Download `VorsightSetup.exe` from [GitHub Releases](../../releases) on the target PC.
+1. Download `VorsightSetup.exe` from [Releases](https://github.com/linus-aldehag/vorsight/releases) onto the target PC.
+2. Run the installer and enter your **Server Address** (e.g., `http://192.168.1.50:3000`) and **Web Passphrase**.
+3. The background monitoring service will launch automatically.
 
-1. Run the installer.
-2. Enter your **Server Address** (e.g., `http://192.168.1.50:3000`).
-3. Enter the **Web Passphrase** configured during server setup.
-4. The service will start automatically in the background.
+---
 
 ## Configuration
 
 ### Google Drive Integration
-Vörsight uses a secure, client-side upload architecture. Your server coordinates authentication, but the heavy lifting (file uploads) happens directly from the Windows PC to Google Drive.
+1. **Create OAuth Credentials**: In [Google Cloud Console](https://console.cloud.google.com/), create OAuth 2.0 Web Application credentials.
+2. **Set Credentials**: Provide Client ID and Secret during server setup or set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `.env`.
+3. **Authorize**: Go to **Settings** in the Vörsight dashboard and click **Connect Google Drive**.
 
-1. **Create OAuth Credentials**: In your Google Cloud Console, create OAuth 2.0 credentials for a Web Application.
-2. **Configure Server**: Provide the Client ID and Secret during server installation (or in `.env`).
-3. **Connect**: Go to the **Settings** page in the Vörsight dashboard and click "Connect Google Drive" to authorize.
+---
 
 ## Troubleshooting
 
-- **Web Dashboard shows "Offline"**: Ensure the Windows client machine is turned on and has network access to the server. Check firewall rules on port 3000.
-- **Screenshots not appearing**: Verify your Google Drive connection in Settings. Ensure the Windows client has the correct time and date settings.
+- **Dashboard shows "Offline"**: Verify the Windows client has network connectivity to the server and firewall allows port 3000.
+- **Missing Screenshots**: Ensure Google Drive is connected in Settings and system clocks on client/server match.
 
 ---
 
 ## ⚖️ Legal & Contributing
 
-- **Legal Notice**: Vörsight is intended for legal, transparent monitoring. See [LEGAL.md](LEGAL.md) for acceptable use and licensing details.
-- **Contributing**: We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development guides and project structure.
+- **Legal Notice**: Vörsight is built for legal, transparent parental monitoring. See [LEGAL.md](LEGAL.md).
+- **Contributing**: Code contributions and bug reports are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
